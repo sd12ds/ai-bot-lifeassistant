@@ -1,7 +1,7 @@
 """
 Обработчик текстовых сообщений.
 Передаёт текст в Supervisor и возвращает ответ пользователю.
-При активном draft — принудительно направляет в nutrition-агента.
+При активном draft или sticky domain — принудительно направляет в соответствующего агента.
 """
 from __future__ import annotations
 
@@ -27,12 +27,18 @@ async def text_handler(message: Message, user_db: dict | None = None, bot: Bot =
 
     logger.info("TEXT user=%s mode=%s: %s", user_id, user_mode, message.text)
 
-    # Проверяем активный draft — если есть, принудительно направляем в соответствующий домен
+    # Проверяем контекст сессии — draft или sticky domain
     force_agent = None
     ctx = get_context(user_id)
-    if ctx and ctx.draft:
-        force_agent = ctx.active_domain or "nutrition"  # fallback на nutrition для совместимости
-        logger.info("TEXT user=%s: активный draft → force_agent=%s", user_id, force_agent)
+    if ctx:
+        if ctx.draft:
+            # Активный черновик — принудительно в домен
+            force_agent = ctx.active_domain or "nutrition"
+            logger.info("TEXT user=%s: активный draft → force_agent=%s", user_id, force_agent)
+        elif ctx.is_domain_sticky():
+            # Sticky domain — недавно взаимодействовал с доменом
+            force_agent = ctx.active_domain
+            logger.info("TEXT user=%s: sticky domain → force_agent=%s", user_id, force_agent)
 
     try:
         response = await process_message(

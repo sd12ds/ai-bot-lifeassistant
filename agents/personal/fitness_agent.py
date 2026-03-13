@@ -7,7 +7,7 @@ from __future__ import annotations
 from langchain_openai import ChatOpenAI
 from langgraph.prebuilt import create_react_agent
 
-from config import OPENAI_API_KEY, OPENAI_LLM_MODEL
+from config import OPENAI_API_KEY, OPENAI_AGENT_MODEL
 
 # Системный промпт для фитнес-агента
 _SYSTEM_PROMPT = """Ты — персональный фитнес-тренер и трекер тренировок.
@@ -80,7 +80,7 @@ _SYSTEM_PROMPT = """Ты — персональный фитнес-тренер 
 
 # LLM для агента
 _llm = ChatOpenAI(
-    model=OPENAI_LLM_MODEL,
+    model=OPENAI_AGENT_MODEL,
     api_key=OPENAI_API_KEY,
     temperature=0,
     model_kwargs={"parallel_tool_calls": False},

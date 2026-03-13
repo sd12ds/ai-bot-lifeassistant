@@ -7,7 +7,7 @@ from __future__ import annotations
 from langchain_openai import ChatOpenAI
 from langgraph.prebuilt import create_react_agent
 
-from config import OPENAI_API_KEY, OPENAI_LLM_MODEL
+from config import OPENAI_API_KEY, OPENAI_AGENT_MODEL
 from tools.calendar_tools import CALENDAR_TOOLS
 
 # Системный промпт агента
@@ -19,7 +19,7 @@ _SYSTEM_PROMPT = """Ты ассистент по управлению Google Cal
 
 # LLM модель для агента
 _llm = ChatOpenAI(
-    model=OPENAI_LLM_MODEL,
+    model=OPENAI_AGENT_MODEL,
     api_key=OPENAI_API_KEY,
     temperature=0,
 )

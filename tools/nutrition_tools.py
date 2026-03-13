@@ -488,6 +488,9 @@ def make_nutrition_tools(user_id: int) -> list:
                 notes=f"source:{draft.source_type}",
             )
 
+            # Сохраняем last_saved_entity — чтобы можно было редактировать после confirm
+            from bot.core.session_context import set_last_saved
+            set_last_saved(user_id, result)
             # Очищаем draft после успешного сохранения
             clear_draft(user_id)
 
@@ -693,7 +696,50 @@ def make_nutrition_tools(user_id: int) -> list:
         result = await generate_weekly_summary(user_id)
         return result["text"]
 
-    return [meal_log, meal_delete, water_log, nutrition_stats, nutrition_goals_set, meal_from_template, food_search, ewa_product_info, meal_draft_create, meal_draft_update, meal_draft_confirm, meal_draft_discard, meal_check_pending, nutrition_remaining_today, meal_clone_recent, meal_template_save, nutrition_daily_score, nutrition_weekly_summary_tool]
+    @tool
+    async def meal_reload_last() -> str:
+        """Загрузить последний сохранённый приём пищи обратно в черновик для редактирования.
+        Вызывай когда пользователь хочет изменить/отредактировать/поменять что-то 
+        в УЖЕ СОХРАНЁННОМ приёме (не в draft). Признаки: 'поменяй', 'измени', 'исправь' 
+        + контекст [LAST_SAVED].
+        """
+        ctx = get_context(user_id)
+        if not ctx or not ctx.last_saved_entity:
+            # Пробуем взять из БД последний приём
+            recent = await ns.get_recent_meals(user_id, meal_type=None, limit=1)
+            if not recent:
+                return "Нет недавних приёмов пищи для редактирования."
+            last_meal = recent[0]
+        else:
+            last_meal = ctx.last_saved_entity
+
+        # Конвертируем сохранённый meal обратно в draft
+        items = [
+            {
+                "name": item["name"],
+                "amount_g": item["amount_g"],
+                "calories": item["calories"],
+                "protein_g": item["protein_g"],
+                "fat_g": item["fat_g"],
+                "carbs_g": item["carbs_g"],
+            }
+            for item in last_meal.get("items", [])
+        ]
+        if not items:
+            return "Не удалось загрузить — в приёме нет продуктов."
+
+        m_type = last_meal.get("meal_type", "snack")
+        draft = create_draft(user_id, items=items, meal_type=m_type, source="edit")
+        # Сохраняем ID оригинального meal для последующего удаления/замены
+        draft.meta = {"original_meal_id": last_meal.get("id")}
+        card = format_draft_card(draft)
+
+        return (
+            f"📋 Загружен для редактирования (ID: {last_meal.get('id', '?')}):\n{card}\n"
+            f"Теперь можно вносить правки. После подтверждения — старый приём будет заменён."
+        )
+
+    return [meal_log, meal_delete, water_log, nutrition_stats, nutrition_goals_set, meal_from_template, food_search, ewa_product_info, meal_draft_create, meal_draft_update, meal_draft_confirm, meal_draft_discard, meal_check_pending, nutrition_remaining_today, meal_clone_recent, meal_template_save, nutrition_daily_score, nutrition_weekly_summary_tool, meal_reload_last]
 
 
 # ── Вспомогательные ──────────────────────────────────────────────────────────

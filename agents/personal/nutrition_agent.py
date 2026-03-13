@@ -7,7 +7,7 @@ from __future__ import annotations
 from langchain_openai import ChatOpenAI
 from langgraph.prebuilt import create_react_agent
 
-from config import OPENAI_API_KEY, OPENAI_LLM_MODEL
+from config import OPENAI_API_KEY, OPENAI_AGENT_MODEL
 
 # Системный промпт для агента питания
 _SYSTEM_PROMPT = """Ты — персональный нутрициолог и трекер питания.
@@ -116,6 +116,16 @@ FOLLOW-UP:
 - Не нужно вызывать отдельный инструмент — follow-up встроен в подтверждение черновика.
 - Если совет пришёл — передай его пользователю. Если нет — ничего не придумывай.
 
+ПОСЛЕДНИЙ СОХРАНЁННЫЙ ПРИЁМ (LAST_SAVED):
+Когда сообщение содержит контекст "[LAST_SAVED]" — значит у пользователя есть недавно сохранённый приём.
+⚠️ ПРАВИЛА:
+1. ЕСЛИ пользователь хочет ИЗМЕНИТЬ/ПОМЕНЯТЬ/ИСПРАВИТЬ что-то в сохранённом приёме → вызови meal_reload_last
+   - "поменяй сыр на 30г" → meal_reload_last, затем meal_draft_update
+   - "убери хлеб из прошлого приёма" → meal_reload_last, затем meal_draft_update
+   - "измени граммовку" → meal_reload_last
+2. ПОСЛЕ meal_reload_last приём загрузится в draft — дальше работай с ним как с обычным draft
+3. НЕ создавай новый приём если пользователь просит ИЗМЕНИТЬ существующий
+
 ВАЖНО:
 - ВСЕГДА рассчитывай КБЖУ для каждого продукта — не оставляй нули.
 - Используй общепринятые данные о нутриентах продуктов.
@@ -124,7 +134,7 @@ FOLLOW-UP:
 
 # LLM для агента — parallel_tool_calls=False чтобы не было параллельных вызовов meal_log
 _llm = ChatOpenAI(
-    model=OPENAI_LLM_MODEL,
+    model=OPENAI_AGENT_MODEL,
     api_key=OPENAI_API_KEY,
     temperature=0,
     model_kwargs={"parallel_tool_calls": False},

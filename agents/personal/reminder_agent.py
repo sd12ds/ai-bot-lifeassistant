@@ -7,7 +7,7 @@ from __future__ import annotations
 from langchain_openai import ChatOpenAI
 from langgraph.prebuilt import create_react_agent
 
-from config import OPENAI_API_KEY, OPENAI_LLM_MODEL
+from config import OPENAI_API_KEY, OPENAI_AGENT_MODEL
 
 _SYSTEM_PROMPT = """Ты ассистент по управлению задачами и напоминаниями.
 Отвечай на русском языке, коротко и по делу.
@@ -94,7 +94,7 @@ _SYSTEM_PROMPT = """Ты ассистент по управлению задач
 Если срок не распознан — создай задачу без дедлайна и скажи об этом."""
 
 _llm = ChatOpenAI(
-    model=OPENAI_LLM_MODEL,
+    model=OPENAI_AGENT_MODEL,
     api_key=OPENAI_API_KEY,
     temperature=0,
 )

@@ -32,7 +32,22 @@ class SessionContext:
     last_activity: datetime = field(default_factory=lambda: datetime.now(DEFAULT_TZ))
     last_source: str = ""                       # "photo" | "text" | "voice"
     pending_confirmation: bool = False          # Ждём подтверждения?
+    domain_sticky_until: datetime | None = None          # До какого момента домен "липкий"
     meta: dict[str, Any] = field(default_factory=dict)  # Доп. данные домена
+
+    def is_domain_sticky(self) -> bool:
+        """Проверяет, активен ли sticky-режим домена."""
+        if not self.active_domain or not self.domain_sticky_until:
+            return False
+        return datetime.now(DEFAULT_TZ) < self.domain_sticky_until
+
+    def activate_sticky(self, minutes: int = 5) -> None:
+        """Включает sticky-режим для текущего домена на N минут."""
+        self.domain_sticky_until = datetime.now(DEFAULT_TZ) + timedelta(minutes=minutes)
+
+    def clear_sticky(self) -> None:
+        """Сбрасывает sticky-режим."""
+        self.domain_sticky_until = None
 
 
 # ── In-memory хранилище ──────────────────────────────────────────────────────
@@ -83,12 +98,14 @@ def set_draft(user_id: int, draft: BaseDraft) -> SessionContext:
 
 
 def clear_draft(user_id: int) -> None:
-    """Очистить только draft, оставив last_saved_entity."""
+    """Очистить только draft, оставив last_saved_entity. Активирует sticky на 5 мин."""
     ctx = _contexts.get(user_id)
     if ctx:
         ctx.draft = None
         ctx.pending_confirmation = False
         ctx.last_activity = datetime.now(DEFAULT_TZ)
+        # После очистки draft — домен остаётся "липким" 5 минут
+        ctx.activate_sticky(minutes=5)
 
 
 def set_last_saved(user_id: int, entity: dict) -> None:

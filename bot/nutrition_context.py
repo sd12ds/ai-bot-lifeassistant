@@ -114,6 +114,10 @@ def cleanup_expired() -> int:
 def format_context_for_agent(ctx_or_user_id) -> str:
     """Форматирует контекст сессии для инъекции в HumanMessage перед отправкой agent'у.
     
+    Инжектирует:
+    - [DRAFT] контекст если есть активный черновик
+    - [LAST_SAVED] контекст если нет draft, но есть недавно сохранённый приём (< 10 мин)
+    
     Принимает SessionContext или user_id (int) для обратной совместимости.
     """
     if isinstance(ctx_or_user_id, int):
@@ -123,7 +127,35 @@ def format_context_for_agent(ctx_or_user_id) -> str:
             return ""
     else:
         ctx = ctx_or_user_id
-    return _adapter.format_context_for_agent(ctx)
+
+    # Если есть активный draft — используем стандартный формат
+    draft_ctx = _adapter.format_context_for_agent(ctx)
+    if draft_ctx:
+        return draft_ctx
+
+    # Если нет draft, но есть last_saved_entity — инжектируем контекст
+    if ctx.last_saved_entity and ctx.active_domain == "nutrition":
+        # Проверяем давность — только < 10 мин
+        elapsed = datetime.now(DEFAULT_TZ) - ctx.last_activity
+        if elapsed.total_seconds() < 600:  # 10 минут
+            entity = ctx.last_saved_entity
+            items_lines = []
+            for item in entity.get("items", []):
+                items_lines.append(
+                    f"  - {item.get('name', '?')} {item.get('amount_g', 0)}г "
+                    f"({item.get('calories', 0)} ккал)"
+                )
+            items_str = "\n".join(items_lines) if items_lines else "  (нет продуктов)"
+            mt = entity.get("meal_type", "?")
+            meal_id = entity.get("id", "?")
+            total_cal = entity.get("total_calories", 0)
+            return (
+                f"[LAST_SAVED] Последний сохранённый приём (ID: {meal_id}, {mt}, {total_cal} ккал):\n"
+                f"{items_str}\n"
+                f"Если пользователь хочет изменить/поменять что-то — вызови meal_reload_last."
+            )
+
+    return ""
 
 
 def format_draft_card(draft: MealDraft) -> str:
