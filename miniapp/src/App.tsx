@@ -16,6 +16,8 @@ import { ActiveWorkout } from './features/fitness/ActiveWorkout'
 import { WorkoutComplete } from './features/fitness/WorkoutComplete'
 import { ProgressDashboard } from './features/fitness/ProgressDashboard'
 import { BodyMetricsPage } from './features/fitness/BodyMetricsPage'
+import { AuthGatePage } from './features/auth/AuthGatePage'
+import { AuthRequiredPage } from './features/auth/AuthRequiredPage'
 import { ProgramsPage } from './features/fitness/ProgramsPage'
 import { AICoachPage } from './features/fitness/AICoachPage'
 import { ProgramEditorPage } from './features/fitness/ProgramEditorPage'
@@ -57,6 +59,8 @@ function AppContent() {
           <Route path="/fitness/program/:id" element={<ProgramEditorPage />} />
           {/* Заглушки */}
           <Route path="/coaching"   element={<ComingSoon label="Коучинг" />} />
+          <Route path="/auth"        element={<AuthGatePage />} />
+          <Route path="/auth-required" element={<AuthRequiredPage />} />
           <Route path="*"           element={<Navigate to="/tasks" replace />} />
         </Routes>
       </div>

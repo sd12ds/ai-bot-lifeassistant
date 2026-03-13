@@ -5,7 +5,7 @@ FastAPI приложение — REST API для Mini App и внешних кл
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
-from api.routers import tasks, calendars, nutrition, fitness, voice, ai_coach
+from api.routers import auth, tasks, calendars, nutrition, fitness, voice, ai_coach
 
 # ── Приложение ────────────────────────────────────────────────────────────────
 app = FastAPI(
@@ -29,7 +29,8 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-# ── Роутеры ───────────────────────────────────────────────────────────────────
+# ── Роутеры
+app.include_router(auth.router, prefix="/api")
 app.include_router(tasks.router, prefix="/api")
 app.include_router(calendars.router, prefix="/api")
 

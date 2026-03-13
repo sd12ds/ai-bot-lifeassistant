@@ -95,3 +95,32 @@ async def voice_off_handler(message: Message):
     import config
     config.VOICE_REPLY_MODE = "never"
     await message.answer("🔇 Отвечаю текстом.")
+
+
+@router.message(Command("web"))
+async def web_handler(message: Message):
+    """Команда /web — генерирует magic-link для доступа к miniapp из браузера.
+    Создаёт JWT токен (5 мин), отправляет кнопку со ссылкой.
+    """
+    import os
+    from aiogram.types import InlineKeyboardMarkup, InlineKeyboardButton
+    from api.deps import create_jwt
+
+    user_id = message.from_user.id
+    miniapp_url = os.environ.get("MINIAPP_URL", "https://77-238-235-171.sslip.io")
+
+    # Создаём magic-токен (живёт 5 минут, одноразовый по назначению)
+    magic_token = create_jwt(telegram_id=user_id, expires_in=300, purpose="magic")
+    link = f"{miniapp_url}/auth?token={magic_token}"
+
+    keyboard = InlineKeyboardMarkup(inline_keyboard=[
+        [InlineKeyboardButton(text="🌐 Открыть в браузере", url=link)]
+    ])
+
+    await message.answer(
+        "🔗 Ссылка для доступа к приложению из браузера.\n"
+        "Действует **5 минут**, после чего сессия будет работать 24 часа.\n\n"
+        "⚠️ Не передавай эту ссылку другим людям.",
+        reply_markup=keyboard,
+        parse_mode="Markdown",
+    )
