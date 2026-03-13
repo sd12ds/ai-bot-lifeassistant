@@ -723,6 +723,68 @@ def make_fitness_tools(user_id: int) -> list:
         name = program["name"]
         return f"✅ Программа «{name}» деактивирована.\n\n💡 Скинь новую программу текстом или голосом — я загружу.\n💡 Или скажи «активируй программу» чтобы вернуть эту."
 
+
+    @tool
+    async def program_set_schedule(
+        day_number: int,
+        weekday: int = -1,
+        start_time: str = "",
+        end_time: str = "",
+    ) -> str:
+        """Настроить расписание дня тренировки — день недели и/или время.
+        day_number — номер дня в программе (1, 2, 3, ...)
+        weekday — день недели: 0=Пн, 1=Вт, 2=Ср, 3=Чт, 4=Пт, 5=Сб, 6=Вс. -1 = не менять.
+        start_time — время начала в формате HH:MM (например "21:00"). Пустая строка = не менять.
+        end_time — время окончания в формате HH:MM (например "22:00"). Пустая строка = не менять.
+
+        Примеры:
+        - "день 1 по пятницам с 21 до 22" → day_number=1, weekday=4, start_time="21:00", end_time="22:00"
+        - "день 2 в среду" → day_number=2, weekday=2
+        - "день 3 с 18:00 до 19:30" → day_number=3, start_time="18:00", end_time="19:30"
+        """
+        from db import fitness_storage as fs_mod
+
+        program = await fs_mod.get_program_with_exercises(user_id)
+        if not program:
+            return "❌ Нет активной программы."
+
+        # Находим день
+        target_day = None
+        for day in program["days"]:
+            if day["day_number"] == day_number:
+                target_day = day
+                break
+        if not target_day:
+            return f"❌ День {day_number} не найден в программе."
+
+        # Подготавливаем параметры для update
+        kwargs = {"day_id": target_day["id"], "user_id": user_id}
+
+        weekday_names = ["Пн", "Вт", "Ср", "Чт", "Пт", "Сб", "Вс"]
+        changes = []
+
+        if weekday >= 0:
+            kwargs["weekday"] = weekday
+            changes.append(f"📅 {weekday_names[weekday]}")
+        
+        if start_time:
+            kwargs["preferred_start_time"] = start_time
+            changes.append(f"🕐 с {start_time}")
+        
+        if end_time:
+            kwargs["preferred_end_time"] = end_time
+            changes.append(f"до {end_time}")
+
+        if not changes:
+            return "❌ Укажи день недели и/или время."
+
+        result = await fs_mod.update_program_day(**kwargs)
+        if not result:
+            return "❌ Не удалось обновить расписание."
+
+        day_name = target_day.get("day_name", f"День {day_number}")
+        return f"✅ День {day_number} ({day_name}): {' '.join(changes)}\n\n💡 Так же можно настроить остальные дни. Или открой мини-приложение для визуального редактора."
+
     # Возвращаем все инструменты
     return [
         exercise_search,
@@ -742,4 +804,5 @@ def make_fitness_tools(user_id: int) -> list:
         program_remove_exercise,
         program_swap_days,
         program_delete,
+        program_set_schedule,
     ]

@@ -54,3 +54,6 @@
 
 ## [4be80e0] — 2026-03-13 19:38 (МСК)
 📦 fix: program_delete теперь деактивирует программу (is_active=False), а не удаляет из БД
+
+## [5c363fb] — 2026-03-13 19:47 (МСК)
+📦 fix: API DELETE /programs деактивирует (is_active=False) вместо удаления из БД. Miniapp: confirm-диалог перед деактивацией
