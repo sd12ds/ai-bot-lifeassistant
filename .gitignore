@@ -14,12 +14,15 @@ __pycache__/
 # Логи
 *.log
 
-# Данные и конфигурация
+# Секреты и конфигурация
 .env
 credentials.json
 token.json
-data/
-db/
+
+# Файлы БД (код db/*.py и миграции — отслеживаются)
+db/app.db
+db/*.db
+*.sqlite3
 
 # Кэш
 .pytest_cache/
@@ -28,4 +31,6 @@ db/
 # OS
 .DS_Store
 *.exe
+
+# Локальный changelog (не коммитим)
 docs/changelog.md
