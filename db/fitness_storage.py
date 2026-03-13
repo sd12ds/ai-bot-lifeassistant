@@ -1607,3 +1607,147 @@ async def delete_template(template_id: int, user_id: int) -> bool:
         )
         await session.commit()
         return result.rowcount > 0
+
+
+# ── Программа тренировок: расширенные функции ─────────────────────────────────
+
+async def get_or_create_exercise(
+    user_id: int,
+    name: str,
+    category: str = "strength",
+    muscle_group: str | None = None,
+    equipment: str | None = None,
+) -> dict:
+    """
+    Ищет упражнение по имени (ILIKE). Если не найдено — создаёт пользовательское.
+    Возвращает dict с данными упражнения (id, name, ...).
+    """
+    async with AsyncSessionLocal() as session:
+        # Поиск: точное совпадение по имени (регистронезависимое)
+        result = await session.execute(
+            select(ExerciseLibrary)
+            .where(ExerciseLibrary.name.ilike(name.strip()))
+            .limit(1)
+        )
+        ex = result.scalar_one_or_none()
+        if ex:
+            return _exercise_to_dict(ex)
+
+        # Поиск: подстрока в name или aliases
+        q_lower = name.lower().strip()
+        result = await session.execute(
+            select(ExerciseLibrary)
+            .where(
+                or_(
+                    ExerciseLibrary.name.ilike(f"%{q_lower}%"),
+                    cast(ExerciseLibrary.aliases, String).ilike(f"%{q_lower}%"),
+                )
+            )
+            .limit(5)
+        )
+        candidates = result.scalars().all()
+
+        if len(candidates) == 1:
+            # Единственный результат — считаем совпадением
+            return _exercise_to_dict(candidates[0])
+
+        if len(candidates) > 1:
+            # Несколько кандидатов — ищем наиболее точное совпадение по длине имени
+            best = min(candidates, key=lambda c: abs(len(c.name) - len(name)))
+            return _exercise_to_dict(best)
+
+        # Не найдено — создаём пользовательское упражнение
+        new_ex = ExerciseLibrary(
+            user_id=user_id,
+            name=name.strip(),
+            category=category,
+            muscle_group=muscle_group,
+            equipment=equipment,
+            difficulty="intermediate",
+            is_compound=False,
+            aliases=[],
+        )
+        session.add(new_ex)
+        await session.commit()
+        await session.refresh(new_ex)
+        return _exercise_to_dict(new_ex)
+
+
+async def get_program_with_exercises(user_id: int, program_id: int | None = None) -> dict | None:
+    """
+    Загружает программу со всеми днями, шаблонами и упражнениями.
+    Если program_id=None — берёт активную программу.
+    Возвращает расширенный dict с полными данными упражнений в каждом дне.
+    """
+    from db.models import WorkoutProgram, WorkoutTemplate, WorkoutTemplateExercise
+
+    async with AsyncSessionLocal() as session:
+        # Получаем программу
+        if program_id:
+            q = select(WorkoutProgram).where(
+                and_(WorkoutProgram.id == program_id, WorkoutProgram.user_id == user_id)
+            )
+        else:
+            q = select(WorkoutProgram).where(
+                and_(WorkoutProgram.user_id == user_id, WorkoutProgram.is_active == True)
+            )
+        q = q.options(selectinload(WorkoutProgram.days))
+
+        result = await session.execute(q)
+        program = result.scalar_one_or_none()
+        if not program:
+            return None
+
+        # Собираем все template_id из дней
+        template_ids = [d.template_id for d in program.days if d.template_id]
+
+        # Загружаем шаблоны с упражнениями
+        templates_map: dict[int, list[dict]] = {}
+        if template_ids:
+            tpl_result = await session.execute(
+                select(WorkoutTemplate)
+                .where(WorkoutTemplate.id.in_(template_ids))
+                .options(selectinload(WorkoutTemplate.exercises))
+            )
+            templates = tpl_result.scalars().all()
+
+            # Собираем все exercise_id для подгрузки имён
+            all_ex_ids = set()
+            for t in templates:
+                for ex in (t.exercises or []):
+                    all_ex_ids.add(ex.exercise_id)
+
+            # Подгружаем данные упражнений из справочника
+            exercise_info: dict[int, dict] = {}
+            if all_ex_ids:
+                ex_result = await session.execute(
+                    select(ExerciseLibrary).where(ExerciseLibrary.id.in_(all_ex_ids))
+                )
+                for ex in ex_result.scalars():
+                    exercise_info[ex.id] = _exercise_to_dict(ex)
+
+            # Формируем маппинг template_id → список упражнений
+            for t in templates:
+                exercises = []
+                for tex in sorted(t.exercises or [], key=lambda x: x.sort_order):
+                    ex_data = exercise_info.get(tex.exercise_id, {})
+                    exercises.append({
+                        "id": tex.id,
+                        "exercise_id": tex.exercise_id,
+                        "exercise_name": ex_data.get("name", f"#{tex.exercise_id}"),
+                        "muscle_group": ex_data.get("muscle_group", ""),
+                        "equipment": ex_data.get("equipment", ""),
+                        "sets": tex.sets,
+                        "reps": tex.reps,
+                        "weight_kg": tex.weight_kg,
+                        "rest_sec": tex.rest_sec,
+                        "sort_order": tex.sort_order,
+                    })
+                templates_map[t.id] = exercises
+
+        # Формируем результат
+        prog_dict = _program_to_dict(program)
+        for day in prog_dict["days"]:
+            day["exercises"] = templates_map.get(day.get("template_id"), [])
+
+        return prog_dict
