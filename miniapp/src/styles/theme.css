@@ -1,0 +1,27 @@
+/*
+ * Маппинг Telegram WebApp CSS-переменных → кастомные CSS-свойства приложения.
+ * Применяется в useTheme.ts при инициализации.
+ * Если Telegram-переменные недоступны (dev), используются fallback-значения тёмной темы.
+ */
+
+:root {
+  /* ── Базовые цвета из Telegram ──────────────────────────────────────────── */
+  --app-bg:          var(--tg-theme-bg-color,          #0f0f1a);
+  --app-bg-section:  var(--tg-theme-section-bg-color,  #1a1a2e);
+  --app-text:        var(--tg-theme-text-color,        #ffffff);
+  --app-hint:        var(--tg-theme-hint-color,        rgba(255,255,255,0.5));
+  --app-link:        var(--tg-theme-link-color,        #6366f1);
+  --app-button-bg:   var(--tg-theme-button-color,      #6366f1);
+  --app-button-text: var(--tg-theme-button-text-color, #ffffff);
+  --app-secondary:   var(--tg-theme-secondary-bg-color, rgba(255,255,255,0.05));
+
+  /* ── Glass-эффект ───────────────────────────────────────────────────────── */
+  --glass-bg:     rgba(255, 255, 255, 0.05);
+  --glass-border: rgba(255, 255, 255, 0.08);
+  --glass-hover:  rgba(255, 255, 255, 0.08);
+
+  /* ── Тени ───────────────────────────────────────────────────────────────── */
+  --shadow-card: 0 4px 24px rgba(0, 0, 0, 0.25);
+  --shadow-fab:  0 8px 32px rgba(99, 102, 241, 0.4);
+  --shadow-nav:  0 -2px 32px rgba(0, 0, 0, 0.3);
+}

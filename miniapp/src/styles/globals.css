@@ -1,0 +1,65 @@
+/* Шрифт Inter — ДОЛЖЕН быть первым @import */
+@import url("https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap");
+
+/* Tailwind v4 */
+@import "tailwindcss";
+
+/* ── Дизайн-токены через @theme ────────────────────────────────────────────── */
+@theme {
+  --color-accent-start: #6366f1;
+  --color-accent-mid:   #8b5cf6;
+  --color-accent-end:   #3b82f6;
+  --color-priority-high:   #ef4444;
+  --color-priority-medium: #f59e0b;
+  --color-priority-low:    #22c55e;
+  --radius-card:    20px;
+  --radius-btn:     14px;
+  --radius-nav:     24px;
+  --radius-pill:    999px;
+  --radius-sheet:   24px;
+  --font-sans: "Inter", system-ui, sans-serif;
+  --ease-spring: cubic-bezier(0.34, 1.56, 0.64, 1);
+}
+
+* {
+  box-sizing: border-box;
+  -webkit-tap-highlight-color: transparent;
+}
+
+html, body, #root {
+  height: 100%;
+  overflow: hidden;
+}
+
+body {
+  font-family: var(--font-sans);
+  background-color: var(--app-bg, #0f0f1a);
+  color: var(--app-text, #ffffff);
+  -webkit-font-smoothing: antialiased;
+  overscroll-behavior: none;
+  user-select: none;
+}
+
+::-webkit-scrollbar { width: 3px; }
+::-webkit-scrollbar-track { background: transparent; }
+::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.15); border-radius: 3px; }
+
+input[type="number"]::-webkit-outer-spin-button,
+input[type="number"]::-webkit-inner-spin-button { -webkit-appearance: none; }
+
+.gradient-text {
+  background: linear-gradient(135deg, var(--color-accent-start), var(--color-accent-mid));
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+}
+
+.gradient-bg {
+  background: linear-gradient(135deg, var(--color-accent-start), var(--color-accent-mid), var(--color-accent-end));
+}
+
+/* Минимальный размер шрифта для input/textarea/select — предотвращает
+   автозум iOS WebView при фокусе (порог 16px) */
+input, textarea, select {
+  font-size: 16px !important;
+}
