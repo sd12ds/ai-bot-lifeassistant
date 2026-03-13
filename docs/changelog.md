@@ -33,3 +33,6 @@
 
 ## [e9d34ba] — 2026-03-13 17:29 (МСК)
 📦 Этап B+D: Reusable Chat-Core — универсальное ядро bot/core/ (BaseDraft, SessionContext, ActionResolver, DomainAdapter, FollowupEngine) + NutritionAdapter, рефакторинг nutrition_context в адаптер
+
+## [da1eb73] — 2026-03-13 18:10 (МСК)
+📦 Smart Routing v1: трёхуровневая маршрутизация (rule-based → sticky domain → LLM), обновление всех моделей на gpt-4.1-mini/nano, поддержка редактирования сохранённых приёмов через meal_reload_last, инжекция LAST_SAVED контекста

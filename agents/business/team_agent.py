@@ -8,7 +8,7 @@ from __future__ import annotations
 from langchain_openai import ChatOpenAI
 from langgraph.prebuilt import create_react_agent
 
-from config import OPENAI_API_KEY, OPENAI_LLM_MODEL
+from config import OPENAI_API_KEY, OPENAI_AGENT_MODEL
 from tools.calendar_tools import CALENDAR_TOOLS
 
 _SYSTEM_PROMPT = """Ты бизнес-ассистент для управления командой.
@@ -24,7 +24,7 @@ _SYSTEM_PROMPT = """Ты бизнес-ассистент для управлен
 При создании командных встреч уточняй список участников и добавляй их в описание события."""
 
 _llm = ChatOpenAI(
-    model=OPENAI_LLM_MODEL,
+    model=OPENAI_AGENT_MODEL,
     api_key=OPENAI_API_KEY,
     temperature=0,
 )

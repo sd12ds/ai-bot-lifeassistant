@@ -7,7 +7,7 @@ from __future__ import annotations
 from langchain_openai import ChatOpenAI
 from langgraph.prebuilt import create_react_agent
 
-from config import OPENAI_API_KEY, OPENAI_LLM_MODEL
+from config import OPENAI_API_KEY, OPENAI_AGENT_MODEL
 
 _SYSTEM_PROMPT = """Ты бизнес-ассистент для управления клиентской базой (CRM).
 Отвечай на русском языке, профессионально и по делу.
@@ -21,7 +21,7 @@ _SYSTEM_PROMPT = """Ты бизнес-ассистент для управлен
 Статусы сделок: new (новая), in_progress (в работе), won (выиграна), lost (проиграна)."""
 
 _llm = ChatOpenAI(
-    model=OPENAI_LLM_MODEL,
+    model=OPENAI_AGENT_MODEL,
     api_key=OPENAI_API_KEY,
     temperature=0,
 )
