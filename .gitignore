@@ -1,0 +1,30 @@
+# Виртуальное окружение
+venv/
+env/
+__pycache__/
+*.py[cod]
+*$py.class
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# Логи
+*.log
+
+# Данные и конфигурация
+.env
+credentials.json
+token.json
+data/
+db/
+
+# Кэш
+.pytest_cache/
+.cache/
+
+# OS
+.DS_Store
+*.exe
