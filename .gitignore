@@ -34,3 +34,4 @@ db/*.db
 
 # Локальный changelog (не коммитим)
 docs/changelog.md
+miniapp/dist/
