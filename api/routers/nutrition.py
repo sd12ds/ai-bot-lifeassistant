@@ -500,3 +500,54 @@ async def search_food(
         {**r, "is_favorite": r["id"] in fav_ids}
         for r in results
     ]
+
+
+# ── Score / Remaining / Weekly Summary ────────────────────────────────────────
+
+@router.get("/score")
+async def get_daily_score(
+    target_date: Optional[date] = Query(None, description="Дата в формате YYYY-MM-DD (по умолчанию — сегодня)"),
+    user: User = Depends(get_current_user),
+):
+    """Оценка дня по питанию (score 0-100) с разбивкой по компонентам."""
+    from services.nutrition_score import calculate_daily_score
+    d = target_date or date.today()
+    return await calculate_daily_score(user.telegram_id, d)
+
+
+@router.get("/remaining")
+async def get_remaining_today(
+    user: User = Depends(get_current_user),
+):
+    """Остаток КБЖУ на сегодня (разница между целями и съеденным)."""
+    today = date.today()
+    summary = await ns.get_nutrition_summary(user.telegram_id, today)
+    goals = summary.get("goals") or {}
+    totals = summary.get("totals", {})
+    water_ml = summary.get("water_ml", 0)
+
+    if not goals or not goals.get("calories"):
+        raise HTTPException(status_code=400, detail="Цели по КБЖУ не установлены.")
+
+    return {
+        "date": str(today),
+        "remaining": {
+            "calories": max(0, goals["calories"] - totals.get("calories", 0)),
+            "protein_g": max(0, (goals.get("protein_g") or 0) - totals.get("protein_g", 0)),
+            "fat_g": max(0, (goals.get("fat_g") or 0) - totals.get("fat_g", 0)),
+            "carbs_g": max(0, (goals.get("carbs_g") or 0) - totals.get("carbs_g", 0)),
+            "water_ml": max(0, (goals.get("water_ml") or 0) - water_ml),
+        },
+        "eaten": totals,
+        "goals": goals,
+        "progress_pct": round(totals.get("calories", 0) / goals["calories"] * 100) if goals["calories"] else 0,
+    }
+
+
+@router.get("/weekly-summary")
+async def get_weekly_summary(
+    user: User = Depends(get_current_user),
+):
+    """Недельный AI-обзор питания с рекомендациями."""
+    from services.nutrition_weekly_summary import generate_weekly_summary
+    return await generate_weekly_summary(user.telegram_id)

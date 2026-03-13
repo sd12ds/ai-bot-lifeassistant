@@ -16,6 +16,9 @@ from bot.nutrition_context import (
     get_context, get_or_create_context, create_draft, clear_draft,
     format_draft_card,
 )
+from services.nutrition_score import calculate_daily_score, format_score_card
+from services.nutrition_followup import generate_followup, format_followup
+from services.nutrition_weekly_summary import generate_weekly_summary
 
 
 def make_nutrition_tools(user_id: int) -> list:
@@ -499,6 +502,15 @@ def make_nutrition_tools(user_id: int) -> list:
                 f"📊 Итого: {result['total_calories']} ккал "
                 f"· Б {result['total_protein']} · Ж {result['total_fat']} · У {result['total_carbs']}"
             )
+            # Генерируем follow-up подсказки после сохранения
+            try:
+                tips = await generate_followup(user_id)
+                followup_text = format_followup(tips)
+                if followup_text:
+                    lines.append(followup_text)
+            except Exception:
+                pass  # не ломаем сохранение если follow-up не сработал
+
             return "\n".join(lines)
         except Exception as e:
             return f"Ошибка при сохранении: {e}"
@@ -525,7 +537,163 @@ def make_nutrition_tools(user_id: int) -> list:
         card = format_draft_card(ctx.draft)
         return f"📋 Есть незавершённый черновик:\n{card}"
 
-    return [meal_log, meal_delete, water_log, nutrition_stats, nutrition_goals_set, meal_from_template, food_search, ewa_product_info, meal_draft_create, meal_draft_update, meal_draft_confirm, meal_draft_discard, meal_check_pending]
+    @tool
+    async def nutrition_remaining_today() -> str:
+        """Показать сколько КБЖУ осталось на сегодня (остаток от целей).
+        Вызывай когда пользователь спрашивает 'сколько осталось', 'что ещё можно', 'остаток' и т.п.
+        """
+        today = date.today()
+        summary = await ns.get_nutrition_summary(user_id, today)
+        goals = summary.get("goals") or {}
+        totals = summary.get("totals", {})
+        water_ml = summary.get("water_ml", 0)
+
+        # Если целей нет — не можем считать остаток
+        if not goals or not goals.get("calories"):
+            return "⚠️ Цели по КБЖУ не установлены. Установи цели, чтобы видеть остаток."
+
+        # Считаем остаток по каждому параметру
+        cal_left = max(0, goals["calories"] - totals.get("calories", 0))
+        prot_left = max(0, (goals.get("protein_g") or 0) - totals.get("protein_g", 0))
+        fat_left = max(0, (goals.get("fat_g") or 0) - totals.get("fat_g", 0))
+        carbs_left = max(0, (goals.get("carbs_g") or 0) - totals.get("carbs_g", 0))
+        water_left = max(0, (goals.get("water_ml") or 0) - water_ml)
+
+        # Прогресс в процентах
+        cal_pct = round(totals.get("calories", 0) / goals["calories"] * 100) if goals["calories"] else 0
+
+        lines = [
+            f"📊 **Остаток на сегодня** (съедено {cal_pct}%)\n",
+            f"🔥 Калории: {int(cal_left)} ккал",
+            f"🥩 Белок: {int(prot_left)}г",
+            f"🧈 Жиры: {int(fat_left)}г",
+            f"🍞 Углеводы: {int(carbs_left)}г",
+            f"💧 Вода: {int(water_left)} мл",
+        ]
+
+        # Проверяем перебор
+        if totals.get("calories", 0) > goals["calories"]:
+            over = int(totals["calories"] - goals["calories"])
+            lines[1] = f"🔥 Калории: ⚠️ перебор на {over} ккал"
+
+        return "\n".join(lines)
+
+    @tool
+    async def meal_clone_recent(
+        meal_type: str = "",
+        days_back: int = 1,
+    ) -> str:
+        """Клонировать недавний приём пищи в черновик.
+        meal_type — breakfast | lunch | dinner | snack (если пусто — любой)
+        days_back — сколько дней назад искать (1 = вчера, 0 = сегодня)
+        Используй когда пользователь говорит 'как вчера', 'повтори завтрак', 'то же что вчера на обед'.
+        """
+        mt = meal_type if meal_type else None
+        recent = await ns.get_recent_meals(user_id, meal_type=mt, limit=5)
+
+        if not recent:
+            return "Не нашёл недавних приёмов пищи для клонирования."
+
+        # Ищем подходящий приём по days_back
+        target_date = date.today() - timedelta(days=days_back)
+        target_meal = None
+
+        for m in recent:
+            eaten_str = m.get("eaten_at", "")
+            if eaten_str:
+                try:
+                    eaten_date = datetime.fromisoformat(eaten_str).date()
+                    if eaten_date == target_date:
+                        target_meal = m
+                        break
+                except (ValueError, AttributeError):
+                    continue
+
+        # Если не нашли за конкретный день — берём первый из недавних
+        if not target_meal:
+            target_meal = recent[0]
+
+        # Создаём draft из найденного приёма
+        items = [
+            {
+                "name": item["name"],
+                "amount_g": item["amount_g"],
+                "calories": item["calories"],
+                "protein_g": item["protein_g"],
+                "fat_g": item["fat_g"],
+                "carbs_g": item["carbs_g"],
+            }
+            for item in target_meal.get("items", [])
+        ]
+
+        if not items:
+            return "Не удалось клонировать — в найденном приёме нет продуктов."
+
+        m_type = target_meal.get("meal_type", "snack")
+        draft = create_draft(user_id, items=items, meal_type=m_type, source="clone")
+        card = format_draft_card(draft)
+        src_date = target_meal.get("eaten_at", "")[:10]
+
+        return f"📋 Клонирован {_meal_type_ru(m_type)} от {src_date}:\n{card}\nПодтверди или внеси правки."
+
+    @tool
+    async def meal_template_save(
+        name: str,
+        meal_id: int = 0,
+    ) -> str:
+        """Сохранить приём пищи как шаблон.
+        name — название шаблона (например 'Мой завтрак')
+        meal_id — ID приёма (если 0, сохранит последний подтверждённый приём)
+        Используй когда пользователь говорит 'сохрани как шаблон', 'запомни этот приём'.
+        """
+        if meal_id > 0:
+            result = await ns.create_template_from_meal(user_id, meal_id, name)
+            if result:
+                return f"✅ Шаблон «{name}» сохранён (ID: {result['id']}, {len(result.get('items', []))} продуктов)."
+            return "Не удалось создать шаблон — приём пищи не найден."
+
+        # Если meal_id не указан — берём последний приём
+        recent = await ns.get_recent_meals(user_id, meal_type=None, limit=1)
+        if not recent:
+            return "Нет недавних приёмов пищи для сохранения как шаблон."
+
+        last_meal = recent[0]
+        result = await ns.create_template_from_meal(user_id, last_meal["id"], name)
+        if result:
+            return (
+                f"✅ Шаблон «{name}» сохранён из последнего приёма "
+                f"({_meal_type_ru(last_meal['meal_type'])} · {len(result.get('items', []))} продуктов)."
+            )
+        return "Не удалось создать шаблон."
+
+    @tool
+    async def nutrition_daily_score(
+        target_date: str = "",
+    ) -> str:
+        """Показать оценку дня по питанию (score 0-100).
+        target_date — дата в формате YYYY-MM-DD (если пусто — сегодня)
+        Вызывай когда пользователь спрашивает 'оценка за день', 'как у меня сегодня', 'score'.
+        """
+        if target_date:
+            try:
+                d = date.fromisoformat(target_date)
+            except ValueError:
+                return "Некорректный формат даты. Используй YYYY-MM-DD."
+        else:
+            d = date.today()
+
+        result = await calculate_daily_score(user_id, d)
+        return format_score_card(result)
+
+    @tool
+    async def nutrition_weekly_summary_tool() -> str:
+        """Показать итоги за неделю — LLM-обзор с рекомендациями.
+        Вызывай когда пользователь спрашивает 'итоги за неделю', 'обзор', 'weekly summary'.
+        """
+        result = await generate_weekly_summary(user_id)
+        return result["text"]
+
+    return [meal_log, meal_delete, water_log, nutrition_stats, nutrition_goals_set, meal_from_template, food_search, ewa_product_info, meal_draft_create, meal_draft_update, meal_draft_confirm, meal_draft_discard, meal_check_pending, nutrition_remaining_today, meal_clone_recent, meal_template_save, nutrition_daily_score, nutrition_weekly_summary_tool]
 
 
 # ── Вспомогательные ──────────────────────────────────────────────────────────
