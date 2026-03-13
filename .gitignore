@@ -28,3 +28,4 @@ db/
 # OS
 .DS_Store
 *.exe
+docs/changelog.md
