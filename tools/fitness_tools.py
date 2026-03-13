@@ -694,6 +694,23 @@ def make_fitness_tools(user_id: int) -> list:
 
         return f"✅ День {day_a} ↔ День {day_b} — поменял местами"
 
+
+    @tool
+    async def program_delete() -> str:
+        """Удалить активную программу тренировок.
+        Вызывай когда пользователь просит удалить, отменить, убрать программу целиком."""
+        from db import fitness_storage as fs_mod
+
+        program = await fs_mod.get_active_program(user_id)
+        if not program:
+            return "📋 У тебя нет активной программы."
+
+        name = program["name"]
+        ok = await fs_mod.delete_program(program["id"], user_id)
+        if ok:
+            return f"🗑 Программа «{name}» удалена.\n\n💡 Скинь новую программу текстом или голосом — я загружу."
+        return "❌ Не удалось удалить программу."
+
     # Возвращаем все инструменты
     return [
         exercise_search,
@@ -712,4 +729,5 @@ def make_fitness_tools(user_id: int) -> list:
         program_add_exercise,
         program_remove_exercise,
         program_swap_days,
+        program_delete,
     ]
