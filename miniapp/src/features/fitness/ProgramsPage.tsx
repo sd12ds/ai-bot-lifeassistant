@@ -448,7 +448,7 @@ export function ProgramsPage() {
 
                         {/* Удалить */}
                         <button
-                          onClick={() => deleteMut.mutate(prog.id)}
+                          onClick={() => { if (window.confirm("Деактивировать программу? Её можно будет активировать снова.")) deleteMut.mutate(prog.id) }}
                           disabled={deleteMut.isPending}
                           className="px-3 py-2 rounded-xl"
                           style={{ background: 'rgba(239,68,68,0.1)' }}

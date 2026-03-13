@@ -778,10 +778,25 @@ async def activate_program(program_id: int, user: User = Depends(get_current_use
 
 @router.delete("/programs/{program_id}")
 async def delete_program(program_id: int, user: User = Depends(get_current_user)):
-    """Удалить программу."""
-    ok = await fs.delete_program(program_id=program_id, user_id=user.telegram_id)
-    if not ok:
-        raise HTTPException(status_code=404, detail="Программа не найдена")
+    """Деактивировать программу (is_active=False). Данные остаются в БД."""
+    from db.models import WorkoutProgram
+    from sqlalchemy import update, and_
+    from db.session import AsyncSessionLocal
+
+    async with AsyncSessionLocal() as session:
+        result = await session.execute(
+            update(WorkoutProgram)
+            .where(and_(
+                WorkoutProgram.id == program_id,
+                WorkoutProgram.user_id == user.telegram_id,
+            ))
+            .values(is_active=False)
+            .returning(WorkoutProgram.id)
+        )
+        row = result.scalar_one_or_none()
+        if not row:
+            raise HTTPException(status_code=404, detail="Программа не найдена")
+        await session.commit()
     return {"ok": True}
 
 
