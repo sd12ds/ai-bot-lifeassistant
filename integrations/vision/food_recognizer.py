@@ -98,8 +98,31 @@ def _extract_json(text: str) -> str:
     return stripped
 
 
-async def _call_vision(model: str, photo_base64: str, time_hint: str) -> dict[str, Any]:
-    """Вызов Vision API с указанной моделью."""
+async def _call_vision(
+    model: str,
+    photo_base64: str,
+    time_hint: str,
+    caption: str | None = None,
+) -> dict[str, Any]:
+    """Вызов Vision API с указанной моделью.
+
+    Args:
+        model: название модели OpenAI
+        photo_base64: base64-строка изображения
+        time_hint: подсказка с текущим временем и типом приёма пищи
+        caption: подпись пользователя к фото (если есть)
+    """
+    # Базовый текст запроса
+    user_text = "Проанализируй эту еду. Определи продукты, вес и КБЖУ."
+
+    # Если пользователь добавил подпись — включаем её в запрос
+    if caption:
+        user_text += (
+            f"\n\nПользователь описал: «{caption}»\n"
+            "Учти эту информацию: если указаны продукты или граммовка — "
+            "они имеют ПРИОРИТЕТ над визуальной оценкой."
+        )
+
     response = await _client.chat.completions.create(
         model=model,
         messages=[
@@ -112,7 +135,7 @@ async def _call_vision(model: str, photo_base64: str, time_hint: str) -> dict[st
                 "content": [
                     {
                         "type": "text",
-                        "text": "Проанализируй эту еду. Определи продукты, вес и КБЖУ.",
+                        "text": user_text,
                     },
                     {
                         "type": "image_url",
@@ -130,12 +153,17 @@ async def _call_vision(model: str, photo_base64: str, time_hint: str) -> dict[st
     return response
 
 
-async def recognize_food_photo(photo_base64: str) -> dict[str, Any]:
+async def recognize_food_photo(
+    photo_base64: str,
+    caption: str | None = None,
+) -> dict[str, Any]:
     """
     Анализирует фото еды через GPT-4o Vision.
 
     Args:
         photo_base64: base64-строка изображения (без префикса data:image/...)
+        caption: подпись пользователя к фото (если есть) —
+                 используется для уточнения продуктов и граммовки
 
     Returns:
         dict с ключами: meal_type, items, total
@@ -145,11 +173,14 @@ async def recognize_food_photo(photo_base64: str) -> dict[str, Any]:
     now = datetime.now(DEFAULT_TZ)
     time_hint = f"\nСейчас {now.strftime('%H:%M')} ({_guess_meal_type()})."
 
+    if caption:
+        logger.info("Vision: распознаём фото с подписью: «%s»", caption[:100])
+
     # Пробуем основную модель, при ошибке или отказе — fallback
     raw_text = None
     for model in [_PRIMARY_MODEL, _FALLBACK_MODEL]:
         try:
-            response = await _call_vision(model, photo_base64, time_hint)
+            response = await _call_vision(model, photo_base64, time_hint, caption)
             content = response.choices[0].message.content
             # Проверяем наличие поля refusal (OpenAI API)
             refusal = getattr(response.choices[0].message, "refusal", None)
@@ -206,9 +237,17 @@ async def recognize_food_photo(photo_base64: str) -> dict[str, Any]:
     return result
 
 
-async def recognize_food_from_file(file_path: str) -> dict[str, Any]:
-    """Удобная обёртка: читает файл, конвертирует в base64 и распознаёт."""
+async def recognize_food_from_file(
+    file_path: str,
+    caption: str | None = None,
+) -> dict[str, Any]:
+    """Удобная обёртка: читает файл, конвертирует в base64 и распознаёт.
+
+    Args:
+        file_path: путь к файлу изображения
+        caption: подпись пользователя (если есть)
+    """
     with open(file_path, "rb") as f:
         photo_bytes = f.read()
     photo_b64 = base64.b64encode(photo_bytes).decode("utf-8")
-    return await recognize_food_photo(photo_b64)
+    return await recognize_food_photo(photo_b64, caption=caption)

@@ -12,6 +12,10 @@ from langchain.tools import tool
 
 from config import DEFAULT_TZ
 from db import nutrition_storage as ns
+from bot.nutrition_context import (
+    get_context, get_or_create_context, create_draft, clear_draft,
+    format_draft_card,
+)
 
 
 def make_nutrition_tools(user_id: int) -> list:
@@ -395,7 +399,133 @@ def make_nutrition_tools(user_id: int) -> list:
 
         return header + "\n" + "\n".join(parts)
 
-    return [meal_log, meal_delete, water_log, nutrition_stats, nutrition_goals_set, meal_from_template, food_search, ewa_product_info]
+
+    @tool
+    async def meal_draft_create(
+        items_json: str,
+        meal_type: str = "snack",
+        source: str = "agent",
+    ) -> str:
+        """Создать черновик приёма пищи (НЕ сохраняет в БД — только draft).
+        items_json — JSON-массив: [{"name": "...", "amount_g": N, "calories": N, "protein_g": N, "fat_g": N, "carbs_g": N}]
+        meal_type — breakfast | lunch | dinner | snack
+        source — откуда данные: photo | text | agent
+        Используй этот инструмент вместо meal_log, если нужно дать пользователю возможность проверить/отредактировать перед сохранением.
+        """
+        try:
+            items = json.loads(items_json)
+            if not isinstance(items, list) or len(items) == 0:
+                return "Ошибка: нужен непустой JSON-массив продуктов."
+
+            # Создаём draft в контексте сессии
+            draft = create_draft(user_id, items=items, meal_type=meal_type, source=source)
+            card = format_draft_card(draft)
+            return f"📋 Черновик создан:\n{card}\nПопроси пользователя подтвердить или внести правки."
+        except json.JSONDecodeError:
+            return "Ошибка: некорректный JSON в items_json."
+        except Exception as e:
+            return f"Ошибка при создании черновика: {e}"
+
+    @tool
+    async def meal_draft_update(
+        items_json: str,
+        meal_type: str = "",
+    ) -> str:
+        """Обновить текущий черновик приёма пищи (заменяет items и/или meal_type).
+        items_json — ПОЛНЫЙ обновлённый JSON-массив продуктов (все позиции).
+        meal_type — новый тип (если нужно изменить, иначе пустая строка).
+        """
+        ctx = get_context(user_id)
+        if not ctx or not ctx.draft:
+            return "Нет активного черновика для обновления."
+
+        try:
+            items = json.loads(items_json)
+            if not isinstance(items, list) or len(items) == 0:
+                return "Ошибка: нужен непустой JSON-массив продуктов."
+
+            # Обновляем items в draft
+            ctx.draft.items = items
+            if meal_type:
+                ctx.draft.meal_type = meal_type
+            # Пересчитываем total
+            ctx.draft.total_calories = round(sum(i.get("calories", 0) for i in items), 1)
+            ctx.draft.total_protein = round(sum(i.get("protein_g", 0) for i in items), 1)
+            ctx.draft.total_fat = round(sum(i.get("fat_g", 0) for i in items), 1)
+            ctx.draft.total_carbs = round(sum(i.get("carbs_g", 0) for i in items), 1)
+            ctx.draft.version += 1
+
+            card = format_draft_card(ctx.draft)
+            return f"📋 Черновик обновлён (v{ctx.draft.version}):\n{card}\nПопроси пользователя подтвердить."
+        except json.JSONDecodeError:
+            return "Ошибка: некорректный JSON в items_json."
+        except Exception as e:
+            return f"Ошибка при обновлении черновика: {e}"
+
+    @tool
+    async def meal_draft_confirm() -> str:
+        """Подтвердить и сохранить черновик в базу данных.
+        Вызывай когда пользователь подтвердил ('да', 'ок', 'сохрани', 'верно').
+        """
+        ctx = get_context(user_id)
+        if not ctx or not ctx.draft:
+            return "Нет активного черновика для сохранения."
+
+        draft = ctx.draft
+        try:
+            # Время приёма — сейчас
+            eaten_at = datetime.now(DEFAULT_TZ)
+
+            # Сохраняем через nutrition_storage
+            result = await ns.add_meal(
+                user_id=user_id,
+                meal_type=draft.meal_type,
+                eaten_at=eaten_at,
+                items=draft.items,
+                notes=f"source:{draft.source}",
+            )
+
+            # Очищаем draft после успешного сохранения
+            clear_draft(user_id)
+
+            # Формируем ответ
+            lines = [f"✅ {_meal_type_ru(result['meal_type'])} сохранён (ID: {result['id']})"]
+            for item in result["items"]:
+                lines.append(
+                    f"  🔸 {item['name']} — {item['amount_g']}г "
+                    f"({item['calories']} ккал)"
+                )
+            lines.append(
+                f"📊 Итого: {result['total_calories']} ккал "
+                f"· Б {result['total_protein']} · Ж {result['total_fat']} · У {result['total_carbs']}"
+            )
+            return "\n".join(lines)
+        except Exception as e:
+            return f"Ошибка при сохранении: {e}"
+
+    @tool
+    async def meal_draft_discard() -> str:
+        """Отменить текущий черновик приёма пищи.
+        Вызывай когда пользователь отменил ('нет', 'отмена', 'не надо').
+        """
+        ctx = get_context(user_id)
+        if not ctx or not ctx.draft:
+            return "Нет активного черновика."
+        clear_draft(user_id)
+        return "🗑 Черновик отменён."
+
+    @tool
+    async def meal_check_pending() -> str:
+        """Проверить, есть ли активный черновик приёма пищи.
+        Используй в начале разговора, чтобы напомнить пользователю о незавершённом вводе.
+        """
+        ctx = get_context(user_id)
+        if not ctx or not ctx.draft:
+            return "Нет активного черновика."
+        card = format_draft_card(ctx.draft)
+        return f"📋 Есть незавершённый черновик:\n{card}"
+
+    return [meal_log, meal_delete, water_log, nutrition_stats, nutrition_goals_set, meal_from_template, food_search, ewa_product_info, meal_draft_create, meal_draft_update, meal_draft_confirm, meal_draft_discard, meal_check_pending]
 
 
 # ── Вспомогательные ──────────────────────────────────────────────────────────
