@@ -434,8 +434,17 @@ def make_fitness_tools(user_id: int) -> list:
                 days_data=days_data,
             )
 
+            # Шаг 4: Синхронизируем календарь (создаём workout-события для дней с weekday)
+            try:
+                cal_count = await fs_mod.sync_program_calendar(
+                    program_id=program["id"], user_id=user_id
+                )
+            except Exception:
+                cal_count = 0
+
             total_ex = sum(len(d["exercises"]) for d in parsed["days"])
-            header = f"📋 Программа «{program['name']}» создана — {len(days_data)} дней, {total_ex} упражнений\n"
+            cal_note = f"\n📅 Добавлено {cal_count} тренировок в календарь." if cal_count else ""
+            header = f"📋 Программа «{program['name']}» создана — {len(days_data)} дней, {total_ex} упражнений{cal_note}\n"
             footer = "\n\n✅ = из справочника | ⚠️ = создано как пользовательское"
             footer += "\n\nПрограмма активна. Для редактирования напиши, например:\n«замени X на Y», «убери X из дня N», «добавь X в день N»"
 
@@ -772,8 +781,17 @@ def make_fitness_tools(user_id: int) -> list:
         if not result:
             return "❌ Не удалось обновить расписание."
 
+        # Синхронизируем календарь — создаём/обновляем workout-события в задачах
+        try:
+            count = await fs_mod.sync_program_calendar(
+                program_id=program["id"], user_id=user_id
+            )
+        except Exception:
+            count = 0
+
         day_name = target_day.get("day_name", f"День {day_number}")
-        return f"✅ День {day_number} ({day_name}): {' '.join(changes)}\n\n💡 Так же можно настроить остальные дни. Или открой мини-приложение для визуального редактора."
+        cal_note = f"\n📅 Обновлено {count} событий в календаре." if count else ""
+        return f"✅ День {day_number} ({day_name}): {' '.join(changes)}{cal_note}\n\n💡 Так же можно настроить остальные дни. Или открой мини-приложение для визуального редактора."
 
     # Возвращаем все инструменты
     return [

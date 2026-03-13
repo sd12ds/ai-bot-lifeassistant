@@ -1038,10 +1038,20 @@ async def sync_program_calendar(program_id: int, user_id: int, duration_weeks: i
                 
                 if pst and pet:
                     # Есть интервал — создаём событие с конкретным временем
-                    sh, sm = map(int, pst.split(":"))
-                    eh, em = map(int, pet.split(":"))
+                    try:
+                        sh, sm = map(int, pst.split(":"))
+                        eh, em = map(int, pet.split(":"))
+                        # Валидация: hour 0-23, minute 0-59 (24:xx → 23:59)
+                        sh, sm = min(sh, 23), min(sm, 59)
+                        eh, em = min(eh, 23), min(em, 59)
+                    except (ValueError, IndexError):
+                        # Невалидный формат — пропускаем время, создаём all-day
+                        sh, sm, eh, em = 9, 0, 10, 0
                     event_start = event_date.replace(hour=sh, minute=sm, second=0, microsecond=0)
                     event_end = event_date.replace(hour=eh, minute=em, second=0, microsecond=0)
+                    # Если end <= start — добавляем 1 час
+                    if event_end <= event_start:
+                        event_end = event_start + timedelta(hours=1)
                     remind_time = event_start - timedelta(minutes=30)
                     task = Task(
                         user_id=user_id,
