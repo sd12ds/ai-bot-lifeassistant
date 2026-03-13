@@ -697,31 +697,21 @@ def make_fitness_tools(user_id: int) -> list:
 
     @tool
     async def program_delete() -> str:
-        """Деактивировать активную программу тренировок.
-        Вызывай когда пользователь просит удалить, отменить, убрать, отключить программу."""
+        """Удалить активную программу тренировок.
+        Вызывай когда пользователь просит удалить, отменить, убрать программу целиком.
+        Удаляет только программу текущего пользователя."""
         from db import fitness_storage as fs_mod
-        from db.models import WorkoutProgram
-        from sqlalchemy import update, and_
-        from db.session import AsyncSessionLocal
 
         program = await fs_mod.get_active_program(user_id)
         if not program:
             return "📋 У тебя нет активной программы."
 
-        # Деактивируем (is_active = False), НЕ удаляем из БД
-        async with AsyncSessionLocal() as session:
-            await session.execute(
-                update(WorkoutProgram)
-                .where(and_(
-                    WorkoutProgram.id == program["id"],
-                    WorkoutProgram.user_id == user_id,
-                ))
-                .values(is_active=False)
-            )
-            await session.commit()
-
+        # Проверяем что программа принадлежит пользователю (delete_program проверяет user_id)
         name = program["name"]
-        return f"✅ Программа «{name}» деактивирована.\n\n💡 Скинь новую программу текстом или голосом — я загружу.\n💡 Или скажи «активируй программу» чтобы вернуть эту."
+        ok = await fs_mod.delete_program(program["id"], user_id)
+        if ok:
+            return f"🗑 Программа «{name}» удалена.\n\n💡 Скинь новую программу текстом или голосом — я загружу."
+        return "❌ Не удалось удалить программу."
 
 
     @tool
