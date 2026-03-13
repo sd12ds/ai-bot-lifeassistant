@@ -10,7 +10,7 @@ from aiogram import Router, F, Bot
 from aiogram.types import Message
 
 from agents.supervisor import process_message
-from bot.nutrition_context import get_context
+from bot.core.session_context import get_context
 
 router = Router()
 logger = logging.getLogger(__name__)
@@ -27,12 +27,12 @@ async def text_handler(message: Message, user_db: dict | None = None, bot: Bot =
 
     logger.info("TEXT user=%s mode=%s: %s", user_id, user_mode, message.text)
 
-    # Проверяем активный draft — если есть, принудительно направляем в nutrition
+    # Проверяем активный draft — если есть, принудительно направляем в соответствующий домен
     force_agent = None
     ctx = get_context(user_id)
     if ctx and ctx.draft:
-        force_agent = "nutrition"
-        logger.info("TEXT user=%s: активный draft → force_agent=nutrition", user_id)
+        force_agent = ctx.active_domain or "nutrition"  # fallback на nutrition для совместимости
+        logger.info("TEXT user=%s: активный draft → force_agent=%s", user_id, force_agent)
 
     try:
         response = await process_message(

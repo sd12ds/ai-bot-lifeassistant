@@ -485,7 +485,7 @@ def make_nutrition_tools(user_id: int) -> list:
                 meal_type=draft.meal_type,
                 eaten_at=eaten_at,
                 items=draft.items,
-                notes=f"source:{draft.source}",
+                notes=f"source:{draft.source_type}",
             )
 
             # Очищаем draft после успешного сохранения

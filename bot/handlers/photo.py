@@ -153,7 +153,7 @@ async def on_draft_save(cb: CallbackQuery):
             meal_type=draft.meal_type,
             eaten_at=datetime.now(DEFAULT_TZ),
             items=draft.items,
-            notes=f"source:{draft.source}",
+            notes=f"source:{draft.source_type}",
         )
 
         total_cal = meal["total_calories"]
