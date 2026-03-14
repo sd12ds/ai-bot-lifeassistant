@@ -823,11 +823,22 @@ async def run_proactive_for_user(
         logger.info(
             "Proactive sent: user=%s type=%s priority=%s state=%s",
             user_id, nudge.nudge_type, nudge.priority, state,
+            extra={
+                "user_id": user_id,
+                "nudge_type": nudge.nudge_type,
+                "priority": nudge.priority,
+                "state": state,
+                "event": "proactive_nudge_sent",
+            },
         )
         return True
 
     except Exception as exc:
-        logger.error("Proactive error for user=%s: %s", user_id, exc, exc_info=True)
+        logger.error(
+            "Proactive error for user=%s: %s",
+            user_id, exc, exc_info=True,
+            extra={"user_id": user_id, "event": "proactive_error"},
+        )
         return False
 
 async def evaluate_reengagement_nudge(

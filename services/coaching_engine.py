@@ -234,16 +234,32 @@ async def _compute_habit_completion_drop(
 async def compute_weekly_score(
     session: AsyncSession,
     user_id: int,
-    goals_progress: float = 0.5,      # 0.0-1.0
-    habits_completion: float = 0.5,   # 0.0-1.0
-    checkins_done: int = 0,           # check-ins за неделю
-    review_done: bool = False,        # сделан ли review
-    streak_recoveries: int = 0,       # сколько раз вернулись после срыва
+    goals_progress: float = -1.0,     # -1 означает "автовычисление из DB"
+    habits_completion: float = -1.0,  # -1 означает "автовычисление из DB"
+    checkins_done: int = -1,          # -1 означает "автовычисление из DB"
+    review_done: bool = False,
+    streak_recoveries: int = 0,
 ) -> int:
     """
     Weekly score 0-100 по формуле §22.3:
-    Goals 30% + Habits 40% + Engagement 20% + Recovery 10%
+    Goals 30% + Habits 40% + Engagement 20% + Recovery 10%.
+
+    При вызове без параметров (только session + user_id) автоматически
+    запрашивает все данные из DB через coaching_analytics.
     """
+    # Если параметры не переданы — используем auto-расчёт из DB
+    if goals_progress < 0 and habits_completion < 0 and checkins_done < 0:
+        try:
+            from services.coaching_analytics import compute_weekly_score_auto
+            score, _ = await compute_weekly_score_auto(session, user_id)
+            return score
+        except Exception:
+            pass
+        # Fallback к дефолтным значениям
+        goals_progress = 0.5
+        habits_completion = 0.5
+        checkins_done = 0
+
     goals_score = goals_progress * 30
     habits_score = habits_completion * 40
 
@@ -332,35 +348,56 @@ async def get_context_pack(
     - top_memory (топ-5 по confidence)
     - pending_milestones (незавершённые этапы)
     """
-    # Состояние
-    snapshot = await cs.get_latest_snapshot(session, user_id)
-    state = snapshot.overall_state if snapshot else "stable"
-    score = snapshot.score if snapshot else 75
+    # ── Состояние (с graceful degradation) ─────────────────────────────────
+    state = "stable"
+    score = 75
+    try:
+        snapshot = await cs.get_latest_snapshot(session, user_id)
+        state = snapshot.overall_state if snapshot else "stable"
+        score = snapshot.score if snapshot else 75
+    except Exception as exc:
+        logger.warning("get_context_pack: snapshot недоступен: %s", exc)
+        snapshot = None
 
-    # Цели
-    goals = await cs.get_goals(session, user_id, status="active")
+    # ── Цели (с graceful degradation) ────────────────────────────────────
     goals_summary = []
-    for g in goals[:5]:
-        summary = f"• {g.title} ({g.area or '—'}) — {g.progress_pct}%"
-        if g.is_frozen:
-            summary += " [заморожена]"
-        goals_summary.append(summary)
+    try:
+        goals = await cs.get_goals(session, user_id, status="active")
+        for g in goals[:5]:
+            summary = f"• {g.title} ({g.area or '—'}) — {g.progress_pct}%"
+            if g.is_frozen:
+                summary += " [заморожена]"
+            goals_summary.append(summary)
+    except Exception as exc:
+        logger.warning("get_context_pack: цели недоступны: %s", exc)
+        goals = []
 
-    # Привычки
-    habits = await cs.get_habits(session, user_id, is_active=True)
+    # ── Привычки (с graceful degradation) ───────────────────────────────
     habits_summary = []
-    for h in habits[:8]:
-        habits_summary.append(
-            f"• {h.title} — стрик: {h.current_streak} дн. / рекорд: {h.longest_streak}"
-        )
+    try:
+        habits = await cs.get_habits(session, user_id, is_active=True)
+        for h in habits[:8]:
+            habits_summary.append(
+                f"• {h.title} — стрик: {h.current_streak} дн. / рекорд: {h.longest_streak}"
+            )
+    except Exception as exc:
+        logger.warning("get_context_pack: привычки недоступны: %s", exc)
 
-    # Рекомендации
-    recs = await cs.get_active_recommendations(session, user_id, limit=3)
-    recs_summary = [f"• [{r.rec_type}] {r.title}" for r in recs]
+    # ── Рекомендации (с graceful degradation) ────────────────────────────
+    recs_summary = []
+    try:
+        recs = await cs.get_active_recommendations(session, user_id, limit=3)
+        recs_summary = [f"• [{r.rec_type}] {r.title}" for r in recs]
+    except Exception as exc:
+        logger.warning("get_context_pack: рекомендации недоступны: %s", exc)
 
-    # Память
-    memories = await cs.get_memory(session, user_id, top_n=5)
-    memory_summary = [f"• {m.key}: {m.value} (confidence={m.confidence:.1f})" for m in memories]
+    # ── Память (с graceful degradation) ──────────────────────────────────
+    memory_summary = []
+    try:
+        memories = await cs.get_memory(session, user_id, top_n=5)
+        memory_summary = [f"• {m.key}: {m.value} (confidence={m.confidence:.1f})" for m in memories]
+    except Exception as exc:
+        logger.warning("get_context_pack: память недоступна: %s", exc)
 
     # Кросс-модульный вывод (Phase 9) — lazy import для избежания circular dependency
     cross_module_top = None

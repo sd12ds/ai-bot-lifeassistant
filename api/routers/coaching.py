@@ -33,6 +33,15 @@ from api.deps import get_current_user
 from db.models import User, CoachingOrchestrationAction
 from db.session import get_session
 import db.coaching_storage as cs
+from services.coaching_analytics import (
+    get_goal_metrics,
+    get_habit_detailed_metrics,
+    get_engagement_metrics,
+    get_streak_analytics,
+    compute_weekly_score_auto,
+    compute_dropout_risk_detailed,
+    DROPOUT_RISK_HIGH_THRESHOLD,
+)
 from services.coaching_cross_module import (
     run_cross_module_analysis,
     execute_orchestration_action,
@@ -262,6 +271,7 @@ class DashboardOut(BaseModel):
     nudge_pending: Optional[dict]          # pending proactive
     prompt_suggestions: list[str]          # 3-5 sample prompts
     risks: dict                             # dropout/overload/goal_failure/habit_death
+    dropout_risk_level: str = "none"        # none|low|medium|high|critical
 
 
 # ── Onboarding ────────────────────────────────────────────────────────────────
@@ -286,10 +296,12 @@ class OnboardingOut(BaseModel):
 
 class WeeklyAnalyticsOut(BaseModel):
     weekly_score: int
+    weekly_score_breakdown: dict = {}       # {goals, habits, engagement, recovery}
     goals_progress: list[dict]
     habits_completion_rate: float
     checkins_this_week: int
     dropout_risk: float
+    dropout_risk_level: str = "none"
     state: str
 
 
@@ -419,6 +431,19 @@ async def get_dashboard(
     # Sample prompts по состоянию
     prompts = _SAMPLE_PROMPTS.get(state, _SAMPLE_PROMPTS["default"])
 
+    # Уровень риска дропаута для UI
+    dropout_score = risks.get("dropout", 0.0)
+    if dropout_score >= DROPOUT_RISK_HIGH_THRESHOLD:
+        dropout_level = "critical"
+    elif dropout_score >= 0.5:
+        dropout_level = "high"
+    elif dropout_score >= 0.3:
+        dropout_level = "medium"
+    elif dropout_score >= 0.1:
+        dropout_level = "low"
+    else:
+        dropout_level = "none"
+
     return DashboardOut(
         state=state,
         state_score=state_score,
@@ -427,9 +452,10 @@ async def get_dashboard(
         top_insight=top_insight,
         recommendations=recs_out,
         weekly_score=weekly_score,
-        nudge_pending=None,  # TODO: pendng nudge из scheduler
+        nudge_pending=None,
         prompt_suggestions=prompts[:5],
         risks=risks,
+        dropout_risk_level=dropout_level,
     )
 
 
@@ -1013,26 +1039,40 @@ async def weekly_analytics(
     db: AsyncSession = Depends(get_session),
     current_user: User = Depends(get_current_user),
 ):
-    """Сводная аналитика за текущую неделю."""
+    """Сводная аналитика за текущую неделю с детальным breakdown скора."""
     user_id = current_user.id
-    goals, state_data, risks, weekly_score, checkins = await asyncio.gather(
+    goals, state_data, risks, checkins = await asyncio.gather(
         cs.get_goals(db, user_id, status="active"),
         compute_user_state(db, user_id),
         compute_risk_scores(db, user_id),
-        compute_weekly_score(db, user_id),
         cs.get_recent_goal_checkins(db, user_id, limit=7),
     )
-    habits = await cs.get_habits(db, user_id, is_active=True)
-    completion_rate = (
-        sum(h.current_streak > 0 for h in habits) / len(habits)
-        if habits else 0.0
-    )
+    # Auto-расчёт weekly score из DB с детализацией
+    weekly_score, score_breakdown = await compute_weekly_score_auto(db, user_id)
+
+    # Completion rate привычек из breakdown
+    habits_completion_rate = round(score_breakdown.get("habits", 0) / 40, 2)
+
+    dropout_risk = risks.get("dropout", 0.0)
+    if dropout_risk >= DROPOUT_RISK_HIGH_THRESHOLD:
+        dropout_level = "critical"
+    elif dropout_risk >= 0.5:
+        dropout_level = "high"
+    elif dropout_risk >= 0.3:
+        dropout_level = "medium"
+    elif dropout_risk >= 0.1:
+        dropout_level = "low"
+    else:
+        dropout_level = "none"
+
     return WeeklyAnalyticsOut(
         weekly_score=weekly_score,
+        weekly_score_breakdown=score_breakdown,
         goals_progress=[_goal_to_dict(g) for g in goals],
-        habits_completion_rate=round(completion_rate, 2),
-        checkins_this_week=len(checkins),
-        dropout_risk=risks.get("dropout", 0.0),
+        habits_completion_rate=habits_completion_rate,
+        checkins_this_week=score_breakdown.get("checkins_this_week", len(checkins)),
+        dropout_risk=dropout_risk,
+        dropout_risk_level=dropout_level,
         state=state_data["state"],
     )
 
@@ -1070,6 +1110,69 @@ async def goals_analytics(
         "avg_progress": round(sum(g.progress_pct for g in active) / len(active), 1) if active else 0,
         "goals": [_goal_to_dict(g) for g in active],
     }
+
+
+@router.get("/analytics/engagement")
+async def engagement_analytics(
+    days: int = Query(30, ge=7, le=90),
+    db: AsyncSession = Depends(get_session),
+    current_user: User = Depends(get_current_user),
+) -> dict:
+    """
+    Метрики вовлечённости: частота check-in, nudge response rate, сессии с коучем,
+    использование функций за последние N дней.
+    """
+    return await get_engagement_metrics(db, current_user.id, days=days)
+
+
+@router.get("/analytics/streaks")
+async def streaks_analytics(
+    db: AsyncSession = Depends(get_session),
+    current_user: User = Depends(get_current_user),
+) -> dict:
+    """
+    Аналитика стриков: топ привычки, рекорды, привычки под угрозой срыва.
+    """
+    return await get_streak_analytics(db, current_user.id)
+
+
+@router.get("/analytics/habits/detailed")
+async def habits_detailed_analytics(
+    days: int = Query(30, ge=7, le=90),
+    db: AsyncSession = Depends(get_session),
+    current_user: User = Depends(get_current_user),
+) -> list:
+    """
+    Детальные метрики привычек: consistency score, лучший/худший день недели,
+    временные паттерны (утро/день/вечер) за последние N дней.
+    """
+    return await get_habit_detailed_metrics(db, current_user.id, days=days)
+
+
+@router.get("/analytics/dropout-risk")
+async def dropout_risk_analytics(
+    db: AsyncSession = Depends(get_session),
+    current_user: User = Depends(get_current_user),
+) -> dict:
+    """
+    Детальный анализ риска дропаута (§22.2):
+    score, level, факторы, рекомендации.
+    Score > 0.7 → HIGH RISK → запускается reactivation-сценарий.
+    """
+    return await compute_dropout_risk_detailed(db, current_user.id)
+
+
+@router.get("/analytics/goals/detailed")
+async def goals_detailed_analytics(
+    days: int = Query(30, ge=7, le=90),
+    db: AsyncSession = Depends(get_session),
+    current_user: User = Depends(get_current_user),
+) -> dict:
+    """
+    Детальные метрики целей: completion rate, среднее время достижения,
+    abandonment rate, milestone completion rate, распределение по областям.
+    """
+    return await get_goal_metrics(db, current_user.id, days=days)
 
 
 # ══════════════════════════════════════════════════════════════════════════════

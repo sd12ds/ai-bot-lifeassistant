@@ -114,7 +114,11 @@ async def _run_daily_personalization() -> None:
             )
 
     _last_daily_analysis = datetime.utcnow()
-    logger.info("Daily personalization завершён: обновлено %d пользователей", updated)
+    logger.info(
+        "Daily personalization завершён: обновлено %d пользователей",
+        updated,
+        extra={"event": "daily_personalization_done", "updated_users": updated},
+    )
 
 async def _coaching_scheduler_loop(bot: Bot, interval_seconds: int) -> None:
     """Основной asyncio-цикл планировщика."""
