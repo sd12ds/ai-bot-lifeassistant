@@ -24,3 +24,18 @@ async def get_session() -> AsyncSession:
     """FastAPI dependency — выдаёт сессию и закрывает после запроса."""
     async with AsyncSessionLocal() as session:
         yield session
+
+
+from contextlib import asynccontextmanager
+
+
+@asynccontextmanager
+async def get_async_session():
+    """Async context manager для получения сессии вне FastAPI (бот, инструменты).
+
+    Использование:
+        async with get_async_session() as session:
+            result = await session.execute(...)
+    """
+    async with AsyncSessionLocal() as session:
+        yield session

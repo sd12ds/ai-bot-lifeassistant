@@ -12,6 +12,10 @@ from config import BUSINESS_MODE_USERS
 
 # Главное меню (ReplyKeyboard) — первая кнопка «Задачи»
 from bot.keyboards.main_kb import main_menu_kb
+# Onboarding коуча — для показа при первом /start
+from db.session import get_async_session
+from db import coaching_storage as cs
+from bot.keyboards.coaching_keyboards import onboarding_kb
 
 router = Router()
 
@@ -29,6 +33,23 @@ async def start_handler(message: Message, user_db: dict | None = None):
     )
     # Показываем ReplyKeyboard главного меню
     await message.answer(text, reply_markup=main_menu_kb())
+
+    # При первом запуске предлагаем онбординг коуча
+    user_id = message.from_user.id
+    try:
+        async with get_async_session() as session:
+            onboarding = await cs.get_or_create_onboarding(session, user_id)
+            await session.commit()
+        if not onboarding.bot_onboarding_done:
+            await message.answer(
+                "\U0001f44b *Кстати, у меня есть AI-коуч!*\n\n"
+                "Помогает ставить цели, формировать привычки и двигаться к результату.\n\n"
+                "_Хочешь попробовать? Это займёт 2 минуты_ \U0001f680",
+                reply_markup=onboarding_kb(),
+                parse_mode="Markdown",
+            )
+    except Exception:
+        pass  # Не блокируем /start если coaching DB недоступна
 
 
 @router.message(Command("help"))

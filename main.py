@@ -93,13 +93,14 @@ async def main() -> None:
     # 1) Общие команды (/start, /help)
     # 2) Меню задач (ReplyKeyboard) — должно идти до текстового обработчика
     # 3) Голосовые/текстовые обработчики
-    from bot.handlers import task_menu, settings, task_actions
+    from bot.handlers import task_menu, settings, task_actions, coaching_handler
     dp.include_router(common.router)
     dp.include_router(task_menu.router)
     dp.include_router(settings.router)  # ⚙️ Настройки — до текстового хендлера
     dp.include_router(task_actions.router)  # callback «✅ Выполнено»
     dp.include_router(photo.router)  # 📸 Фото еды — до voice и text
     dp.include_router(voice.router)
+    dp.include_router(coaching_handler.router)  # 🤖 Coaching — до text.router
     dp.include_router(text.router)
 
     logger.info("Бот запущен")
