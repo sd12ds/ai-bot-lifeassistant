@@ -15,6 +15,11 @@ from sqlalchemy import select, func
 from db.session import get_async_session
 from db import coaching_storage as cs
 from db.models import HabitLog, GoalCheckin
+from services.coaching_cross_module import (
+    collect_module_signals,
+    generate_cross_module_inferences,
+    run_cross_module_analysis,
+)
 from services.coaching_engine import (
     compute_user_state,
     compute_risk_scores,
@@ -156,10 +161,54 @@ def make_coaching_context_tools(user_id: int) -> list:
                 })
             return json.dumps(result, ensure_ascii=False)
 
+    @tool
+    async def coaching_cross_module_signals_get() -> str:
+        """
+        Получить сигналы из всех модулей: Tasks, Calendar, Fitness, Nutrition, Reminders.
+        Используй для понимания общей картины пользователя перед советом.
+        """
+        async with get_async_session() as session:
+            signals = await collect_module_signals(session, user_id)
+            return json.dumps(signals, ensure_ascii=False, default=str)
+
+    @tool
+    async def coaching_cross_module_analyze() -> str:
+        """
+        Запустить кросс-модульный анализ: собрать сигналы, сгенерировать выводы
+        и сохранить рекомендации. Возвращает выводы с типами, severity и описанием.
+        Используй когда нужно объяснить пользователю «почему буксуешь» целостно.
+        """
+        async with get_async_session() as session:
+            # Получаем текущее состояние пользователя
+            from services.coaching_engine import compute_user_state
+            state_data = await compute_user_state(session, user_id)
+            state = state_data.get("state", "stable")
+
+            result = await run_cross_module_analysis(session, user_id, state)
+
+            inferences = result.get("inferences", [])
+            if not inferences:
+                return "Кросс-модульных проблем не обнаружено — всё сбалансировано."
+
+            lines = ["🔍 Кросс-модульный анализ:"]
+            for inf in inferences:
+                severity_icon = {"critical": "🔴", "high": "🟠", "medium": "🟡", "low": "🟢"}.get(
+                    inf.get("severity", "medium"), "🟡"
+                )
+                lines.append(
+                    f"{severity_icon} [{inf['type']}] {inf['title']}\n"
+                    f"  {inf['description']}"
+                )
+            if result.get("saved_recommendations"):
+                lines.append(f"\n💡 Сохранено рекомендаций: {result['saved_recommendations']}")
+            return "\n\n".join(lines)
+
     return [
         coaching_context_snapshot_get,
         coaching_risk_assess,
         coaching_behavior_patterns_get,
         coaching_progress_analytics,
         coaching_habit_analytics,
+        coaching_cross_module_signals_get,
+        coaching_cross_module_analyze,
     ]

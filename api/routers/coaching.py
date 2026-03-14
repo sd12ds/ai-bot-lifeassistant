@@ -30,9 +30,13 @@ from pydantic import BaseModel, Field
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from api.deps import get_current_user
-from db.models import User
+from db.models import User, CoachingOrchestrationAction
 from db.session import get_session
 import db.coaching_storage as cs
+from services.coaching_cross_module import (
+    run_cross_module_analysis,
+    execute_orchestration_action,
+)
 from services.coaching_personalization import (
     get_adaptation_context,
     reset_personalization as reset_personalization_svc,
@@ -1198,4 +1202,120 @@ async def reset_personalization_endpoint(
     return {
         "ok": True,
         "message": "Персонализация сброшена. Коуч начнёт адаптироваться заново.",
+    }
+
+
+# ══════════════════════════════════════════════════════════════════════════════
+# ORCHESTRATION ACTIONS
+# ══════════════════════════════════════════════════════════════════════════════
+
+@router.get("/orchestration/pending")
+async def get_pending_orchestration_actions(
+    db: AsyncSession = Depends(get_session),
+    current_user: User = Depends(get_current_user),
+) -> list:
+    """
+    Список orchestration-действий, ожидающих подтверждения пользователя.
+    Коуч предлагает создать задачу/событие/напоминание — пользователь подтверждает здесь.
+    """
+    actions = await cs.get_pending_actions(db, current_user.id)
+    return [
+        {
+            "id": a.id,
+            "action_type": a.action_type,
+            "target_module": a.target_module,
+            "payload": a.payload,
+            "created_at": a.created_at.isoformat() if a.created_at else None,
+        }
+        for a in actions
+    ]
+
+
+@router.post("/orchestration/{action_id}/confirm")
+async def confirm_orchestration_action(
+    action_id: int,
+    db: AsyncSession = Depends(get_session),
+    current_user: User = Depends(get_current_user),
+) -> dict:
+    """
+    Подтвердить и выполнить orchestration-действие.
+    Создаёт задачу/событие/напоминание в соответствующем модуле.
+    """
+    # Находим действие
+    from sqlalchemy import select as sa_select
+    result = await db.execute(
+        sa_select(CoachingOrchestrationAction).where(
+            CoachingOrchestrationAction.id == action_id,
+            CoachingOrchestrationAction.user_id == current_user.id,
+        )
+    )
+    action = result.scalar_one_or_none()
+    if not action:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Действие не найдено")
+    if action.status != "pending":
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=f"Действие уже в статусе: {action.status}")
+
+    # Сначала помечаем как подтверждённое
+    await cs.confirm_orchestration_action(db, action_id, current_user.id)
+
+    # Выполняем действие
+    success, message = await execute_orchestration_action(db, action)
+    await db.commit()
+
+    return {"ok": success, "message": message, "action_id": action_id}
+
+
+@router.post("/orchestration/{action_id}/reject")
+async def reject_orchestration_action(
+    action_id: int,
+    db: AsyncSession = Depends(get_session),
+    current_user: User = Depends(get_current_user),
+) -> dict:
+    """
+    Отклонить orchestration-действие — оно не будет выполнено.
+    """
+    from sqlalchemy import update as sa_update
+    await db.execute(
+        sa_update(CoachingOrchestrationAction)
+        .where(
+            CoachingOrchestrationAction.id == action_id,
+            CoachingOrchestrationAction.user_id == current_user.id,
+        )
+        .values(status="rejected")
+    )
+    await db.commit()
+    return {"ok": True, "message": "Действие отклонено", "action_id": action_id}
+
+
+# ══════════════════════════════════════════════════════════════════════════════
+# CROSS-MODULE ANALYSIS
+# ══════════════════════════════════════════════════════════════════════════════
+
+@router.post("/cross-module/analyze")
+async def trigger_cross_module_analysis(
+    db: AsyncSession = Depends(get_session),
+    current_user: User = Depends(get_current_user),
+) -> dict:
+    """
+    Запустить кросс-модульный анализ вручную.
+    Собирает сигналы из всех модулей, генерирует выводы и сохраняет рекомендации.
+    Возвращает найденные проблемы и число сохранённых рекомендаций.
+    """
+    state_data = await compute_user_state(db, current_user.id)
+    state = state_data["state"]
+
+    result = await run_cross_module_analysis(db, current_user.id, state)
+    await db.commit()
+
+    return {
+        "state": state,
+        "inferences_found": len(result.get("inferences", [])),
+        "recommendations_saved": result.get("saved_recommendations", 0),
+        "top_inference": result.get("top_inference"),
+        "signals_summary": {
+            "tasks_overdue": result["signals"].get("tasks_overdue", 0),
+            "calendar_events_today": result["signals"].get("calendar_events_today", 0),
+            "last_workout_days_ago": result["signals"].get("last_workout_days_ago", 0),
+            "habits_completion_rate": result["signals"].get("habits_completion_rate_week", 0),
+        },
     }

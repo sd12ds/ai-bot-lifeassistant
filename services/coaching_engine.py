@@ -362,6 +362,21 @@ async def get_context_pack(
     memories = await cs.get_memory(session, user_id, top_n=5)
     memory_summary = [f"• {m.key}: {m.value} (confidence={m.confidence:.1f})" for m in memories]
 
+    # Кросс-модульный вывод (Phase 9) — lazy import для избежания circular dependency
+    cross_module_top = None
+    try:
+        from services.coaching_cross_module import (
+            collect_module_signals,
+            generate_cross_module_inferences,
+        )
+        signals = await collect_module_signals(session, user_id)
+        inferences = generate_cross_module_inferences(signals)
+        if inferences:
+            top = inferences[0]
+            cross_module_top = f"[{top['type']}] {top['title']}: {top['description']}"
+    except Exception:
+        pass  # cross-module анализ — некритичный, не ломаем context pack
+
     return {
         "state": state,
         "score": score,
@@ -373,6 +388,8 @@ async def get_context_pack(
         "streak_at_risk_count": snapshot.streak_at_risk if snapshot else 0,
         # Персонализированный тон (Phase 8)
         "tone_instruction": await _get_tone_instruction_safe(session, user_id, state),
+        # Топовый кросс-модульный вывод (Phase 9)
+        "cross_module_top": cross_module_top,
     }
 
 

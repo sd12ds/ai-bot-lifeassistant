@@ -240,6 +240,11 @@ def _format_context_pack(ctx: dict) -> str:
     if focus:
         lines.append(f"\n📍 Фокус пользователя: {', '.join(focus)}")
 
+    # Топовый кросс-модульный вывод (Phase 9) — системный взгляд через модули
+    cross_module = ctx.get("cross_module_top")
+    if cross_module:
+        lines.append(f"\n🔍 Кросс-модульный вывод: {cross_module}")
+
     return "\n".join(lines)
 
 

@@ -934,6 +934,77 @@ async def cmd_reset_coach(message: Message) -> None:
     )
 
 
+
+# ══════════════════════════════════════════════════════════════════════════════
+# ORCHESTRATION ACTIONS
+# ══════════════════════════════════════════════════════════════════════════════
+
+@router.callback_query(F.data.startswith("cg_orc_confirm_"))
+async def confirm_orchestration(callback: CallbackQuery) -> None:
+    """Подтвердить orchestration-действие и выполнить его в соответствующем модуле."""
+    from db.models import CoachingOrchestrationAction
+    from sqlalchemy import select as sa_select
+    try:
+        action_id = int(callback.data.split("_")[-1])
+    except (ValueError, IndexError):
+        await callback.answer("Некорректный ID действия")
+        return
+
+    user_id = callback.from_user.id
+    async with get_async_session() as session:
+        result = await session.execute(
+            sa_select(CoachingOrchestrationAction).where(
+                CoachingOrchestrationAction.id == action_id,
+                CoachingOrchestrationAction.user_id == user_id,
+            )
+        )
+        action = result.scalar_one_or_none()
+
+        if not action:
+            await callback.answer("Действие не найдено")
+            return
+        if action.status != "pending":
+            await callback.answer(f"Действие уже в статусе: {action.status}")
+            return
+
+        # Подтверждаем действие и выполняем его
+        await cs.confirm_orchestration_action(session, action_id, user_id)
+        success, message = await execute_orchestration_action(session, action)
+        await session.commit()
+
+    if success:
+        await callback.message.answer(message)
+    else:
+        await callback.message.answer(f"Что-то пошло не так: {message}")
+    await callback.answer()
+
+
+@router.callback_query(F.data.startswith("cg_orc_reject_"))
+async def reject_orchestration(callback: CallbackQuery) -> None:
+    """Отклонить orchestration-действие."""
+    from db.models import CoachingOrchestrationAction
+    from sqlalchemy import update as sa_update
+    try:
+        action_id = int(callback.data.split("_")[-1])
+    except (ValueError, IndexError):
+        await callback.answer("Некорректный ID действия")
+        return
+
+    user_id = callback.from_user.id
+    async with get_async_session() as session:
+        await session.execute(
+            sa_update(CoachingOrchestrationAction)
+            .where(
+                CoachingOrchestrationAction.id == action_id,
+                CoachingOrchestrationAction.user_id == user_id,
+            )
+            .values(status="rejected")
+        )
+        await session.commit()
+
+    await callback.message.answer("Действие отменено — ничего не создано.")
+    await callback.answer()
+
 # ══════════════════════════════════════════════════════════════════════════════
 # FSM TEXT MESSAGE HANDLERS
 # ══════════════════════════════════════════════════════════════════════════════
