@@ -1,0 +1,52 @@
+# CI/CD: автодеплой на сервер при пуше в ветку main
+name: Deploy to Production
+
+on:
+  push:
+    branches:
+      - main
+
+jobs:
+  deploy:
+    name: Deploy via SSH
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Deploy to server
+        uses: appleboy/ssh-action@v1.0.3
+        with:
+          host: ${{ secrets.DEPLOY_HOST }}
+          username: ${{ secrets.DEPLOY_USER }}
+          key: ${{ secrets.DEPLOY_KEY }}
+          script: |
+            set -e
+            cd /root/ai-assistant
+
+            echo "=== git pull ==="
+            git pull origin main
+
+            echo "=== pip install ==="
+            venv/bin/pip install -r requirements.txt --quiet
+
+            echo "=== npm build miniapp ==="
+            if [ -d "miniapp" ]; then
+              cd miniapp
+              npm ci --quiet
+              npm run build
+              cp -r dist/. /var/www/jarvis/
+              chown -R www-data:www-data /var/www/jarvis/
+              cd ..
+            fi
+
+            echo "=== restart services ==="
+            systemctl restart ai-api
+            systemctl restart ai-bot
+
+            echo "=== health check ==="
+            sleep 3
+            curl -sf http://localhost:8000/api/health || echo "WARNING: health check failed"
+
+            echo "=== deploy done ==="

@@ -5,6 +5,7 @@
 """
 from __future__ import annotations
 
+import asyncio
 import logging
 from aiogram import Router, F, Bot
 from aiogram.types import Message
@@ -14,6 +15,9 @@ from bot.core.session_context import get_context
 
 router = Router()
 logger = logging.getLogger(__name__)
+
+# Максимальное время ожидания ответа от LLM (секунды)
+LLM_TIMEOUT_SECONDS = 30
 
 
 @router.message(F.text)
@@ -41,11 +45,22 @@ async def text_handler(message: Message, user_db: dict | None = None, bot: Bot =
             logger.info("TEXT user=%s: sticky domain → force_agent=%s", user_id, force_agent)
 
     try:
-        response = await process_message(
-            user_id=user_id,
-            user_mode=user_mode,
-            text=message.text,
-            force_agent=force_agent,
+        # Оборачиваем вызов LLM в таймаут — если OpenAI не отвечает > LLM_TIMEOUT_SECONDS,
+        # возвращаем пользователю вежливый fallback вместо зависания
+        response = await asyncio.wait_for(
+            process_message(
+                user_id=user_id,
+                user_mode=user_mode,
+                text=message.text,
+                force_agent=force_agent,
+            ),
+            timeout=LLM_TIMEOUT_SECONDS,
+        )
+    except asyncio.TimeoutError:
+        logger.warning("LLM timeout user=%s после %ds", user_id, LLM_TIMEOUT_SECONDS)
+        response = (
+            "⏳ Запрос занял слишком много времени. "
+            "Попробуй ещё раз — сейчас нагрузка повышена."
         )
     except Exception as e:
         logger.error("Ошибка обработки сообщения: %s", e, exc_info=True)
