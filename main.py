@@ -23,6 +23,7 @@ from bot.middleware.user_context import UserContextMiddleware
 from bot.handlers import common, text, voice, photo
 from infrastructure.scheduler.notification_scheduler import start_notification_scheduler
 from infrastructure.scheduler.nutrition_tips_scheduler import start_nutrition_tips_scheduler
+from infrastructure.scheduler.coaching_scheduler import start_coaching_scheduler
 from db.checkpointer import init_checkpointer
 
 logging.basicConfig(
@@ -107,6 +108,7 @@ async def main() -> None:
     # Запускаем фоновый планировщик уведомлений
     start_notification_scheduler(bot, interval_seconds=60)
     start_nutrition_tips_scheduler(bot, check_interval=60)
+    start_coaching_scheduler(bot, interval_seconds=60)  # 🤖 Coaching proactive
     await dp.start_polling(bot)
 
 
