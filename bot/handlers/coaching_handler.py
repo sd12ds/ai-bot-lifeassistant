@@ -45,6 +45,7 @@ from bot.flows.coaching_flows import (
 )
 from db.session import get_async_session
 from db import coaching_storage as cs
+from services.coaching_personalization import reset_personalization
 
 logger = logging.getLogger(__name__)
 router = Router()
@@ -857,7 +858,8 @@ async def show_recommendations(callback: CallbackQuery) -> None:
 
 @router.callback_query(F.data == "cg_memory")
 async def show_memory(callback: CallbackQuery) -> None:
-    """Показать что коуч знает о пользователе."""
+    """Показать что коуч знает о пользователе + кнопка сброса персонализации."""
+    from aiogram.types import InlineKeyboardMarkup, InlineKeyboardButton
     user_id = callback.from_user.id
     async with get_async_session() as session:
         memories = await cs.get_memory(session, user_id, top_n=10)
@@ -866,10 +868,70 @@ async def show_memory(callback: CallbackQuery) -> None:
         return
     lines = ["🧠 *Что я знаю о тебе:*"]
     for m in memories:
-        mark = " (ты сказал)" if m.is_explicit else ""
+        # Отмечаем явно заданные пользователем настройки
+        mark = " _(ты сказал)_" if m.is_explicit else ""
         lines.append(f"• {m.key}: {m.value}{mark}")
-    await callback.message.answer("\n".join(lines), parse_mode="Markdown")
+
+    # Клавиатура с кнопкой сброса персонализации
+    kb = InlineKeyboardMarkup(inline_keyboard=[[
+        InlineKeyboardButton(text="🗑 Сбросить настройки", callback_data="cg_reset_confirm")
+    ]])
+    await callback.message.answer("\n".join(lines), parse_mode="Markdown", reply_markup=kb)
     await callback.answer()
+
+
+@router.callback_query(F.data == "cg_reset_confirm")
+async def confirm_reset_personalization(callback: CallbackQuery) -> None:
+    """Показать подтверждение сброса персонализации."""
+    from aiogram.types import InlineKeyboardMarkup, InlineKeyboardButton
+    kb = InlineKeyboardMarkup(inline_keyboard=[[
+        InlineKeyboardButton(text="✅ Да, сбросить", callback_data="cg_reset_do"),
+        InlineKeyboardButton(text="❌ Отмена", callback_data="cg_reset_cancel"),
+    ]])
+    await callback.message.answer(
+        "⚠️ Сбросить всё что коуч узнал о тебе?\nЭто удалит память и поведенческие паттерны. Отменить нельзя.",
+        reply_markup=kb,
+    )
+    await callback.answer()
+
+
+@router.callback_query(F.data == "cg_reset_do")
+async def do_reset_personalization(callback: CallbackQuery) -> None:
+    """Выполнить сброс персонализации по подтверждению пользователя."""
+    user_id = callback.from_user.id
+    async with get_async_session() as session:
+        await reset_personalization(session, user_id)
+        await session.commit()
+    await callback.message.answer(
+        "✅ Персонализация сброшена. Коуч начнёт узнавать тебя заново.",
+    )
+    await callback.answer()
+
+
+@router.callback_query(F.data == "cg_reset_cancel")
+async def cancel_reset_personalization(callback: CallbackQuery) -> None:
+    """Отмена сброса персонализации."""
+    await callback.answer("Отменено — ничего не изменилось.")
+
+
+@router.message(Command("reset_coach"))
+async def cmd_reset_coach(message: Message) -> None:
+    """
+    Команда /reset_coach — сброс поведенческих паттернов и памяти коуча.
+    Выводит запрос подтверждения перед удалением.
+    """
+    from aiogram.types import InlineKeyboardMarkup, InlineKeyboardButton
+    kb = InlineKeyboardMarkup(inline_keyboard=[[
+        InlineKeyboardButton(text="✅ Да, сбросить", callback_data="cg_reset_do"),
+        InlineKeyboardButton(text="❌ Отмена", callback_data="cg_reset_cancel"),
+    ]])
+    await message.answer(
+        "⚠️ *Сбросить персонализацию?*\n\n"
+        "Коуч забудет всё что узнал о твоих привычках, предпочтениях и паттернах.\n"
+        "Профиль и цели останутся. Память и адаптации — удалятся.",
+        parse_mode="Markdown",
+        reply_markup=kb,
+    )
 
 
 # ══════════════════════════════════════════════════════════════════════════════

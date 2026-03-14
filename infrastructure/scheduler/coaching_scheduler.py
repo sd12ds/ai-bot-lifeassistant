@@ -23,8 +23,15 @@ from sqlalchemy import select
 from db.session import AsyncSessionLocal
 from db.models import UserCoachingProfile
 from services.coaching_proactive import run_proactive_for_user
+from services.coaching_personalization import (
+    analyze_behavioral_patterns,
+    update_memory_from_behavior,
+)
 
 logger = logging.getLogger(__name__)
+
+# Время последнего запуска ежедневного анализа поведенческих паттернов
+_last_daily_analysis: datetime | None = None
 
 
 async def _get_active_user_ids() -> list[int]:
@@ -73,6 +80,42 @@ async def _run_proactive_cycle(bot: Bot) -> None:
         logger.info("Coaching scheduler: отправлено %d proactive сообщений", sent_count)
 
 
+
+async def _run_daily_personalization() -> None:
+    """
+    Ежедневный анализ поведенческих паттернов для всех активных пользователей.
+    Обновляет coaching_memory на основе собранной статистики активности.
+    """
+    global _last_daily_analysis
+
+    try:
+        user_ids = await _get_active_user_ids()
+    except Exception as exc:
+        logger.error("Daily personalization: ошибка получения пользователей: %s", exc)
+        return
+
+    if not user_ids:
+        return
+
+    updated = 0
+    for user_id in user_ids:
+        try:
+            async with AsyncSessionLocal() as session:
+                # Анализируем поведенческие паттерны и обновляем память
+                patterns = await analyze_behavioral_patterns(session, user_id)
+                if patterns:
+                    await update_memory_from_behavior(session, user_id, patterns)
+                    await session.commit()
+                    updated += 1
+        except Exception as exc:
+            logger.error(
+                "Daily personalization: ошибка для user=%s: %s",
+                user_id, exc, exc_info=False,
+            )
+
+    _last_daily_analysis = datetime.utcnow()
+    logger.info("Daily personalization завершён: обновлено %d пользователей", updated)
+
 async def _coaching_scheduler_loop(bot: Bot, interval_seconds: int) -> None:
     """Основной asyncio-цикл планировщика."""
     logger.info("Coaching scheduler запущен, интервал=%ds", interval_seconds)
@@ -86,6 +129,17 @@ async def _coaching_scheduler_loop(bot: Bot, interval_seconds: int) -> None:
             await _run_proactive_cycle(bot)
         except Exception as exc:
             logger.error("Coaching scheduler: критическая ошибка цикла: %s", exc, exc_info=True)
+        # Раз в 24 часа запускаем анализ поведенческих паттернов
+        try:
+            now = datetime.utcnow()
+            if (
+                _last_daily_analysis is None
+                or (now - _last_daily_analysis).total_seconds() >= 86400
+            ):
+                await _run_daily_personalization()
+        except Exception as exc:
+            logger.error("Coaching scheduler: ошибка daily personalization: %s", exc, exc_info=True)
+
         tick += 1
         await asyncio.sleep(interval_seconds)
 

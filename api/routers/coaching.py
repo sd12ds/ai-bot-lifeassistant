@@ -33,6 +33,12 @@ from api.deps import get_current_user
 from db.models import User
 from db.session import get_session
 import db.coaching_storage as cs
+from services.coaching_personalization import (
+    get_adaptation_context,
+    reset_personalization as reset_personalization_svc,
+    analyze_behavioral_patterns,
+    update_memory_from_behavior,
+)
 from services.coaching_engine import (
     compute_user_state,
     compute_risk_scores,
@@ -1145,3 +1151,51 @@ async def clear_memory(
     count = await cs.clear_memory(db, current_user.id)
     await db.commit()
     return {"cleared": count}
+
+
+# ══════════════════════════════════════════════════════════════════════════════
+# PERSONALIZATION
+# ══════════════════════════════════════════════════════════════════════════════
+
+@router.get("/profile/personalization")
+async def get_personalization_profile(
+    db: AsyncSession = Depends(get_session),
+    current_user: User = Depends(get_current_user),
+) -> dict:
+    """
+    Возвращает поведенческий профиль адаптации коуча:
+    тон общения, выявленные паттерны, области фокуса, лучшее время для работы.
+    """
+    state_data = await compute_user_state(db, current_user.id)
+    state = state_data["state"]
+    profile = state_data.get("profile")
+    coach_tone = profile.coach_tone if profile else "motivational"
+
+    # Получаем полный контекст адаптации
+    adaptation = await get_adaptation_context(db, current_user.id, state)
+
+    return {
+        "tone": coach_tone,
+        "tone_instruction": adaptation.get("tone_instruction"),
+        "best_time": adaptation.get("best_time"),
+        "active_patterns": adaptation.get("active_patterns", []),
+        "focus_areas": adaptation.get("focus_areas", []),
+        "has_explicit_corrections": adaptation.get("has_corrections", False),
+    }
+
+
+@router.post("/profile/reset", status_code=status.HTTP_200_OK)
+async def reset_personalization_endpoint(
+    db: AsyncSession = Depends(get_session),
+    current_user: User = Depends(get_current_user),
+) -> dict:
+    """
+    Сбрасывает всю персонализацию коуча: coaching_memory и behavior_patterns.
+    Профиль, цели и привычки НЕ затрагиваются.
+    """
+    await reset_personalization_svc(db, current_user.id)
+    await db.commit()
+    return {
+        "ok": True,
+        "message": "Персонализация сброшена. Коуч начнёт адаптироваться заново.",
+    }

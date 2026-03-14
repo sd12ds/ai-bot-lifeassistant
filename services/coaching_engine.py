@@ -371,12 +371,25 @@ async def get_context_pack(
         "memory": memory_summary,
         "stuck_goals_count": snapshot.stuck_goals if snapshot else 0,
         "streak_at_risk_count": snapshot.streak_at_risk if snapshot else 0,
+        # Персонализированный тон (Phase 8)
+        "tone_instruction": await _get_tone_instruction_safe(session, user_id, state),
     }
 
 
 # ══════════════════════════════════════════════════════════════════════════════
 # Адаптация тона коуча под состояние пользователя (§6.2, §16)
 # ══════════════════════════════════════════════════════════════════════════════
+
+
+async def _get_tone_instruction_safe(session, user_id: int, state: str) -> str | None:
+    """Безопасно получает персонализированную инструкцию тона (с fallback)."""
+    try:
+        from services.coaching_personalization import get_adaptation_context
+        ctx = await get_adaptation_context(session, user_id, state)
+        return ctx.get("tone_instruction")
+    except Exception:
+        return None
+
 
 def get_tone_for_state(state: str) -> str:
     """

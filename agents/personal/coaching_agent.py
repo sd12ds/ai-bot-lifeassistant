@@ -220,11 +220,25 @@ def _format_context_pack(ctx: dict) -> str:
         lines.append(f"\n🧠 Память о пользователе:")
         lines.extend(memories)
 
-    # Тон
+    # Персонализированный тон — приоритет у tone_instruction из context_pack (Phase 8)
+    tone_instruction = ctx.get("tone_instruction")
     state = ctx.get("state", "stable")
-    from services.coaching_engine import get_tone_for_state
-    tone = get_tone_for_state(state)
-    lines.append(f"\n🎙️ Текущий тон: {tone}")
+    if tone_instruction:
+        lines.append(f"\n🎙️ Инструкция по тону: {tone_instruction}")
+    else:
+        from services.coaching_engine import get_tone_for_state
+        tone = get_tone_for_state(state)
+        lines.append(f"\n🎙️ Текущий тон: {tone}")
+
+    # Активные паттерны (если есть)
+    patterns = ctx.get("active_patterns", [])
+    if patterns:
+        lines.append(f"\n🧠 Активные паттерны: {', '.join(patterns)}")
+
+    # Фокусные области из профиля
+    focus = ctx.get("focus_areas", [])
+    if focus:
+        lines.append(f"\n📍 Фокус пользователя: {', '.join(focus)}")
 
     return "\n".join(lines)
 
