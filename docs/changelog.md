@@ -60,3 +60,31 @@
 
 ## [06d8521] — 2026-03-13 19:56 (МСК)
 📦 Настройка расписания программы через чат: program_set_schedule (день недели + время начала/окончания). Обновлены подсказки после импорта.
+
+## [72151ba] — 2026-03-13 20:13 (МСК)
+📦 Возврат реального удаления программ тренировок (chat tool + API). Проверка владельца сохранена. Confirm-диалог в miniapp оставлен.
+
+## [abf84d5] — 2026-03-13 22:05 (МСК)
+📦 Синхронизация программы тренировок с календарём: program_set_schedule и program_import автоматически создают workout-события. Валидация невалидного времени (24:xx).
+
+## [7dfaee8] — 2026-03-13 23:08 (МСК)
+📦 JWT авторизация для браузерного доступа: dual-auth (initData + Bearer JWT), команда /web для magic-link, страницы /auth и /auth-required.
+
+## [9d59d4b] — 2026-03-13 23:26 (МСК)
+📦 Документация: план действий для следующих сессий разработки (docs/next-session-plan.md)
+## [58e5dc0] — 2026-03-14 20:30 (МСК)
+📦 fix: Toast-уведомления для замеров тела — теперь показывает ошибку или успех при сохранении
+## [4a84693] — 2026-03-14 20:39
+📦 feat: прогресс по упражнениям — чипы топ-5 вместо dropdown/поиска
+
+## [0d497f3] — 2026-03-14 21:36
+📦 Фаза 1 Coaching: расширение goals/habits (9+9 полей), 17 новых coaching-таблиц, db/coaching_storage.py (49 методов), Alembic миграция dc98c42a69b6
+## [09f692a] — 2026-03-14 21:50
+📦 Phase 2 Coaching: 36 инструментов (coaching_tools.py), 5 контекстных tools (coaching_context_tools.py), coaching_agent.py с 8 режимами и динамическим context pack, supervisor routing, intent_classifier keywords
+
+
+## [6084bb0] — 2026-03-14 22:07
+📦 Phase 3 Coaching: coaching_handler.py (полный Aiogram router), регистрация в main.py, onboarding в /start, get_async_session в db/session.py
+
+## [fc0f669] — 
+📦 Phase 4 Coaching Proactive: 17 триггеров + 4 multi-signal + ритуалы (morning brief/evening/weekly/monthly/anti-dropout), antispam pipeline, coaching_scheduler.py

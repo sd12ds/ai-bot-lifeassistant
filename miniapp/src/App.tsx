@@ -21,6 +21,15 @@ import { AuthRequiredPage } from './features/auth/AuthRequiredPage'
 import { ProgramsPage } from './features/fitness/ProgramsPage'
 import { AICoachPage } from './features/fitness/AICoachPage'
 import { ProgramEditorPage } from './features/fitness/ProgramEditorPage'
+// Коучинг — все экраны модуля
+import { CoachingDashboard } from './features/coaching/CoachingDashboard'
+import { GoalsPage }         from './features/coaching/GoalsPage'
+import { GoalDetailPage }    from './features/coaching/GoalDetailPage'
+import { HabitsPage }        from './features/coaching/HabitsPage'
+import { CheckInPage }       from './features/coaching/CheckInPage'
+import { WeeklyReviewPage }  from './features/coaching/WeeklyReviewPage'
+import { InsightsPage }      from './features/coaching/InsightsPage'
+import { OnboardingPage }    from './features/coaching/OnboardingPage'
 
 // QueryClient с оптимальными настройками для мобильного приложения
 const queryClient = new QueryClient({
@@ -57,36 +66,24 @@ function AppContent() {
           <Route path="/fitness/programs" element={<ProgramsPage />} />
           <Route path="/fitness/coach" element={<AICoachPage />} />
           <Route path="/fitness/program/:id" element={<ProgramEditorPage />} />
-          {/* Заглушки */}
-          <Route path="/coaching"   element={<ComingSoon label="Коучинг" />} />
-          <Route path="/auth"        element={<AuthGatePage />} />
+          {/* Коучинг */}
+          <Route path="/coaching"             element={<CoachingDashboard />} />
+          <Route path="/coaching/goals"        element={<GoalsPage />} />
+          <Route path="/coaching/goals/:id"    element={<GoalDetailPage />} />
+          <Route path="/coaching/habits"       element={<HabitsPage />} />
+          <Route path="/coaching/checkin"      element={<CheckInPage />} />
+          <Route path="/coaching/review"       element={<WeeklyReviewPage />} />
+          <Route path="/coaching/insights"     element={<InsightsPage />} />
+          <Route path="/coaching/onboarding"   element={<OnboardingPage />} />
+          {/* Auth */}
+          <Route path="/auth"         element={<AuthGatePage />} />
           <Route path="/auth-required" element={<AuthRequiredPage />} />
-          <Route path="*"           element={<Navigate to="/tasks" replace />} />
+          <Route path="*"             element={<Navigate to="/tasks" replace />} />
         </Routes>
       </div>
 
       {/* Нижняя навигация */}
       <BottomNav />
-    </div>
-  )
-}
-
-// Заглушка для ещё не реализованных разделов
-function ComingSoon({ label }: { label: string }) {
-  return (
-    <div className="flex flex-col items-center justify-center h-full pb-24">
-      <div
-        className="w-20 h-20 rounded-full flex items-center justify-center mb-4 text-3xl"
-        style={{ background: 'rgba(99,102,241,0.1)' }}
-      >
-        🚀
-      </div>
-      <p className="text-lg font-bold mb-1" style={{ color: 'var(--app-text)' }}>
-        {label}
-      </p>
-      <p className="text-sm" style={{ color: 'var(--app-hint)' }}>
-        Скоро будет доступно
-      </p>
     </div>
   )
 }

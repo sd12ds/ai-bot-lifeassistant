@@ -5,7 +5,7 @@ FastAPI приложение — REST API для Mini App и внешних кл
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
-from api.routers import auth, tasks, calendars, nutrition, fitness, voice, ai_coach
+from api.routers import auth, tasks, calendars, nutrition, fitness, voice, ai_coach, coaching
 
 # ── Приложение ────────────────────────────────────────────────────────────────
 app = FastAPI(
