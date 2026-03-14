@@ -91,3 +91,19 @@
 
 ## [e1cff7b] — 2026-03-14 22:29 (МСК)
 📦 Phase 5+6: FastAPI coaching router (40+ endpoints) + Mini App (9 экранов + 5 shared компонентов + роутинг)
+
+## [563d5ed] — 2026-03-14 22:45 (МСК)
+📦 Phase 7: 3-шаговый bot onboarding (профилирование), образовательные вставки в агент, re-engagement nudge, CoachPromptBubble в пустых состояниях Mini App
+## [96b1731] — 2026-03-14 23:05\n📦 Phase 8: Adaptive Personalization — ежедневный анализ паттернов в scheduler, команда /reset_coach, API эндпоинты GET /coaching/profile/personalization и POST /coaching/profile/reset\n
+## [a031042] — 2026-03-14 23:15\n📦 Phase 9: Cross-Module Intelligence — сбор сигналов из 5 модулей, 6 типов выводов, oркестрация действий с подтверждением, API и bot-хендлеры\n
+## [96cdd51] — 2026-03-14 23:24\n📦 Phase 10: Analytics, Reliability, Polish — детальные метрики целей/привычек/вовлечённости, dropout risk с уровнями, auto weekly score, graceful degradation, structured logging\n
+
+## [12c716b] — 2026-03-14 23:34 (МСК)
+📦 Инфраструктура: health endpoint с DB-чеком, LLM таймаут 30s, обновлён /help, GitHub Actions CI/CD, оба сервиса переведены под systemd
+
+## [c887897] — 2026-03-14 23:XX (МСК)
+📦 Коучинг в миниапп: разблокирована кнопка навигации, исправлены все несоответствия полей между API и TypeScript-интерфейсами, miniapp пересобран и задеплоен
+## [6cb9ad0] —  (МСК)
+📦 Добавлен полный план тестирования Coaching модуля (docs/coaching_test_plan.md): 24 раздела, 300+ тест-кейсов, Test Pyramid, 5 персонажей, Factories/Fakes, Init/Unit/Integration/API/Chat/E2E/MiniApp тесты, Auth/Scheduler/CrossModule/Resilience, CI pipeline, Regression Pack, DoD, 6-фазный план
+## [6cb9ad0] — 2026-03-14 23:57 (МСК)
+📦 Добавлен полный план тестирования Coaching модуля (docs/coaching_test_plan.md): 24 раздела, 300+ тест-кейсов, Test Pyramid, 5 персонажей, Factories/Fakes, Init/Unit/Integration/API/Chat/E2E/MiniApp/Auth/Scheduler/CrossModule/Resilience, CI pipeline, Regression Pack R-001..R-010, DoD, 6-фазный план реализации

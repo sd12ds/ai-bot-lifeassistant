@@ -100,7 +100,7 @@ class GoalOut(BaseModel):
     description: Optional[str]
     area: Optional[str]
     status: str
-    priority: int
+    priority: Optional[str] = None  # Приоритет: high|medium|low
     progress_pct: int
     target_date: Optional[date]
     why_statement: Optional[str]
@@ -133,7 +133,7 @@ class MilestoneOut(BaseModel):
     status: str
     due_date: Optional[date]
     description: Optional[str]
-    order_index: int
+    sort_order: int = 0  # Порядок сортировки этапа (в модели sort_order)
     completed_at: Optional[datetime]
 
     class Config:
@@ -200,8 +200,8 @@ class CheckInCreateDto(BaseModel):
 class CheckInOut(BaseModel):
     id: int
     goal_id: Optional[int]
-    energy_level: int
-    mood: Optional[str]
+    energy_level: Optional[int] = None  # Уровень энергии (nullable в модели)
+    mood: Optional[str] = None  # Настроение (поле отсутствует в GoalCheckin, допускаем None)
     notes: Optional[str]
     blockers: Optional[str]
     wins: Optional[str]
@@ -281,8 +281,8 @@ class OnboardingStepDto(BaseModel):
 
 
 class OnboardingOut(BaseModel):
-    current_step: Optional[str]
-    steps_completed: list
+    current_step: Optional[Any] = None  # В БД хранится как int (номер шага)
+    steps_completed: Optional[list] = None  # nullable JSONB
     first_goal_created: bool
     first_habit_created: bool
     first_checkin_done: bool
@@ -375,7 +375,7 @@ async def get_dashboard(
     Выполняет все запросы параллельно через asyncio.gather().
     Цель: latency <500ms.
     """
-    user_id = current_user.id
+    user_id = current_user.telegram_id
 
     # Параллельные запросы для минимальной latency
     (
@@ -470,7 +470,7 @@ async def get_state(
     current_user: User = Depends(get_current_user),
 ) -> dict:
     """Текущее whole-user state + risk scores."""
-    user_id = current_user.id
+    user_id = current_user.telegram_id
     state_data, risks = await asyncio.gather(
         compute_user_state(db, user_id),
         compute_risk_scores(db, user_id),
@@ -489,7 +489,7 @@ async def list_goals(
     current_user: User = Depends(get_current_user),
 ):
     """Список целей с фильтром по статусу (active|achieved|archived|all)."""
-    return await cs.get_goals(db, current_user.id, status=status)
+    return await cs.get_goals(db, current_user.telegram_id, status=status)
 
 
 @router.post("/goals", response_model=GoalOut, status_code=201)
@@ -499,7 +499,7 @@ async def create_goal(
     current_user: User = Depends(get_current_user),
 ):
     """Создать новую цель."""
-    goal = await cs.create_goal(db, current_user.id, **body.model_dump(exclude_none=True))
+    goal = await cs.create_goal(db, current_user.telegram_id, **body.model_dump(exclude_none=True))
     await db.commit()
     return goal
 
@@ -510,7 +510,7 @@ async def get_goal(
     db: AsyncSession = Depends(get_session),
     current_user: User = Depends(get_current_user),
 ):
-    goal = await cs.get_goal(db, goal_id, current_user.id)
+    goal = await cs.get_goal(db, goal_id, current_user.telegram_id)
     if not goal:
         raise HTTPException(status_code=404, detail="Goal not found")
     return goal
@@ -523,7 +523,7 @@ async def update_goal(
     db: AsyncSession = Depends(get_session),
     current_user: User = Depends(get_current_user),
 ):
-    goal = await cs.update_goal(db, goal_id, current_user.id, **body.model_dump(exclude_none=True))
+    goal = await cs.update_goal(db, goal_id, current_user.telegram_id, **body.model_dump(exclude_none=True))
     if not goal:
         raise HTTPException(status_code=404, detail="Goal not found")
     await db.commit()
@@ -539,7 +539,7 @@ async def delete_goal(
     from sqlalchemy import delete as sql_delete
     from db.models import Goal
     await db.execute(
-        sql_delete(Goal).where(Goal.id == goal_id, Goal.user_id == current_user.id)
+        sql_delete(Goal).where(Goal.id == goal_id, Goal.user_id == current_user.telegram_id)
     )
     await db.commit()
 
@@ -552,7 +552,7 @@ async def freeze_goal(
     current_user: User = Depends(get_current_user),
 ):
     """Заморозить цель."""
-    goal = await cs.update_goal(db, goal_id, current_user.id, is_frozen=True, frozen_reason=reason)
+    goal = await cs.update_goal(db, goal_id, current_user.telegram_id, is_frozen=True, frozen_reason=reason)
     if not goal:
         raise HTTPException(status_code=404, detail="Goal not found")
     await db.commit()
@@ -566,7 +566,7 @@ async def resume_goal(
     current_user: User = Depends(get_current_user),
 ):
     """Возобновить замороженную цель."""
-    goal = await cs.update_goal(db, goal_id, current_user.id, is_frozen=False, frozen_reason=None)
+    goal = await cs.update_goal(db, goal_id, current_user.telegram_id, is_frozen=False, frozen_reason=None)
     if not goal:
         raise HTTPException(status_code=404, detail="Goal not found")
     await db.commit()
@@ -580,7 +580,7 @@ async def restart_goal(
     current_user: User = Depends(get_current_user),
 ):
     """Сбросить прогресс и перезапустить цель."""
-    goal = await cs.update_goal(db, goal_id, current_user.id,
+    goal = await cs.update_goal(db, goal_id, current_user.telegram_id,
                                 status="active", progress_pct=0, is_frozen=False)
     if not goal:
         raise HTTPException(status_code=404, detail="Goal not found")
@@ -595,7 +595,7 @@ async def achieve_goal(
     current_user: User = Depends(get_current_user),
 ):
     """Отметить цель как достигнутую."""
-    goal = await cs.update_goal(db, goal_id, current_user.id,
+    goal = await cs.update_goal(db, goal_id, current_user.telegram_id,
                                 status="achieved", progress_pct=100)
     if not goal:
         raise HTTPException(status_code=404, detail="Goal not found")
@@ -610,12 +610,18 @@ async def goal_analytics(
     current_user: User = Depends(get_current_user),
 ) -> dict:
     """Аналитика по цели: checkins история, прогресс, stuck-дни."""
-    goal = await cs.get_goal(db, goal_id, current_user.id)
+    goal = await cs.get_goal(db, goal_id, current_user.telegram_id)
     if not goal:
         raise HTTPException(status_code=404, detail="Goal not found")
-    milestones = await cs.get_milestones(db, goal_id, current_user.id)
-    checkins = await cs.get_recent_goal_checkins(db, current_user.id, limit=10)
-    goal_checkins = [c for c in checkins if getattr(c, 'goal_id', None) == goal_id]
+    milestones = await cs.get_milestones(db, goal_id, current_user.telegram_id)
+    # Прямой запрос check-in для конкретной цели
+    from sqlalchemy import select as _sel3
+    from db.models import GoalCheckin as _GC3
+    _r3 = await db.execute(
+        _sel3(_GC3).where(_GC3.goal_id == goal_id, _GC3.user_id == current_user.telegram_id)
+        .order_by(_GC3.created_at.desc()).limit(10)
+    )
+    goal_checkins = list(_r3.scalars().all())
     done_ms = [m for m in milestones if m.status == "done"]
     return {
         "goal_id": goal_id,
@@ -638,7 +644,7 @@ async def list_milestones(
     db: AsyncSession = Depends(get_session),
     current_user: User = Depends(get_current_user),
 ):
-    return await cs.get_milestones(db, goal_id, current_user.id)
+    return await cs.get_milestones(db, goal_id, current_user.telegram_id)
 
 
 @router.post("/milestones", response_model=MilestoneOut, status_code=201)
@@ -647,7 +653,13 @@ async def create_milestone(
     db: AsyncSession = Depends(get_session),
     current_user: User = Depends(get_current_user),
 ):
-    m = await cs.create_milestone(db, current_user.id, **body.model_dump(exclude_none=True))
+    # Извлекаем goal_id из body — cs.create_milestone(session, goal_id, user_id, **kwargs)
+    _ms_data = body.model_dump(exclude_none=True)
+    _ms_goal_id = _ms_data.pop("goal_id", 0)
+    # Переименовываем order_index -> sort_order (поле модели GoalMilestone)
+    if "order_index" in _ms_data:
+        _ms_data["sort_order"] = _ms_data.pop("order_index")
+    m = await cs.create_milestone(db, _ms_goal_id, current_user.telegram_id, **_ms_data)
     await db.commit()
     return m
 
@@ -658,7 +670,7 @@ async def complete_milestone(
     db: AsyncSession = Depends(get_session),
     current_user: User = Depends(get_current_user),
 ):
-    m = await cs.complete_milestone(db, milestone_id, current_user.id)
+    m = await cs.complete_milestone(db, milestone_id, current_user.telegram_id)
     if not m:
         raise HTTPException(status_code=404, detail="Milestone not found")
     await db.commit()
@@ -675,7 +687,7 @@ async def list_habits(
     db: AsyncSession = Depends(get_session),
     current_user: User = Depends(get_current_user),
 ):
-    return await cs.get_habits(db, current_user.id, is_active=is_active)
+    return await cs.get_habits(db, current_user.telegram_id, is_active=is_active)
 
 
 @router.post("/habits", response_model=HabitOut, status_code=201)
@@ -685,7 +697,7 @@ async def create_habit(
     current_user: User = Depends(get_current_user),
 ):
     from db.models import Habit
-    h = Habit(user_id=current_user.id, **body.model_dump(exclude_none=True))
+    h = Habit(user_id=current_user.telegram_id, **body.model_dump(exclude_none=True))
     db.add(h)
     await db.flush()
     await db.refresh(h)
@@ -711,7 +723,7 @@ async def get_habit(
 ):
     from sqlalchemy import select
     from db.models import Habit
-    r = await db.execute(select(Habit).where(Habit.id == habit_id, Habit.user_id == current_user.id))
+    r = await db.execute(select(Habit).where(Habit.id == habit_id, Habit.user_id == current_user.telegram_id))
     h = r.scalar_one_or_none()
     if not h:
         raise HTTPException(status_code=404, detail="Habit not found")
@@ -729,7 +741,7 @@ async def update_habit(
     from db.models import Habit
     await db.execute(
         sql_update(Habit)
-        .where(Habit.id == habit_id, Habit.user_id == current_user.id)
+        .where(Habit.id == habit_id, Habit.user_id == current_user.telegram_id)
         .values(**body.model_dump(exclude_none=True))
     )
     await db.commit()
@@ -744,11 +756,11 @@ async def log_habit(
     current_user: User = Depends(get_current_user),
 ) -> dict:
     """Залогировать выполнение привычки."""
-    habit = await cs.increment_habit_streak(db, habit_id, current_user.id)
+    habit = await cs.increment_habit_streak(db, habit_id, current_user.telegram_id)
     if not habit:
         raise HTTPException(status_code=404, detail="Habit not found")
     from db.models import HabitLog
-    db.add(HabitLog(habit_id=habit_id, user_id=current_user.id))
+    db.add(HabitLog(habit_id=habit_id, user_id=current_user.telegram_id))
     await db.commit()
     return {"streak": habit.current_streak, "is_record": habit.current_streak == habit.longest_streak}
 
@@ -761,7 +773,7 @@ async def miss_habit(
     current_user: User = Depends(get_current_user),
 ) -> dict:
     """Отметить пропуск привычки."""
-    habit = await cs.reset_habit_streak(db, habit_id, current_user.id, reason=reason or "пропуск")
+    habit = await cs.reset_habit_streak(db, habit_id, current_user.telegram_id, reason=reason or "пропуск")
     if not habit:
         raise HTTPException(status_code=404, detail="Habit not found")
     await db.commit()
@@ -777,7 +789,7 @@ async def pause_habit(
     from sqlalchemy import update as sql_update
     from db.models import Habit
     await db.execute(
-        sql_update(Habit).where(Habit.id == habit_id, Habit.user_id == current_user.id).values(is_active=False)
+        sql_update(Habit).where(Habit.id == habit_id, Habit.user_id == current_user.telegram_id).values(is_active=False)
     )
     await db.commit()
     return {"paused": True}
@@ -792,7 +804,7 @@ async def resume_habit(
     from sqlalchemy import update as sql_update
     from db.models import Habit
     await db.execute(
-        sql_update(Habit).where(Habit.id == habit_id, Habit.user_id == current_user.id).values(is_active=True)
+        sql_update(Habit).where(Habit.id == habit_id, Habit.user_id == current_user.telegram_id).values(is_active=True)
     )
     await db.commit()
     return {"resumed": True}
@@ -807,7 +819,7 @@ async def habit_analytics(
     """Статистика привычки: streak history, completion rate, best/worst days."""
     from sqlalchemy import select
     from db.models import Habit, HabitLog
-    r = await db.execute(select(Habit).where(Habit.id == habit_id, Habit.user_id == current_user.id))
+    r = await db.execute(select(Habit).where(Habit.id == habit_id, Habit.user_id == current_user.telegram_id))
     h = r.scalar_one_or_none()
     if not h:
         raise HTTPException(status_code=404, detail="Habit not found")
@@ -838,7 +850,10 @@ async def create_checkin(
     current_user: User = Depends(get_current_user),
 ):
     """Создать новый check-in."""
-    checkin = await cs.create_goal_checkin(db, current_user.id, **body.model_dump(exclude_none=True))
+    # Извлекаем goal_id отдельно — cs.create_goal_checkin принимает (session, goal_id, user_id, **kwargs)
+    data = body.model_dump(exclude_none=True)
+    goal_id_val = data.pop("goal_id", None)
+    checkin = await cs.create_goal_checkin(db, goal_id_val, current_user.telegram_id, **data)
     await db.commit()
     return checkin
 
@@ -850,7 +865,14 @@ async def get_today_checkin(
 ) -> dict:
     """Проверить, был ли check-in сегодня."""
     from datetime import timezone
-    checkins = await cs.get_recent_goal_checkins(db, current_user.id, limit=1)
+    # Прямой запрос последнего check-in пользователя (не требует goal_id)
+    from sqlalchemy import select as _sel
+    from db.models import GoalCheckin as _GC
+    _r = await db.execute(
+        _sel(_GC).where(_GC.user_id == current_user.telegram_id)
+        .order_by(_GC.created_at.desc()).limit(1)
+    )
+    checkins = list(_r.scalars().all())
     if checkins:
         c = checkins[0]
         today = datetime.now(timezone.utc).date()
@@ -865,7 +887,14 @@ async def get_checkin_history(
     db: AsyncSession = Depends(get_session),
     current_user: User = Depends(get_current_user),
 ):
-    return await cs.get_recent_goal_checkins(db, current_user.id, limit=limit)
+    # Прямой запрос всех check-in пользователя (не фильтруем по goal_id)
+    from sqlalchemy import select as _sel2
+    from db.models import GoalCheckin as _GC2
+    _r2 = await db.execute(
+        _sel2(_GC2).where(_GC2.user_id == current_user.telegram_id)
+        .order_by(_GC2.created_at.desc()).limit(limit)
+    )
+    return list(_r2.scalars().all())
 
 
 # ══════════════════════════════════════════════════════════════════════════════
@@ -881,7 +910,7 @@ async def list_reviews(
 ):
     from sqlalchemy import select
     from db.models import GoalReview
-    q = select(GoalReview).where(GoalReview.user_id == current_user.id)
+    q = select(GoalReview).where(GoalReview.user_id == current_user.telegram_id)
     if goal_id:
         q = q.where(GoalReview.goal_id == goal_id)
     q = q.order_by(GoalReview.created_at.desc()).limit(limit)
@@ -894,7 +923,7 @@ async def get_latest_review(
     db: AsyncSession = Depends(get_session),
     current_user: User = Depends(get_current_user),
 ):
-    return await cs.get_latest_review(db, current_user.id)
+    return await cs.get_latest_review(db, current_user.telegram_id)
 
 
 # ══════════════════════════════════════════════════════════════════════════════
@@ -907,7 +936,7 @@ async def list_insights(
     db: AsyncSession = Depends(get_session),
     current_user: User = Depends(get_current_user),
 ) -> list:
-    insights = await cs.get_active_insights(db, current_user.id, limit=limit)
+    insights = await cs.get_active_insights(db, current_user.telegram_id, limit=limit)
     return [
         {
             "id": i.id,
@@ -928,7 +957,7 @@ async def mark_insight_read(
     db: AsyncSession = Depends(get_session),
     current_user: User = Depends(get_current_user),
 ) -> dict:
-    await cs.mark_insight_read(db, insight_id, current_user.id)
+    await cs.mark_insight_read(db, insight_id, current_user.telegram_id)
     await db.commit()
     return {"read": True}
 
@@ -943,7 +972,7 @@ async def list_recommendations(
     db: AsyncSession = Depends(get_session),
     current_user: User = Depends(get_current_user),
 ) -> list:
-    recs = await cs.get_active_recommendations(db, current_user.id, limit=limit)
+    recs = await cs.get_active_recommendations(db, current_user.telegram_id, limit=limit)
     return [
         {
             "id": r.id,
@@ -964,7 +993,7 @@ async def dismiss_recommendation(
     db: AsyncSession = Depends(get_session),
     current_user: User = Depends(get_current_user),
 ) -> dict:
-    await cs.dismiss_recommendation(db, rec_id, current_user.id)
+    await cs.dismiss_recommendation(db, rec_id, current_user.telegram_id)
     await db.commit()
     return {"dismissed": True}
 
@@ -978,7 +1007,7 @@ async def get_profile(
     db: AsyncSession = Depends(get_session),
     current_user: User = Depends(get_current_user),
 ):
-    return await cs.get_or_create_profile(db, current_user.id)
+    return await cs.get_or_create_profile(db, current_user.telegram_id)
 
 
 @router.put("/profile", response_model=CoachingProfileOut)
@@ -987,7 +1016,7 @@ async def update_profile(
     db: AsyncSession = Depends(get_session),
     current_user: User = Depends(get_current_user),
 ):
-    profile = await cs.update_profile(db, current_user.id, **body.model_dump(exclude_none=True))
+    profile = await cs.update_profile(db, current_user.telegram_id, **body.model_dump(exclude_none=True))
     await db.commit()
     return profile
 
@@ -1001,7 +1030,7 @@ async def get_onboarding_state(
     db: AsyncSession = Depends(get_session),
     current_user: User = Depends(get_current_user),
 ):
-    return await cs.get_or_create_onboarding(db, current_user.id)
+    return await cs.get_or_create_onboarding(db, current_user.telegram_id)
 
 
 @router.post("/onboarding/step")
@@ -1010,7 +1039,7 @@ async def advance_onboarding(
     db: AsyncSession = Depends(get_session),
     current_user: User = Depends(get_current_user),
 ) -> dict:
-    state = await cs.advance_onboarding_step(db, current_user.id, body.step)
+    state = await cs.advance_onboarding_step(db, current_user.telegram_id, body.step)
     await db.commit()
     return {"step": body.step, "done": state.bot_onboarding_done}
 
@@ -1024,7 +1053,7 @@ async def complete_onboarding(
     from db.models import CoachingOnboardingState
     await db.execute(
         sql_update(CoachingOnboardingState)
-        .where(CoachingOnboardingState.user_id == current_user.id)
+        .where(CoachingOnboardingState.user_id == current_user.telegram_id)
         .values(bot_onboarding_done=True)
     )
     await db.commit()
@@ -1041,12 +1070,17 @@ async def weekly_analytics(
     current_user: User = Depends(get_current_user),
 ):
     """Сводная аналитика за текущую неделю с детальным breakdown скора."""
-    user_id = current_user.id
-    goals, state_data, risks, checkins = await asyncio.gather(
+    user_id = current_user.telegram_id
+    from sqlalchemy import select as _sel4
+    from db.models import GoalCheckin as _GC4
+    _r4 = await db.execute(
+        _sel4(_GC4).where(_GC4.user_id == user_id).order_by(_GC4.created_at.desc()).limit(7)
+    )
+    checkins = list(_r4.scalars().all())
+    goals, state_data, risks = await asyncio.gather(
         cs.get_goals(db, user_id, status="active"),
         compute_user_state(db, user_id),
         compute_risk_scores(db, user_id),
-        cs.get_recent_goal_checkins(db, user_id, limit=7),
     )
     # Auto-расчёт weekly score из DB с детализацией
     weekly_score, score_breakdown = await compute_weekly_score_auto(db, user_id)
@@ -1084,8 +1118,8 @@ async def habits_analytics(
     current_user: User = Depends(get_current_user),
 ) -> dict:
     """Аналитика по всем привычкам: completion rate, streaks."""
-    habits = await cs.get_habits(db, current_user.id, is_active=True)
-    at_risk = await cs.get_habits_at_risk(db, current_user.id, days_no_log=3)
+    habits = await cs.get_habits(db, current_user.telegram_id, is_active=True)
+    at_risk = await cs.get_habits_at_risk(db, current_user.telegram_id, days_no_log=3)
     return {
         "total_habits": len(habits),
         "at_risk_count": len(at_risk),
@@ -1100,10 +1134,10 @@ async def goals_analytics(
     current_user: User = Depends(get_current_user),
 ) -> dict:
     """Аналитика по целям: прогресс, stuck, achieved."""
-    user_id = current_user.id
+    user_id = current_user.telegram_id
     active = await cs.get_goals(db, user_id, status="active")
     achieved = await cs.get_goals(db, user_id, status="achieved")
-    stuck = await cs.get_stuck_goals(db, user_id, days_no_progress=7)
+    stuck = await cs.get_stuck_goals(db, user_id, days_without_progress=7)
     return {
         "active_count": len(active),
         "achieved_count": len(achieved),
@@ -1123,7 +1157,7 @@ async def engagement_analytics(
     Метрики вовлечённости: частота check-in, nudge response rate, сессии с коучем,
     использование функций за последние N дней.
     """
-    return await get_engagement_metrics(db, current_user.id, days=days)
+    return await get_engagement_metrics(db, current_user.telegram_id, days=days)
 
 
 @router.get("/analytics/streaks")
@@ -1134,7 +1168,7 @@ async def streaks_analytics(
     """
     Аналитика стриков: топ привычки, рекорды, привычки под угрозой срыва.
     """
-    return await get_streak_analytics(db, current_user.id)
+    return await get_streak_analytics(db, current_user.telegram_id)
 
 
 @router.get("/analytics/habits/detailed")
@@ -1147,7 +1181,7 @@ async def habits_detailed_analytics(
     Детальные метрики привычек: consistency score, лучший/худший день недели,
     временные паттерны (утро/день/вечер) за последние N дней.
     """
-    return await get_habit_detailed_metrics(db, current_user.id, days=days)
+    return await get_habit_detailed_metrics(db, current_user.telegram_id, days=days)
 
 
 @router.get("/analytics/dropout-risk")
@@ -1160,7 +1194,7 @@ async def dropout_risk_analytics(
     score, level, факторы, рекомендации.
     Score > 0.7 → HIGH RISK → запускается reactivation-сценарий.
     """
-    return await compute_dropout_risk_detailed(db, current_user.id)
+    return await compute_dropout_risk_detailed(db, current_user.telegram_id)
 
 
 @router.get("/analytics/goals/detailed")
@@ -1173,7 +1207,7 @@ async def goals_detailed_analytics(
     Детальные метрики целей: completion rate, среднее время достижения,
     abandonment rate, milestone completion rate, распределение по областям.
     """
-    return await get_goal_metrics(db, current_user.id, days=days)
+    return await get_goal_metrics(db, current_user.telegram_id, days=days)
 
 
 # ══════════════════════════════════════════════════════════════════════════════
@@ -1190,7 +1224,7 @@ async def get_prompts(
     Sample prompts для CoachPromptBubble и каруселей в UI.
     Контекстно-зависимые по параметру context.
     """
-    state_data = await compute_user_state(db, current_user.id)
+    state_data = await compute_user_state(db, current_user.telegram_id)
     state = state_data["state"]
 
     context_prompts = {
@@ -1238,7 +1272,7 @@ async def get_memory(
     db: AsyncSession = Depends(get_session),
     current_user: User = Depends(get_current_user),
 ) -> list:
-    memories = await cs.get_memory(db, current_user.id, top_n=20)
+    memories = await cs.get_memory(db, current_user.telegram_id, top_n=20)
     return [
         {
             "key": m.key,
@@ -1256,7 +1290,7 @@ async def clear_memory(
     current_user: User = Depends(get_current_user),
 ) -> dict:
     """Сбросить coaching-память (reversible learning)."""
-    count = await cs.clear_memory(db, current_user.id)
+    count = await cs.clear_memory(db, current_user.telegram_id)
     await db.commit()
     return {"cleared": count}
 
@@ -1274,13 +1308,13 @@ async def get_personalization_profile(
     Возвращает поведенческий профиль адаптации коуча:
     тон общения, выявленные паттерны, области фокуса, лучшее время для работы.
     """
-    state_data = await compute_user_state(db, current_user.id)
+    state_data = await compute_user_state(db, current_user.telegram_id)
     state = state_data["state"]
     profile = state_data.get("profile")
     coach_tone = profile.coach_tone if profile else "motivational"
 
     # Получаем полный контекст адаптации
-    adaptation = await get_adaptation_context(db, current_user.id, state)
+    adaptation = await get_adaptation_context(db, current_user.telegram_id, state)
 
     return {
         "tone": coach_tone,
@@ -1301,7 +1335,7 @@ async def reset_personalization_endpoint(
     Сбрасывает всю персонализацию коуча: coaching_memory и behavior_patterns.
     Профиль, цели и привычки НЕ затрагиваются.
     """
-    await reset_personalization_svc(db, current_user.id)
+    await reset_personalization_svc(db, current_user.telegram_id)
     await db.commit()
     return {
         "ok": True,
@@ -1322,7 +1356,7 @@ async def get_pending_orchestration_actions(
     Список orchestration-действий, ожидающих подтверждения пользователя.
     Коуч предлагает создать задачу/событие/напоминание — пользователь подтверждает здесь.
     """
-    actions = await cs.get_pending_actions(db, current_user.id)
+    actions = await cs.get_pending_actions(db, current_user.telegram_id)
     return [
         {
             "id": a.id,
@@ -1350,7 +1384,7 @@ async def confirm_orchestration_action(
     result = await db.execute(
         sa_select(CoachingOrchestrationAction).where(
             CoachingOrchestrationAction.id == action_id,
-            CoachingOrchestrationAction.user_id == current_user.id,
+            CoachingOrchestrationAction.user_id == current_user.telegram_id,
         )
     )
     action = result.scalar_one_or_none()
@@ -1360,7 +1394,7 @@ async def confirm_orchestration_action(
         raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=f"Действие уже в статусе: {action.status}")
 
     # Сначала помечаем как подтверждённое
-    await cs.confirm_orchestration_action(db, action_id, current_user.id)
+    await cs.confirm_orchestration_action(db, action_id, current_user.telegram_id)
 
     # Выполняем действие
     success, message = await execute_orchestration_action(db, action)
@@ -1383,7 +1417,7 @@ async def reject_orchestration_action(
         sa_update(CoachingOrchestrationAction)
         .where(
             CoachingOrchestrationAction.id == action_id,
-            CoachingOrchestrationAction.user_id == current_user.id,
+            CoachingOrchestrationAction.user_id == current_user.telegram_id,
         )
         .values(status="rejected")
     )
@@ -1405,10 +1439,10 @@ async def trigger_cross_module_analysis(
     Собирает сигналы из всех модулей, генерирует выводы и сохраняет рекомендации.
     Возвращает найденные проблемы и число сохранённых рекомендаций.
     """
-    state_data = await compute_user_state(db, current_user.id)
+    state_data = await compute_user_state(db, current_user.telegram_id)
     state = state_data["state"]
 
-    result = await run_cross_module_analysis(db, current_user.id, state)
+    result = await run_cross_module_analysis(db, current_user.telegram_id, state)
     await db.commit()
 
     return {
