@@ -30,6 +30,8 @@ from bot.keyboards.coaching_keyboards import (
     habit_list_item_kb, habit_daily_kb, habit_missed_kb,
     goal_stuck_kb, goal_achieved_kb, weekly_review_kb,
     onboarding_kb, onboarding_done_kb,
+    onboarding_profile_intro_kb, onboarding_focus_area_kb, onboarding_tone_kb,
+    onboarding_checkin_time_kb, onboarding_first_action_kb,
 )
 from bot.flows.coaching_flows import (
     start_goal_creation, handle_goal_area, handle_goal_title,
@@ -66,20 +68,30 @@ async def coaching_main(message: Message, state: FSMContext) -> None:
     goals_count = len(goals)
     habits_count = len(habits)
 
-    # Онбординг при первом входе
+    # Онбординг Шаг 1 — знакомство + приглашение к профилированию
     if not onboarding.bot_onboarding_done:
-        await message.answer(
-            "👋 *Привет! Я твой AI-коуч.*\n\n"
-            "Помогу ставить и достигать цели, формировать привычки и двигаться вперёд системно.\n\n"
-            "Как работаю:\n"
-            "🎯 *Цели* — конкретные, с этапами и дедлайнами\n"
-            "🔁 *Привычки* — ежедневный трекинг с серией (стрик)\n"
-            "✅ *Check-in* — фиксируем прогресс и энергию\n"
-            "📊 *Обзор недели* — рефлексия и план\n\n"
-            "_С чего начнём?_",
-            reply_markup=onboarding_kb(),
-            parse_mode="Markdown",
-        )
+        profile = await cs.get_or_create_profile(session, user_id)
+        if profile.onboarding_completed:
+            # Профиль уже настроен — сразу к первому действию
+            await message.answer(
+                "👋 *Привет снова!*\n\nГотов работать над твоими целями. С чего начнём?",
+                reply_markup=onboarding_first_action_kb(),
+                parse_mode="Markdown",
+            )
+        else:
+            # Впервые — полный онбординг
+            await message.answer(
+                "👋 *Привет! Я твой AI-коуч.*\n\n"
+                "Помогу ставить и достигать цели, формировать привычки и двигаться вперёд системно.\n\n"
+                "*Как работаю:*\n"
+                "🎯 *Цели* — конкретные, с этапами и дедлайнами\n"
+                "🔁 *Привычки* — ежедневный трекинг с серией (стрик)\n"
+                "✅ *Check-in* — фиксируем прогресс и энергию\n"
+                "📊 *Обзор недели* — рефлексия и план\n\n"
+                "Чтобы я давал точные советы — настрою коуча под тебя за 30 секунд.",
+                reply_markup=onboarding_profile_intro_kb(),
+                parse_mode="Markdown",
+            )
         return
 
     # Обычное меню
@@ -157,6 +169,135 @@ async def ob_skip(callback: CallbackQuery) -> None:
         await session.commit()
     await callback.message.edit_text(
         "OK, заходи когда будешь готов! Используй /coaching чтобы открыть меню коуча.",
+        reply_markup=None,
+    )
+    await callback.answer()
+
+
+# ══════════════════════════════════════════════════════════════════════════════
+# ОНБОРДИНГ — ШАГ 2: ПРОФИЛИРОВАНИЕ
+# ══════════════════════════════════════════════════════════════════════════════
+
+@router.callback_query(F.data == "cg_ob_profile_start")
+async def ob_profile_start(callback: CallbackQuery, state: FSMContext) -> None:
+    """Начало профилирования — выбор фокусных областей."""
+    await state.update_data(ob_focus_areas=[])
+    await callback.message.edit_text(
+        "🎯 *Какие сферы жизни хочешь прокачать?*\n\n"
+        "Можно выбрать несколько. Нажми ✅ Готово когда закончишь.",
+        reply_markup=onboarding_focus_area_kb([]),
+        parse_mode="Markdown",
+    )
+    await callback.answer()
+
+
+@router.callback_query(F.data == "cg_ob_profile_skip")
+async def ob_profile_skip(callback: CallbackQuery) -> None:
+    """Пропуск профилирования — сразу к первому действию."""
+    user_id = callback.from_user.id
+    async with get_async_session() as session:
+        await cs.update_profile(session, user_id, {"onboarding_completed": True})
+        ob = await cs.get_or_create_onboarding(session, user_id)
+        ob.bot_onboarding_done = True
+        await session.commit()
+    await callback.message.edit_text(
+        "OK! Давай создадим что-нибудь первое.",
+        reply_markup=onboarding_first_action_kb(),
+    )
+    await callback.answer()
+
+
+@router.callback_query(F.data.startswith("cg_ob_focus_") & ~F.data.endswith("_done"))
+async def ob_toggle_focus(callback: CallbackQuery, state: FSMContext) -> None:
+    """Переключение фокусной области (toggle)."""
+    area = callback.data.replace("cg_ob_focus_", "")
+    data = await state.get_data()
+    selected: list = data.get("ob_focus_areas", [])
+    if area in selected:
+        selected.remove(area)
+    else:
+        selected.append(area)
+    await state.update_data(ob_focus_areas=selected)
+    await callback.message.edit_reply_markup(reply_markup=onboarding_focus_area_kb(selected))
+    await callback.answer()
+
+
+@router.callback_query(F.data == "cg_ob_focus_done")
+async def ob_focus_done(callback: CallbackQuery, state: FSMContext) -> None:
+    """Зафиксировать выбор областей → выбор тона."""
+    data = await state.get_data()
+    selected = data.get("ob_focus_areas", [])
+    user_id = callback.from_user.id
+    if selected:
+        async with get_async_session() as session:
+            await cs.update_profile(session, user_id, {"focus_areas": selected})
+            await session.commit()
+    await callback.message.edit_text(
+        "✅ *Записал!*\n\n🎙️ *Как тебе удобнее общаться с коучем?*",
+        reply_markup=onboarding_tone_kb(),
+        parse_mode="Markdown",
+    )
+    await callback.answer()
+
+
+@router.callback_query(F.data.startswith("cg_ob_tone_"))
+async def ob_set_tone(callback: CallbackQuery) -> None:
+    """Выбор тона коуча → выбор времени чекина."""
+    tone = callback.data.replace("cg_ob_tone_", "")
+    user_id = callback.from_user.id
+    async with get_async_session() as session:
+        await cs.update_profile(session, user_id, {"coach_tone": tone})
+        await session.commit()
+    tone_labels = {
+        "friendly": "😊 Дружелюбный",
+        "motivational": "🚀 Мотивационный",
+        "strict": "💪 Требовательный",
+        "soft": "🕊️ Мягкий",
+    }
+    label = tone_labels.get(tone, tone)
+    await callback.message.edit_text(
+        f"✅ Тон коуча: *{label}*\n\n"
+        "⏰ *Когда лучше всего напоминать о check-in?*",
+        reply_markup=onboarding_checkin_time_kb(),
+        parse_mode="Markdown",
+    )
+    await callback.answer()
+
+
+@router.callback_query(F.data.startswith("cg_ob_time_"))
+async def ob_set_time(callback: CallbackQuery) -> None:
+    """Выбор времени чекина → завершение профилирования."""
+    time_val = callback.data.replace("cg_ob_time_", "")
+    user_id = callback.from_user.id
+    async with get_async_session() as session:
+        updates = {"onboarding_completed": True}
+        if time_val != "skip":
+            updates["preferred_checkin_time"] = time_val
+        await cs.update_profile(session, user_id, updates)
+        ob = await cs.get_or_create_onboarding(session, user_id)
+        ob.bot_onboarding_done = True
+        await session.commit()
+    await callback.message.edit_text(
+        "🎉 *Готово! Профиль коуча настроен.*\n\n"
+        "Теперь я смогу давать персональные советы.\n"
+        "С чего начнём?",
+        reply_markup=onboarding_first_action_kb(),
+        parse_mode="Markdown",
+    )
+    await callback.answer()
+
+
+@router.callback_query(F.data == "cg_ob_done_main")
+async def ob_done_main(callback: CallbackQuery) -> None:
+    """Завершение онбординга → главное меню."""
+    user_id = callback.from_user.id
+    async with get_async_session() as session:
+        ob = await cs.get_or_create_onboarding(session, user_id)
+        ob.bot_onboarding_done = True
+        await cs.update_profile(session, user_id, {"onboarding_completed": True})
+        await session.commit()
+    await callback.message.edit_text(
+        "Используй /coaching для доступа к меню коуча.",
         reply_markup=None,
     )
     await callback.answer()

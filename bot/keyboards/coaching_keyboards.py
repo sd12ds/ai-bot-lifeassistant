@@ -400,3 +400,68 @@ def coaching_main_kb() -> InlineKeyboardMarkup:
             InlineKeyboardButton(text="🧠 Память коуча", callback_data="cg_memory"),
         ],
     ])
+
+
+# ══════════════════════════════════════════════════════════════════════════════
+# Онбординг — Шаг 2: Профилирование
+# ══════════════════════════════════════════════════════════════════════════════
+
+def onboarding_profile_intro_kb() -> InlineKeyboardMarkup:
+    """Переход к шагу профилирования после intro."""
+    return InlineKeyboardMarkup(inline_keyboard=[
+        [InlineKeyboardButton(text="⚙️ Настроить за 30 секунд", callback_data="cg_ob_profile_start")],
+        [InlineKeyboardButton(text="⏭ Пропустить настройку", callback_data="cg_ob_profile_skip")],
+    ])
+
+
+def onboarding_focus_area_kb(selected: list[str] | None = None) -> InlineKeyboardMarkup:
+    """Выбор приоритетной области жизни (1 из 5, отображает выбранную через ✅)."""
+    selected = selected or []
+    areas = [
+        ("💚 Здоровье", "health"),
+        ("💰 Финансы", "finance"),
+        ("💼 Карьера", "career"),
+        ("🧘 Личное развитие", "personal"),
+        ("❤️ Отношения", "relationships"),
+    ]
+    rows = []
+    for label, key in areas:
+        mark = "✅ " if key in selected else ""
+        rows.append([InlineKeyboardButton(text=f"{mark}{label}", callback_data=f"cg_ob_focus_{key}")])
+    rows.append([InlineKeyboardButton(text="✅ Готово", callback_data="cg_ob_focus_done")])
+    return InlineKeyboardMarkup(inline_keyboard=rows)
+
+
+def onboarding_tone_kb() -> InlineKeyboardMarkup:
+    """Выбор стиля общения коуча."""
+    return InlineKeyboardMarkup(inline_keyboard=[
+        [InlineKeyboardButton(text="😊 Дружелюбный", callback_data="cg_ob_tone_friendly")],
+        [InlineKeyboardButton(text="🚀 Мотивационный", callback_data="cg_ob_tone_motivational")],
+        [InlineKeyboardButton(text="💪 Требовательный", callback_data="cg_ob_tone_strict")],
+        [InlineKeyboardButton(text="🕊️ Мягкий", callback_data="cg_ob_tone_soft")],
+    ])
+
+
+def onboarding_checkin_time_kb() -> InlineKeyboardMarkup:
+    """Выбор предпочтительного времени чекина."""
+    return InlineKeyboardMarkup(inline_keyboard=[
+        [
+            InlineKeyboardButton(text="🌅 Утро (09:00)", callback_data="cg_ob_time_09:00"),
+            InlineKeyboardButton(text="☀️ День (13:00)", callback_data="cg_ob_time_13:00"),
+        ],
+        [
+            InlineKeyboardButton(text="🌆 Вечер (20:00)", callback_data="cg_ob_time_20:00"),
+            InlineKeyboardButton(text="🌙 Ночь (22:00)", callback_data="cg_ob_time_22:00"),
+        ],
+        [InlineKeyboardButton(text="⏭ Пропустить", callback_data="cg_ob_time_skip")],
+    ])
+
+
+def onboarding_first_action_kb() -> InlineKeyboardMarkup:
+    """Шаг 3 — первое действие после профилирования."""
+    return InlineKeyboardMarkup(inline_keyboard=[
+        [InlineKeyboardButton(text="🎯 Поставить первую цель", callback_data="cg_ob_goal")],
+        [InlineKeyboardButton(text="🔁 Создать привычку", callback_data="cg_ob_habit")],
+        [InlineKeyboardButton(text="👀 Посмотреть примеры", callback_data="cg_ob_examples")],
+        [InlineKeyboardButton(text="🏠 В главное меню", callback_data="cg_ob_done_main")],
+    ])

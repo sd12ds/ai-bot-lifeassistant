@@ -88,3 +88,6 @@
 
 ## [fc0f669] — 
 📦 Phase 4 Coaching Proactive: 17 триггеров + 4 multi-signal + ритуалы (morning brief/evening/weekly/monthly/anti-dropout), antispam pipeline, coaching_scheduler.py
+
+## [e1cff7b] — 2026-03-14 22:29 (МСК)
+📦 Phase 5+6: FastAPI coaching router (40+ endpoints) + Mini App (9 экранов + 5 shared компонентов + роутинг)

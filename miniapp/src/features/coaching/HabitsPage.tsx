@@ -21,6 +21,7 @@ export function HabitsPage() {
 
   const { data: habits = [], isLoading } = useHabits()
   const { data: templates = [] } = useHabitTemplates()
+  const { data: prompts = [] } = usePrompts(empty_habits)
   const logHabit = useLogHabit()
   const missHabit = useMissHabit()
   const createHabit = useCreateHabit()
@@ -67,12 +68,21 @@ export function HabitsPage() {
             <Loader2 className="animate-spin text-purple-400" size={28} />
           </div>
         ) : habits.length === 0 ? (
-          <div className="text-center py-16">
-            <p className="text-4xl mb-3">🌱</p>
-            <p className="text-gray-500 text-sm">Нет активных привычек</p>
+          <div className="py-8 space-y-4">
+            <div className="text-center">
+              <p className="text-4xl mb-3">🌱</p>
+              <p className="text-gray-500 text-sm">Нет активных привычек</p>
+            </div>
+            {prompts.length > 0 && (
+              <CoachPromptBubble
+                text={prompts[0]}
+                action="Добавить привычку"
+                onAction={() => setShowCreate(true)}
+              />
+            )}
             <button
               onClick={() => setShowCreate(true)}
-              className="mt-4 text-indigo-600 text-sm font-semibold"
+              className="w-full text-center text-indigo-600 text-sm font-semibold py-2"
             >
               + Добавить первую
             </button>

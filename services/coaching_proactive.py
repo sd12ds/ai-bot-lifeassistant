@@ -784,6 +784,10 @@ async def run_proactive_for_user(
                 ]
                 all_candidates.extend(high_and_critical)
 
+        # Re-engagement: мягкий nudge если функция не используется >14 дней
+        reeng_candidates = await evaluate_reengagement_nudge(session, user_id, snapshot)
+        all_candidates.extend(reeng_candidates)
+
         if not all_candidates:
             return False
 
@@ -825,3 +829,58 @@ async def run_proactive_for_user(
     except Exception as exc:
         logger.error("Proactive error for user=%s: %s", user_id, exc, exc_info=True)
         return False
+
+async def evaluate_reengagement_nudge(
+    session,
+    user_id: int,
+    snapshot,
+) -> list:
+    """
+    Re-engagement триггер: если функция (цели/привычки/чекин) не использовалась >14 дней.
+    Приоритет: MEDIUM (3). Генерирует мягкое напоминание.
+    """
+    from datetime import datetime, timedelta, timezone
+    candidates = []
+    now = datetime.now(timezone.utc)
+    threshold = timedelta(days=14)
+
+    checks = {
+        "reengagement_goals":   ("goals",   "goal_last_action"),
+        "reengagement_habits":  ("habits",  "habit_last_log"),
+        "reengagement_checkin": ("checkin", "last_checkin_at"),
+    }
+
+    for nudge_type, (feature, attr) in checks.items():
+        last_ts = getattr(snapshot, attr, None) if snapshot else None
+        # Нормализуем timezone
+        if last_ts and last_ts.tzinfo is None:
+            from datetime import timezone as tz
+            last_ts = last_ts.replace(tzinfo=tz.utc)
+        if last_ts is None or (now - last_ts) > threshold:
+            days_ago = int((now - last_ts).days) if last_ts else 14
+            days_ago = min(days_ago, 99)
+
+            messages = {
+                "goals":   (
+                    f"\U0001f3af \u0423\u0436\u0435 {days_ago} \u0434\u043d\u0435\u0439 \u0431\u0435\u0437 \u043e\u0431\u043d\u043e\u0432\u043b\u0435\u043d\u0438\u044f \u0446\u0435\u043b\u0435\u0439 \u2014 \u043e\u043d\u0438 \u043f\u043e\u043c\u043d\u044f\u0442 \u043e \u0442\u0435\u0431\u0435!\n\n"
+                    "\u0414\u0430\u0436\u0435 \u043e\u0434\u0438\u043d \u043c\u0430\u043b\u0435\u043d\u044c\u043a\u0438\u0439 \u0448\u0430\u0433 \u0432\u043f\u0435\u0440\u0451\u0434 \u0441\u0435\u0433\u043e\u0434\u043d\u044f \u043d\u0435 \u0434\u0430\u0441\u0442 \u043f\u043e\u0442\u0435\u0440\u044f\u0442\u044c \u0438\u043c\u043f\u0443\u043b\u044c\u0441. \u041f\u0440\u043e\u0432\u0435\u0440\u0438\u043c?"
+                ),
+                "habits":  (
+                    f"\U0001f501 \u041f\u0440\u0438\u0432\u044b\u0447\u043a\u0438 \u0436\u0434\u0443\u0442 {days_ago} \u0434\u043d\u0435\u0439.\n\n"
+                    "\u041f\u0440\u043e\u043f\u0443\u0441\u043a \u043d\u0435 \u043e\u0431\u043d\u0443\u043b\u044f\u0435\u0442 \u0441\u0435\u0440\u0438\u044e \u2014 \u0433\u043b\u0430\u0432\u043d\u043e\u0435 \u0432\u043e\u0437\u043e\u0431\u043d\u043e\u0432\u0438\u0442\u044c. "
+                    "\u0417\u0430\u043b\u043e\u0433\u0438\u0440\u0443\u0435\u043c \u0445\u043e\u0442\u044f \u0431\u044b \u043e\u0434\u043d\u0443 \u0441\u0435\u0433\u043e\u0434\u043d\u044f?"
+                ),
+                "checkin": (
+                    f"\u2705 {days_ago} \u0434\u043d\u0435\u0439 \u0431\u0435\u0437 check-in \u2014 \u043c\u043d\u0435 \u043d\u0435 \u0445\u0432\u0430\u0442\u0430\u0435\u0442 \u0434\u0430\u043d\u043d\u044b\u0445 \u043e \u0442\u0435\u0431\u0435.\n\n"
+                    "\u0414\u0430\u0436\u0435 \u043f\u0430\u0440\u0430 \u0441\u0442\u0440\u043e\u043a \u043f\u043e\u043c\u043e\u0436\u0435\u0442 \u043c\u043d\u0435 \u0434\u0430\u0442\u044c \u0442\u043e\u0447\u043d\u044b\u0435 \u0441\u043e\u0432\u0435\u0442\u044b. \u041a\u0430\u043a \u0442\u044b \u0441\u0435\u0439\u0447\u0430\u0441?"
+                ),
+            }
+            text = messages[feature]
+            candidates.append(NudgeCandidate(
+                nudge_type=nudge_type,
+                priority=PRIORITY_MEDIUM,
+                text=text,
+                keyboard=None,
+            ))
+
+    return candidates

@@ -29,6 +29,7 @@ export function GoalsPage() {
   // Получаем цели с фильтром по статусу
   const statusParam = filter === 'all' ? undefined : filter
   const { data: goals = [], isLoading } = useGoals(statusParam)
+  const { data: prompts = [] } = usePrompts(empty_goals)
   const createGoal = useCreateGoal()
 
   // Клиентский поиск по названию
