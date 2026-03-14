@@ -6,7 +6,7 @@ import { useNavigate } from 'react-router-dom'
 import { motion, AnimatePresence } from 'framer-motion'
 import { Plus, ArrowLeft, Search, Loader2 } from 'lucide-react'
 import { useGoals, useCreateGoal } from '../../api/coaching'
-import type { CreateGoalDTO } from '../../api/coaching'
+import type { CreateGoalDto } from '../../api/coaching'
 import { GoalCard } from './components/GoalCard'
 
 type Filter = 'all' | 'active' | 'frozen' | 'achieved'
@@ -29,8 +29,7 @@ export function GoalsPage() {
   // Получаем цели с фильтром по статусу
   const statusParam = filter === 'all' ? undefined : filter
   const { data: goals = [], isLoading } = useGoals(statusParam)
-  const { data: prompts = [] } = usePrompts(empty_goals)
-  const createGoal = useCreateGoal()
+    const createGoal = useCreateGoal()
 
   // Клиентский поиск по названию
   const filtered = search.trim()
@@ -39,7 +38,7 @@ export function GoalsPage() {
 
   const handleCreate = () => {
     if (!newTitle.trim()) return
-    const dto: CreateGoalDTO = { title: newTitle.trim(), why_statement: newWhy.trim() || undefined }
+    const dto: CreateGoalDto = { title: newTitle.trim(), why_statement: newWhy.trim() || undefined }
     createGoal.mutate(dto, {
       onSuccess: () => { setShowCreate(false); setNewTitle(''); setNewWhy('') },
     })

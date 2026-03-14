@@ -61,7 +61,7 @@ export function OnboardingPage() {
       })
       return
     }
-    advanceOnboarding.mutate({ step: step + 1 })
+    advanceOnboarding.mutate(String(step + 1))
     setDirection(1)
     setStep(s => s + 1)
   }

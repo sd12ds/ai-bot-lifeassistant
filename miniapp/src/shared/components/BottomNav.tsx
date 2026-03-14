@@ -18,7 +18,7 @@ const NAV_ITEMS: NavItem[] = [
   { path: '/calendar', icon: CalendarDays, label: 'Календарь',  enabled: true },
   { path: '/nutrition',icon: Utensils,    label: 'Питание',    enabled: true },
   { path: '/fitness',  icon: Dumbbell,    label: 'Фитнес',     enabled: true },
-  { path: '/coaching', icon: Target,      label: 'Коучинг',    enabled: false },
+  { path: '/coaching', icon: Target,      label: 'Коучинг',    enabled: true  },
 ]
 
 export function BottomNav() {

@@ -7,7 +7,9 @@ import { useNavigate } from 'react-router-dom'
 import { motion, AnimatePresence } from 'framer-motion'
 import { ArrowLeft, Plus, Loader2 } from 'lucide-react'
 import { useHabits, useLogHabit, useMissHabit, useCreateHabit, useHabitTemplates } from '../../api/coaching'
-import type { CreateHabitDTO } from '../../api/coaching'
+import type { CreateHabitDto } from '../../api/coaching'
+import { usePrompts } from '../../api/coaching'
+import { CoachPromptBubble } from './components/CoachPromptBubble'
 import { HabitCard } from './components/HabitCard'
 
 type Mode = 'today' | 'all'
@@ -21,14 +23,14 @@ export function HabitsPage() {
 
   const { data: habits = [], isLoading } = useHabits()
   const { data: templates = [] } = useHabitTemplates()
-  const { data: prompts = [] } = usePrompts(empty_habits)
+  const { data: prompts = [] } = usePrompts('habits')
   const logHabit = useLogHabit()
   const missHabit = useMissHabit()
   const createHabit = useCreateHabit()
 
   const handleCreate = () => {
     if (!newTitle.trim()) return
-    const dto: CreateHabitDTO = { title: newTitle.trim(), emoji: newEmoji }
+    const dto: CreateHabitDto = { title: newTitle.trim(), emoji: newEmoji }
     createHabit.mutate(dto, {
       onSuccess: () => { setShowCreate(false); setNewTitle(''); setNewEmoji('🎯') },
     })
@@ -104,8 +106,8 @@ export function HabitsPage() {
                       ? (h.today_done === true ? true : h.today_done === false ? false : undefined)
                       : undefined
                   }
-                  onDone={mode === 'today' ? () => logHabit.mutate({ habitId: h.id, data: { note: '' } }) : undefined}
-                  onMiss={mode === 'today' ? () => missHabit.mutate({ habitId: h.id, data: { reason: '' } }) : undefined}
+                  onDone={mode === 'today' ? () => logHabit.mutate(h.id) : undefined}
+                  onMiss={mode === 'today' ? () => missHabit.mutate(h.id) : undefined}
                   showStats={mode === 'all'}
                 />
               </motion.div>
@@ -142,7 +144,7 @@ export function HabitsPage() {
                 <div>
                   <p className="text-xs text-gray-400 mb-2 uppercase tracking-wide">Быстрый выбор</p>
                   <div className="flex flex-wrap gap-2">
-                    {templates.slice(0, 8).map(t => (
+                    {templates.slice(0, 8).map((t: any) => (
                       <button
                         key={t.id}
                         onClick={() => { setNewTitle(t.title); setNewEmoji(t.emoji ?? '🎯') }}

@@ -31,6 +31,11 @@ export interface Goal {
   coaching_notes: string | null
   created_at: string
   updated_at: string
+  // Доп. поля для GoalCard (опциональны — могут не возвращаться в compact dict)
+  deadline?: string | null
+  milestones_completed?: number
+  milestones_total?: number
+  ai_insight?: string | null
 }
 
 export interface Milestone {
@@ -60,6 +65,10 @@ export interface Habit {
   last_logged_at: string | null
   goal_id: number | null
   created_at: string
+  // Доп. поля (опциональны)
+  emoji?: string
+  completion_rate?: number
+  today_done?: boolean
 }
 
 export interface CheckIn {
@@ -85,6 +94,10 @@ export interface Review {
   ai_assessment: string | null
   score: number | null
   created_at: string
+  // Доп. поля
+  ai_summary?: string | null
+  goals_summary?: string | null
+  next_week_priorities?: string | null
 }
 
 export interface CoachingProfile {
@@ -101,7 +114,7 @@ export interface CoachingProfile {
 export interface DashboardData {
   state: CoachingState
   state_score: number
-  habits_today: Array<{ id: number; title: string; current_streak: number; longest_streak: number; area: string | null }>
+  habits_today: Array<{ id: number; title: string; current_streak: number; longest_streak: number; area: string | null; today_done?: boolean }>
   goals_active: Array<{ id: number; title: string; progress_pct: number; area: string | null; target_date: string | null; is_frozen: boolean; status: string }>
   top_insight: { id: number; insight_type: string; severity: string; title: string; body: string } | null
   recommendations: Array<{ id: number; rec_type: string; title: string; body: string; action_type: string }>
@@ -127,6 +140,10 @@ export interface WeeklyAnalytics {
   checkins_this_week: number
   dropout_risk: number
   state: CoachingState
+  // Доп. поля (расширенная аналитика)
+  checkins_count?: number
+  avg_energy?: number
+  habits_stats?: Array<{ id: number; title: string; emoji?: string; rate: number }>
 }
 
 // ── DTOs ──────────────────────────────────────────────────────────────────────
@@ -163,6 +180,7 @@ export interface CreateHabitDto {
   reward?: string
   best_time?: string
   goal_id?: number
+  emoji?: string
 }
 
 export interface CreateCheckInDto {
@@ -173,6 +191,10 @@ export interface CreateCheckInDto {
   wins?: string
   goal_id?: number
   progress_pct?: number
+  mood_level?: number
+  reflection?: string
+  next_priorities?: string
+  is_extended?: boolean
 }
 
 export interface UpdateProfileDto {
@@ -359,6 +381,7 @@ export const coachingKeys = {
   onboarding: ['coaching', 'onboarding'] as const,
   weeklyAnalytics: ['coaching', 'analytics-weekly'] as const,
   prompts: (ctx?: string) => ['coaching', 'prompts', ctx] as const,
+  insights: ['coaching', 'insights'] as const,
 }
 
 // -- Dashboard --

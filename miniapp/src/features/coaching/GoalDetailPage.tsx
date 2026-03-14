@@ -10,7 +10,6 @@ import {
   useFreezeGoal, useResumeGoal, useAchieveGoal,
   useCheckInHistory,
 } from '../../api/coaching'
-import { StateIndicator } from './components/StateIndicator'
 import { CoachPromptBubble } from './components/CoachPromptBubble'
 
 export function GoalDetailPage() {
@@ -20,7 +19,7 @@ export function GoalDetailPage() {
 
   const { data: goal, isLoading } = useGoal(goalId)
   const { data: milestones = [] } = useMilestones(goalId)
-  const { data: history = [] } = useCheckInHistory({ limit: 5 })
+  const { data: history = [] } = useCheckInHistory(5)
 
   const completeMilestone = useCompleteMilestone()
   const freezeGoal = useFreezeGoal()
@@ -81,14 +80,14 @@ export function GoalDetailPage() {
                 <motion.button
                   key={m.id}
                   whileTap={{ scale: 0.97 }}
-                  onClick={() => !m.is_completed && completeMilestone.mutate({ goalId, milestoneId: m.id })}
+                  onClick={() => !(m.status === "done") && completeMilestone.mutate(m.id)}
                   className="w-full flex items-center gap-3 p-2 rounded-xl hover:bg-gray-50 transition-colors text-left"
                 >
-                  {m.is_completed
+                  {(m.status === "done")
                     ? <CheckSquare size={20} className="text-green-500 shrink-0" />
                     : <Square size={20} className="text-gray-300 shrink-0" />
                   }
-                  <span className={`text-sm ${m.is_completed ? 'line-through text-gray-400' : 'text-gray-700'}`}>
+                  <span className={`text-sm ${(m.status === "done") ? 'line-through text-gray-400' : 'text-gray-700'}`}>
                     {m.title}
                   </span>
                 </motion.button>
@@ -109,7 +108,7 @@ export function GoalDetailPage() {
                     <span className="text-xs text-gray-400">{c.energy_level ?? '-'}</span>
                   </div>
                   <div className="flex-1 min-w-0">
-                    <p className="text-xs text-gray-500 truncate">{c.reflection?.slice(0, 80) ?? '—'}</p>
+                    <p className="text-xs text-gray-500 truncate">{c.notes?.slice(0, 80) ?? '—'}</p>
                     <p className="text-xs text-gray-300 mt-0.5">{new Date(c.created_at).toLocaleDateString('ru-RU')}</p>
                   </div>
                 </div>
@@ -129,7 +128,7 @@ export function GoalDetailPage() {
         {goal.status === 'active' && (
           <>
             <button
-              onClick={() => freezeGoal.mutate({ goalId, data: { reason: 'Временная пауза' } })}
+              onClick={() => freezeGoal.mutate(goalId)}
               className="flex-1 flex items-center justify-center gap-1.5 bg-gray-100 text-gray-600 rounded-xl py-3 text-sm font-medium"
             >
               <Snowflake size={16} /> Заморозить

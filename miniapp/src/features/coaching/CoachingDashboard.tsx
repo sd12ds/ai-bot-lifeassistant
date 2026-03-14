@@ -55,10 +55,10 @@ export function CoachingDashboard() {
       </div>
 
       <div className="px-4 space-y-4">
-        {/* Карточка состояния */}
-        {dash.coaching_state && (
+        {/* Карточка состояния — поле называется state, а не coaching_state */}
+        {dash.state && (
           <motion.div initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }}>
-            <StateIndicator state={dash.coaching_state} score={dash.weekly_score ?? 0} />
+            <StateIndicator state={dash.state} score={dash.weekly_score ?? 0} />
           </motion.div>
         )}
 
@@ -77,27 +77,28 @@ export function CoachingDashboard() {
               {dash.habits_today.map((h) => (
                 <HabitCard
                   key={h.id}
-                  habit={h}
+                  habit={h as any}
+                  /* today_done теперь возвращается backend'ом в _habit_to_dict */
                   todayStatus={h.today_done === true ? true : h.today_done === false ? false : undefined}
-                  onDone={() => logHabit.mutate({ habitId: h.id, data: { note: '' } })}
-                  onMiss={() => missHabit.mutate({ habitId: h.id, data: { reason: '' } })}
+                  onDone={() => logHabit.mutate(h.id)}
+                  onMiss={() => missHabit.mutate(h.id)}
                 />
               ))}
             </div>
           </section>
         )}
 
-        {/* AI-инсайт */}
-        {dash.ai_insight && (
+        {/* AI-инсайт — поле называется top_insight (объект), а не ai_insight (строка) */}
+        {dash.top_insight?.body && (
           <CoachPromptBubble
-            text={dash.ai_insight}
+            text={dash.top_insight.body}
             action="Все инсайты"
             onAction={() => navigate('/coaching/insights')}
           />
         )}
 
-        {/* Активные цели */}
-        {dash.active_goals && dash.active_goals.length > 0 && (
+        {/* Активные цели — поле называется goals_active, а не active_goals */}
+        {dash.goals_active && dash.goals_active.length > 0 && (
           <section>
             <div className="flex items-center justify-between mb-2">
               <h2 className="font-bold text-gray-800 flex items-center gap-1.5">
@@ -108,10 +109,10 @@ export function CoachingDashboard() {
               </button>
             </div>
             <div className="space-y-2">
-              {dash.active_goals.slice(0, 3).map((g) => (
+              {dash.goals_active.slice(0, 3).map((g) => (
                 <GoalCard
                   key={g.id}
-                  goal={g}
+                  goal={g as any}
                   compact
                   onClick={() => navigate(`/coaching/goals/${g.id}`)}
                 />
@@ -120,7 +121,7 @@ export function CoachingDashboard() {
           </section>
         )}
 
-        {/* Рекомендации */}
+        {/* Рекомендации — поля body и rec_type, а не text и type */}
         {dash.recommendations && dash.recommendations.length > 0 && (
           <section>
             <h2 className="font-bold text-gray-800 flex items-center gap-1.5 mb-2">
@@ -129,9 +130,9 @@ export function CoachingDashboard() {
             <div className="space-y-2">
               {dash.recommendations.slice(0, 2).map((r) => (
                 <div key={r.id} className="bg-white rounded-2xl p-4 shadow-sm">
-                  <p className="text-sm text-gray-700">{r.text}</p>
+                  <p className="text-sm text-gray-700">{r.body}</p>
                   <div className="flex items-center justify-between mt-2">
-                    <span className="text-xs text-gray-400">{r.type}</span>
+                    <span className="text-xs text-gray-400">{r.rec_type}</span>
                     <button
                       onClick={() => dismissRec.mutate(r.id)}
                       className="text-xs text-gray-400 hover:text-gray-600"

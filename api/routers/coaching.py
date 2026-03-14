@@ -330,6 +330,7 @@ def _habit_to_dict(h) -> dict:
         "current_streak": h.current_streak,
         "longest_streak": h.longest_streak,
         "area": h.area,
+        "today_done": (h.last_logged_at is not None and h.last_logged_at.date() == __import__("datetime").date.today()),
     }
 
 

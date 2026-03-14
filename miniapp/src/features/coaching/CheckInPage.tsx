@@ -7,7 +7,7 @@ import { useNavigate } from 'react-router-dom'
 import { motion } from 'framer-motion'
 import { ArrowLeft, ChevronDown, ChevronUp, Send } from 'lucide-react'
 import { useCreateCheckIn } from '../../api/coaching'
-import type { CreateCheckInDTO } from '../../api/coaching'
+import type { CreateCheckInDto } from '../../api/coaching'
 
 const ENERGY_LABELS = ['😴', '😔', '😐', '🙂', '😊', '⚡', '🚀', '💪', '🔥', '🌟']
 const MOOD_LABELS   = ['😢', '😕', '😐', '🙂', '😄', '😁', '🥳', '💃', '🤩', '😇']
@@ -44,7 +44,7 @@ export function CheckInPage() {
   const createCheckIn = useCreateCheckIn()
 
   const handleSubmit = () => {
-    const dto: CreateCheckInDTO = {
+    const dto: CreateCheckInDto = {
       energy_level: energy,
       mood_level: mood,
       reflection: reflection.trim() || undefined,
