@@ -107,6 +107,38 @@ _REMINDER_ANTI = {
 }
 
 
+
+
+_COACHING_STRONG = {
+    # Коучинг и цели
+    'коучинг', 'коуч',
+    'поставить цель', 'поставь цель', 'новая цель', 'моя цель',
+    'прогресс по цели', 'достиг цели', 'выполнил цель',
+    # Привычки
+    'завести привычку', 'создать привычку', 'новая привычка',
+    'стрик', 'серия дней', 'трекер привычек',
+    # Check-in и обзоры
+    'чекин', 'check-in', 'checkin', 'ежедневный обзор',
+    'недельный обзор', 'review цел',
+    # Явные коучинговые запросы
+    'план достижений', 'этапы цели', 'milestone',
+    'заморозить цель', 'возобновить цель',
+    'habit tracker', 'goal tracker',
+}
+
+_COACHING_NORMAL = {
+    'цель', 'цели', 'привычк', 'мотивация', 'мотивацию',
+    'достижен', 'прогресс',
+    'пропустил привычку', 'пропустила привычку',
+    'выполнил привычку', 'выполнила привычку',
+    'отметить привычку',
+}
+
+_COACHING_ANTI = {
+    'напомни', 'задач', 'тренировк', 'упражнен',
+    'съел', 'калори', 'завтрак', 'обед', 'ужин',
+}
+
 def classify_by_rules(text: str) -> str | None:
     """Определяет домен по ключевым словам.
     
@@ -125,6 +157,11 @@ def classify_by_rules(text: str) -> str | None:
     
     rem_strong = _count_matches(low, _REMINDER_STRONG)
     rem_anti = _count_matches(low, _REMINDER_ANTI)
+
+    # Coaching-счётчики
+    coach_strong = _count_matches(low, _COACHING_STRONG)
+    coach_normal = _count_matches(low, _COACHING_NORMAL)
+    coach_anti = _count_matches(low, _COACHING_ANTI)
     
     # Приоритет 1: сильные маркеры без антимаркеров
     if nutr_strong > 0 and nutr_anti == 0:
@@ -138,6 +175,10 @@ def classify_by_rules(text: str) -> str | None:
     if rem_strong > 0 and rem_anti == 0:
         logger.info("PRE-CLASSIFY → reminder (strong=%d)", rem_strong)
         return "reminder"
+
+    if coach_strong > 0 and coach_anti == 0:
+        logger.info("PRE-CLASSIFY → coaching (strong=%d)", coach_strong)
+        return "coaching"
     
     # Приоритет 2: >= 2 обычных маркера без конфликтов
     if nutr_normal >= 2 and nutr_anti == 0 and rem_strong == 0 and fit_strong == 0:
@@ -147,6 +188,10 @@ def classify_by_rules(text: str) -> str | None:
     if fit_normal >= 2 and nutr_strong == 0 and rem_strong == 0:
         logger.info("PRE-CLASSIFY → fitness (normal=%d)", fit_normal)
         return "fitness"
+
+    if coach_normal >= 2 and coach_anti == 0 and fit_strong == 0 and nutr_strong == 0 and rem_strong == 0:
+        logger.info("PRE-CLASSIFY → coaching (normal=%d)", coach_normal)
+        return "coaching"
     
     # Приоритет 3: один сильный маркер с антимаркерами — конфликт, отдаём LLM
     logger.debug(
