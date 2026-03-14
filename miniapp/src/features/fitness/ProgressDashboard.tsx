@@ -3,16 +3,16 @@
  * Вес тела (линейный), объём по неделям (столбцы + overlay линия sessions/week),
  * прогресс по упражнению (линейный), рекорды, streak.
  */
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
-import { ArrowLeft, Trophy, ChevronDown, Sparkles, Loader2 } from 'lucide-react'
+import { ArrowLeft, Trophy, Sparkles, Loader2 } from 'lucide-react'
 import {
   ResponsiveContainer, LineChart, Line, Bar, ComposedChart,
   XAxis, YAxis, CartesianGrid, Tooltip, Area, AreaChart,
 } from 'recharts'
 import {
   useBodyMetrics, useWeeklyVolume, useExerciseProgress,
-  useFitnessStats, useRecords, useExerciseSearch, useAiAnalyzeProgress,
+  useFitnessStats, useRecords, useAiAnalyzeProgress,
   type AiAnalyzeProgressOut,
 } from '../../api/fitness'
 import { GlassCard } from '../../shared/ui/GlassCard'
@@ -42,15 +42,21 @@ export function ProgressDashboard() {
   // Данные для графиков
   const { data: bodyMetrics } = useBodyMetrics(90)
   const { data: weeklyVolume } = useWeeklyVolume(12)
-  const { data: stats } = useFitnessStats(30)
+  const { data: stats } = useFitnessStats(90)
   const { data: records } = useRecords()
 
   // Прогресс по конкретному упражнению
   const [selectedExId, setSelectedExId] = useState<number>(0)
-  const [exerciseQuery, setExerciseQuery] = useState('')
-  const [showExPicker, setShowExPicker] = useState(false)
   const [selectedExName, setSelectedExName] = useState('')
-  const { data: exercisesList } = useExerciseSearch(exerciseQuery)
+
+  // Автоматически выбираем первое упражнение из топа при загрузке данных
+  useEffect(() => {
+    if (selectedExId === 0 && stats?.top_exercises?.length) {
+      const first = stats.top_exercises[0]
+      setSelectedExId(first.exercise_id)
+      setSelectedExName(first.name)
+    }
+  }, [stats])
 
   // AI анализ прогресса
   const [aiAnalysis, setAiAnalysis] = useState<AiAnalyzeProgressOut | null>(null)
@@ -96,8 +102,6 @@ export function ProgressDashboard() {
   const handleExSelect = (id: number, name: string) => {
     setSelectedExId(id)
     setSelectedExName(name)
-    setShowExPicker(false)
-    setExerciseQuery('')
   }
 
   return (
@@ -276,100 +280,110 @@ export function ProgressDashboard() {
         )}
 
         {/* ── Прогресс по упражнению ── */}
-        <GlassCard>
-          <div className="flex items-center justify-between mb-3">
-            <span className="text-sm font-medium" style={{ color: 'var(--app-text)' }}>
-              📈 Прогресс по упражнению
-            </span>
-          </div>
+        {stats?.top_exercises && stats.top_exercises.length > 0 && (
+          <GlassCard>
+            <div className="flex items-center justify-between mb-3">
+              <span className="text-sm font-medium" style={{ color: 'var(--app-text)' }}>
+                📈 Прогресс
+              </span>
+              {selectedExName && (
+                <span className="text-xs font-medium px-2 py-0.5 rounded-full"
+                  style={{ background: 'rgba(34,197,94,0.15)', color: '#22c55e' }}>
+                  {selectedExName}
+                </span>
+              )}
+            </div>
 
-          {/* Выбор упражнения */}
-          <div className="relative mb-3">
-            <button
-              onClick={() => setShowExPicker(!showExPicker)}
-              className="w-full flex items-center justify-between px-3 py-2.5 rounded-xl border border-white/[0.08] text-sm"
-              style={{ background: 'rgba(255,255,255,0.04)', color: 'var(--app-text)' }}
-            >
-              <span>{selectedExName || 'Выбери упражнение...'}</span>
-              <ChevronDown size={16} style={{ color: 'var(--app-hint)' }} />
-            </button>
+            {/* Горизонтальный скролл чипов — топ упражнений пользователя */}
+            <div className="flex gap-2 overflow-x-auto pb-2 mb-3 -mx-1 px-1"
+              style={{ scrollbarWidth: 'none' }}>
+              {stats.top_exercises.map((ex) => (
+                <button
+                  key={ex.exercise_id}
+                  onClick={() => handleExSelect(ex.exercise_id, ex.name)}
+                  className="flex-shrink-0 px-3 py-1.5 rounded-xl text-xs font-medium whitespace-nowrap transition-all"
+                  style={{
+                    background: selectedExId === ex.exercise_id
+                      ? 'rgba(34,197,94,0.2)'
+                      : 'rgba(255,255,255,0.06)',
+                    color: selectedExId === ex.exercise_id ? '#22c55e' : 'var(--app-hint)',
+                    border: selectedExId === ex.exercise_id
+                      ? '1px solid rgba(34,197,94,0.35)'
+                      : '1px solid transparent',
+                  }}
+                >
+                  {ex.name}
+                </button>
+              ))}
+            </div>
 
-            {/* Выпадающий поиск */}
-            {showExPicker && (
-              <div
-                className="absolute top-full left-0 right-0 z-10 mt-1 rounded-xl border border-white/[0.08] overflow-hidden"
-                style={{ background: 'var(--glass-bg)', maxHeight: 240 }}
-              >
-                <input
-                  type="text"
-                  value={exerciseQuery}
-                  onChange={(e) => setExerciseQuery(e.target.value)}
-                  placeholder="Поиск..."
-                  className="w-full px-3 py-2.5 bg-transparent text-sm outline-none border-b border-white/[0.06]"
-                  style={{ color: 'var(--app-text)' }}
-                  autoFocus
-                />
-                <div className="overflow-y-auto" style={{ maxHeight: 192 }}>
-                  {exercisesList?.map((ex) => (
-                    <button
-                      key={ex.id}
-                      onClick={() => handleExSelect(ex.id, ex.name)}
-                      className="w-full text-left px-3 py-2 text-sm hover:bg-white/[0.04]"
-                      style={{ color: 'var(--app-text)' }}
-                    >
-                      {ex.name}
-                    </button>
-                  ))}
-                  {exerciseQuery.length < 2 && (
-                    <div className="px-3 py-4 text-xs text-center" style={{ color: 'var(--app-hint)' }}>
-                      Введи название (мин. 2 символа)
-                    </div>
-                  )}
+            {/* График прогресса выбранного упражнения */}
+            {exProgressData.length > 1 ? (
+              <>
+                <div className="h-[180px]">
+                  <ResponsiveContainer width="100%" height="100%">
+                    <LineChart data={exProgressData}>
+                      <CartesianGrid strokeDasharray="3 3" stroke="rgba(255,255,255,0.06)" />
+                      <XAxis
+                        dataKey="date"
+                        tick={{ fill: 'rgba(255,255,255,0.4)', fontSize: 10 }}
+                        axisLine={false}
+                        tickLine={false}
+                      />
+                      <YAxis
+                        tick={{ fill: 'rgba(255,255,255,0.4)', fontSize: 10 }}
+                        axisLine={false}
+                        tickLine={false}
+                        width={35}
+                        tickFormatter={(v) => `${v}кг`}
+                      />
+                      <Tooltip content={<ChartTooltip />} />
+                      <Line
+                        type="monotone"
+                        dataKey="weight"
+                        stroke="#22c55e"
+                        strokeWidth={2.5}
+                        dot={{ r: 4, fill: '#22c55e', strokeWidth: 0 }}
+                        activeDot={{ r: 6 }}
+                        name="Макс вес"
+                      />
+                    </LineChart>
+                  </ResponsiveContainer>
                 </div>
+                {/* Последнее значение + динамика */}
+                {exProgressData.length >= 2 && (() => {
+                  const last = exProgressData[exProgressData.length - 1]
+                  const prev = exProgressData[exProgressData.length - 2]
+                  const diff = last.weight && prev.weight
+                    ? Math.round((last.weight - prev.weight) * 10) / 10
+                    : null
+                  return (
+                    <div className="flex items-center justify-between mt-2 px-1">
+                      <span className="text-xs" style={{ color: 'var(--app-hint)' }}>
+                        Текущий макс
+                      </span>
+                      <div className="flex items-center gap-2">
+                        <span className="text-sm font-bold" style={{ color: 'var(--app-text)' }}>
+                          {last.weight} кг
+                        </span>
+                        {diff !== null && diff !== 0 && (
+                          <span className="text-xs font-medium"
+                            style={{ color: diff > 0 ? '#22c55e' : '#f87171' }}>
+                            {diff > 0 ? '+' : ''}{diff} кг
+                          </span>
+                        )}
+                      </div>
+                    </div>
+                  )
+                })()}
+              </>
+            ) : (
+              <div className="py-5 text-center text-sm" style={{ color: 'var(--app-hint)' }}>
+                Недостаточно данных — тренируйся больше 🏋️
               </div>
             )}
-          </div>
-
-          {/* График прогресса */}
-          {exProgressData.length > 1 ? (
-            <div className="h-[180px]">
-              <ResponsiveContainer width="100%" height="100%">
-                <LineChart data={exProgressData}>
-                  <CartesianGrid strokeDasharray="3 3" stroke="rgba(255,255,255,0.06)" />
-                  <XAxis
-                    dataKey="date"
-                    tick={{ fill: 'rgba(255,255,255,0.4)', fontSize: 10 }}
-                    axisLine={false}
-                    tickLine={false}
-                  />
-                  <YAxis
-                    tick={{ fill: 'rgba(255,255,255,0.4)', fontSize: 10 }}
-                    axisLine={false}
-                    tickLine={false}
-                    width={35}
-                  />
-                  <Tooltip content={<ChartTooltip />} />
-                  <Line
-                    type="monotone"
-                    dataKey="weight"
-                    stroke="#22c55e"
-                    strokeWidth={2}
-                    dot={{ r: 3, fill: '#22c55e' }}
-                    name="Макс вес"
-                  />
-                </LineChart>
-              </ResponsiveContainer>
-            </div>
-          ) : selectedExId > 0 ? (
-            <div className="py-6 text-center text-sm" style={{ color: 'var(--app-hint)' }}>
-              Недостаточно данных для графика
-            </div>
-          ) : (
-            <div className="py-6 text-center text-sm" style={{ color: 'var(--app-hint)' }}>
-              Выбери упражнение, чтобы увидеть прогресс
-            </div>
-          )}
-        </GlassCard>
+          </GlassCard>
+        )}
 
         {/* ── AI анализ прогресса ── */}
         <GlassCard>
