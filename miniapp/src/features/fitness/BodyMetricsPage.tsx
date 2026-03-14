@@ -17,6 +17,7 @@ import {
   type BodyMetricCreateDto, type FitnessGoal,
 } from '../../api/fitness'
 import { GlassCard } from '../../shared/ui/GlassCard'
+import { Toast } from '../../shared/ui/Toast'
 
 /** Метки целей */
 const GOAL_TYPE_LABELS: Record<string, { label: string; icon: string }> = {
@@ -84,6 +85,16 @@ export function BodyMetricsPage() {
   const deletePhoto = useDeletePhoto()
   const [showCompare, setShowCompare] = useState(false)
 
+  // Состояние toast-уведомлений (message + type)
+  const [toastMsg, setToastMsg] = useState<string | null>(null)
+  const [toastType, setToastType] = useState<'success' | 'error'>('success')
+
+  // Хелпер для показа toast
+  const showToast = (msg: string, type: 'success' | 'error' = 'success') => {
+    setToastMsg(msg)
+    setToastType(type)
+  }
+
   // Загрузка фото через file input
   const handlePhotoUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0]
@@ -114,14 +125,22 @@ export function BodyMetricsPage() {
 
   // Сохранить замер
   const handleSave = async () => {
-    const hasData = Object.values(form).some((v) => v !== null && v !== undefined)
-    if (!hasData) return
+    // Проверяем наличие данных: исключаем null, undefined и пустые строки
+    const hasData = Object.values(form).some((v) => v !== null && v !== undefined && v !== '')
+    if (!hasData) {
+      showToast('Заполните хотя бы одно поле', 'error')
+      return
+    }
     try {
       await createMetric.mutateAsync(form)
       setForm({})
       setShowForm(false)
-    } catch (e) {
+      showToast('Замер сохранён ✓')
+    } catch (e: any) {
       console.error('Ошибка сохранения замера:', e)
+      // Показываем пользователю понятное сообщение об ошибке
+      const detail = e?.response?.data?.detail
+      showToast(typeof detail === 'string' ? detail : 'Ошибка при сохранении замера', 'error')
     }
   }
 
@@ -144,8 +163,11 @@ export function BodyMetricsPage() {
     try {
       await updateGoals.mutateAsync(goalForm)
       setShowGoalForm(false)
-    } catch (e) {
+      showToast('Цель обновлена ✓')
+    } catch (e: any) {
       console.error('Ошибка сохранения цели:', e)
+      const detail = e?.response?.data?.detail
+      showToast(typeof detail === 'string' ? detail : 'Ошибка при сохранении цели', 'error')
     }
   }
 
@@ -845,6 +867,8 @@ export function BodyMetricsPage() {
           </div>
         )}
       </div>
+      {/* Toast-уведомления об успехе или ошибке */}
+      <Toast message={toastMsg} onClose={() => setToastMsg(null)} type={toastType} />
     </div>
   )
 }

@@ -12,15 +12,21 @@ interface ToastProps {
   onClose: () => void
   /** Время показа (мс), по умолчанию 2500 */
   duration?: number
+  /** Тип уведомления: success (по умолчанию) или error */
+  type?: 'success' | 'error'
 }
 
-export function Toast({ message, onClose, duration = 2500 }: ToastProps) {
+export function Toast({ message, onClose, duration = 2500, type = 'success' }: ToastProps) {
   // Автоматически скрываем через duration мс
   useEffect(() => {
     if (!message) return
     const timer = setTimeout(onClose, duration)
     return () => clearTimeout(timer)
   }, [message, onClose, duration])
+
+  // Цвет фона зависит от типа уведомления
+  const background =
+    type === 'error' ? 'rgba(239,68,68,0.95)' : 'rgba(34,197,94,0.95)'
 
   return (
     <AnimatePresence>
@@ -36,7 +42,7 @@ export function Toast({ message, onClose, duration = 2500 }: ToastProps) {
           <div
             className="px-4 py-2.5 rounded-xl text-sm font-medium shadow-lg"
             style={{
-              background: 'rgba(34,197,94,0.95)',
+              background,
               color: '#fff',
               backdropFilter: 'blur(8px)',
             }}
