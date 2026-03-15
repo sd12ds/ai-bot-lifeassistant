@@ -131,3 +131,9 @@
 ## [9ac988f] — 2026-03-15 12:15 (МСК)
 📦 Редизайн CoachingDashboard под тёмную тему приложения (GlassCard, CSS-vars); фикс NameError в coaching_handler (execute_orchestration_action)
 
+
+## [4b88954] — 2026-03-15 12:36 (МСК)
+📦 Редизайн всех страниц коучинга под тёмную тему: GoalCard, HabitCard, GoalsPage, GoalDetailPage, HabitsPage, WeeklyReviewPage, InsightsPage, CheckInPage, OnboardingPage — glass morphism, var(--app-text/hint/glass-bg), inline styles вместо Tailwind bg-*/text-*
+
+## [2993739] — 2026-03-15 13:14 (МСК)
+📦 Реализованы кнопки коучинга §9 архитектуры: кнопка «🎯 Коучинг» в главном меню, mood-labels в check-in, мотивационное меню, follow-up после выбора настроения, кнопки после создания цели и достижения, snooze для привычек, статус целей в review, контекстные состояния (overload/recovery/momentum)
