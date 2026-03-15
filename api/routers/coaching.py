@@ -196,7 +196,7 @@ class CheckInCreateDto(BaseModel):
     goal_id: Optional[int] = None
     progress_pct: Optional[int] = Field(None, ge=0, le=100)
     time_slot: str = "manual"               # morning|midday|evening|manual
-    check_date: Optional[str] = None        # YYYY-MM-DD, если не указана — сегодня
+    check_date: Optional[date] = None         # дата чекина (date-объект), если не указана — сегодня
 
 
 class CheckInPatchDto(BaseModel):
@@ -219,7 +219,7 @@ class CheckInOut(BaseModel):
     wins: Optional[str] = None
     progress_pct: Optional[int] = None
     time_slot: str = "manual"
-    check_date: Optional[str] = None        # YYYY-MM-DD
+    check_date: Optional[date] = None         # дата чекина (date-объект)
     created_at: datetime
 
     class Config:
@@ -855,11 +855,13 @@ async def create_checkin(
     """Создать новый чекин (привязан к дате и временному слоту)."""
     from datetime import date as _date_t
     data = body.model_dump(exclude_none=True)
-    # Определяем check_date: из запроса или сегодня
-    check_date_str = data.pop("check_date", None)
-    if check_date_str:
+    # Определяем check_date: из запроса или сегодня (Pydantic уже парсит str -> date)
+    check_date_raw = data.pop("check_date", None)
+    if isinstance(check_date_raw, _date_t):
+        check_date_val = check_date_raw          # уже date-объект (Pydantic v2 coercion)
+    elif isinstance(check_date_raw, str):
         try:
-            check_date_val = _date_t.fromisoformat(check_date_str)
+            check_date_val = _date_t.fromisoformat(check_date_raw)
         except ValueError:
             check_date_val = _date_t.today()
     else:

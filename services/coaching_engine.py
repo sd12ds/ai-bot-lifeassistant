@@ -12,7 +12,7 @@ Coaching Engine — вычислительное ядро коучинга.
 from __future__ import annotations
 
 import logging
-from datetime import datetime, date, timedelta
+from datetime import datetime, date, timedelta, timezone
 from typing import Optional
 
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -121,7 +121,7 @@ async def compute_risk_scores(
     Возвращает: {"dropout": 0.0-1.0, "overload": ..., "goal_failure": ..., "habit_death": ...}
     Threshold для HIGH RISK: > 0.7
     """
-    now = datetime.utcnow()
+    now = datetime.now(timezone.utc)
     risks = {}
 
     # ── 1. Dropout risk: no_checkin_days×0.3 + habit_drop×0.25 + goal_stale×0.25 + task_spike×0.2 ──
@@ -196,7 +196,7 @@ async def _compute_habit_completion_drop(
     session: AsyncSession, user_id: int
 ) -> float:
     """Вспомогательный: насколько упала выполняемость привычек последние 7 vs 14 дней."""
-    now = datetime.utcnow()
+    now = datetime.now(timezone.utc)
     week_ago = now - timedelta(days=7)
     two_weeks_ago = now - timedelta(days=14)
 
