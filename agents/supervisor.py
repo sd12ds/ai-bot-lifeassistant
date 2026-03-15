@@ -148,7 +148,7 @@ async def classify_intent(state: SupervisorState) -> SupervisorState:
         agent_type = "reminder"
 
     # Защита от неожиданных значений
-    if agent_type not in {"calendar", "reminder", "nutrition", "fitness", "crm", "team", "assistant"}:
+    if agent_type not in {"calendar", "reminder", "nutrition", "fitness", "coaching", "crm", "team", "assistant"}:
         agent_type = "assistant"
 
     # Сохраняем выбранный агент для контекста следующего сообщения
@@ -255,6 +255,12 @@ def build_supervisor(
         from agents.personal.fitness_agent import build_fitness_agent
         agent = build_fitness_agent(checkpointer=get_checkpointer(), user_id=state["user_id"])
         return await _run_agent(agent, state)
+    async def run_coaching(state):
+        # Динамически создаём coaching-агента под user_id
+        from agents.personal.coaching_agent import build_coaching_agent
+        agent = build_coaching_agent(checkpointer=get_checkpointer(), user_id=state["user_id"])
+        return await _run_agent(agent, state)
+
     async def run_assistant(state):
         return await _run_agent(assistant_agent, state)
 
@@ -262,6 +268,7 @@ def build_supervisor(
     builder.add_node("reminder", run_reminder)
     builder.add_node("nutrition", run_nutrition)
     builder.add_node("fitness", run_fitness)
+    builder.add_node("coaching", run_coaching)
     builder.add_node("assistant", run_assistant)
 
     # Бизнес-агенты (если переданы — используем, иначе маршрутируем в assistant)
@@ -289,13 +296,14 @@ def build_supervisor(
             "reminder": "reminder",
             "nutrition": "nutrition",
             "fitness": "fitness",
+            "coaching": "coaching",
             "crm": "crm",
             "team": "team",
             "assistant": "assistant",
         },
     )
     # Все агенты завершаются
-    for node in ["calendar", "reminder", "nutrition", "fitness", "crm", "team", "assistant"]:
+    for node in ["calendar", "reminder", "nutrition", "fitness", "coaching", "crm", "team", "assistant"]:
         builder.add_edge(node, END)
 
     return builder
