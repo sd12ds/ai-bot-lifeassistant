@@ -106,14 +106,24 @@ async def classify_intent(state: SupervisorState) -> SupervisorState:
 
     # ── Уровень 1: Rule-based pre-classifier ──────────────────────────────
     from bot.core.intent_classifier import classify_by_rules
+    from bot.core.session_context import get_context as _get_ctx
     rule_result = classify_by_rules(user_text)
     if rule_result:
         _last_agent_per_user[user_id] = rule_result
+        # Если правило определило домен ОТЛИЧНЫЙ от текущего sticky —
+        # сбрасываем старый sticky и активируем новый (3 мин).
+        # Это гарантирует, что follow-up ("завтра в 13" после "напомни...")
+        # попадёт к правильному агенту, а не к застрявшему старому sticky.
+        _ctx_rb = _get_ctx(user_id)
+        if _ctx_rb:
+            if _ctx_rb.is_domain_sticky() and _ctx_rb.active_domain != rule_result:
+                _ctx_rb.clear_sticky()
+            _ctx_rb.active_domain = rule_result
+            _ctx_rb.activate_sticky(minutes=3)
         logger.info("user=%s → %s (rule-based)", user_id, rule_result)
         return {**state, "agent_type": rule_result}
 
     # ── Уровень 2: Sticky domain ─────────────────────────────────────────
-    from bot.core.session_context import get_context as _get_ctx
     ctx = _get_ctx(user_id)
     if ctx and ctx.is_domain_sticky():
         sticky = ctx.active_domain
@@ -151,8 +161,11 @@ async def classify_intent(state: SupervisorState) -> SupervisorState:
     if agent_type not in {"calendar", "reminder", "nutrition", "fitness", "coaching", "crm", "team", "assistant"}:
         agent_type = "assistant"
 
-    # Сохраняем выбранный агент для контекста следующего сообщения
+    # Сохраняем выбранный агент и обновляем sticky domain
     _last_agent_per_user[user_id] = agent_type
+    if ctx:
+        ctx.active_domain = agent_type
+        ctx.activate_sticky(minutes=3)
     logger.info("user=%s mode=%s → %s (LLM, пред: %s, домен: %s)", user_id, state["user_mode"], agent_type, last_agent, active_domain)
     return {**state, "agent_type": agent_type}
 
@@ -233,17 +246,28 @@ def build_supervisor(
         # Динамически создаём nutrition-агента под user_id
         from agents.personal.nutrition_agent import build_nutrition_agent
         from bot.nutrition_context import format_context_for_agent
+        from datetime import datetime as _dt
+        from config import DEFAULT_TZ
         agent = build_nutrition_agent(checkpointer=get_checkpointer(), user_id=state["user_id"])
 
-        # Инжектируем контекст draft / last_saved в сообщение пользователя
+        # Инжектируем текущее время МСК — чтобы агент корректно определил meal_type.
+        # Без этого LLM угадывает время из контекста и ошибается (напр. ночная еда → обед).
+        _now = _dt.now(DEFAULT_TZ)
+        _weekdays = ["понедельник","вторник","среда","четверг","пятница","суббота","воскресенье"]
+        time_prefix = (
+            f"[СИСТЕМНОЕ ВРЕМЯ: {_now.strftime('%H:%M')} МСК | "
+            f"{_weekdays[_now.weekday()]}, {_now.strftime('%d.%m.%Y')}]"
+        )
+
+        # Инжектируем контекст draft / last_saved и время в сообщение пользователя
         draft_ctx = format_context_for_agent(state["user_id"])
-        if draft_ctx:
-            # Обогащаем последнее HumanMessage контекстом
+        ctx_parts = [p for p in [time_prefix, draft_ctx] if p]
+        if ctx_parts:
             msgs = list(state["messages"])
             for i in range(len(msgs) - 1, -1, -1):
                 if isinstance(msgs[i], HumanMessage):
                     original = msgs[i].content
-                    msgs[i] = HumanMessage(content=f"{draft_ctx}\n\n{original}")
+                    msgs[i] = HumanMessage(content="\n\n".join(ctx_parts) + "\n\n" + original)
                     break
             state = {**state, "messages": msgs}
 
