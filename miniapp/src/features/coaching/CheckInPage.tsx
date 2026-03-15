@@ -244,7 +244,6 @@ export function CheckInPage() {
   const [extended, setExtended]         = useState<boolean>(savedDraft?.extended   ?? true)
   const [energy, setEnergy]             = useState<number>(savedDraft?.energy      ?? 3)
   const [mood, setMood]                 = useState<number>(savedDraft?.mood        ?? 3)
-  const [moodTouched, setMoodTouched]   = useState<boolean>(savedDraft?.moodTouched ?? false)
   const [reflection, setReflection]     = useState<string>(savedDraft?.reflection  ?? '')
   const [blockers, setBlockers]         = useState<string>(savedDraft?.blockers    ?? '')
   const [wins, setWins]                 = useState<string>(savedDraft?.wins        ?? '')
@@ -263,10 +262,10 @@ export function CheckInPage() {
   useEffect(() => {
     try {
       sessionStorage.setItem(DRAFT_KEY, JSON.stringify({
-        extended, energy, mood, moodTouched, reflection, blockers, wins, goalId,
+        extended, energy, mood, reflection, blockers, wins, goalId,
       }))
     } catch { /* sessionStorage недоступен */ }
-  }, [extended, energy, mood, moodTouched, reflection, blockers, wins, goalId])
+  }, [extended, energy, mood, reflection, blockers, wins, goalId])
 
   // ── Прогресс-индикатор ──────────────────────────────────────────────────────
   // Считаем заполненные поля: energy + mood всегда заполнены (есть дефолт),
@@ -284,7 +283,6 @@ export function CheckInPage() {
   // ── Обработка смены настроения ───────────────────────────────────────────────
   const handleMoodChange = (v: number) => {
     setMood(v)
-    setMoodTouched(true)
   }
 
   // ── Обработка быстрых чипов после настроения (§9.3) ─────────────────────────
@@ -423,9 +421,9 @@ export function CheckInPage() {
           />
 
           {/* Адаптивный вопрос коуча (§8.1) — появляется после первого выбора настроения */}
-          <AnimatePresence>
-            {moodTouched && (
+          <AnimatePresence mode="wait">
               <motion.div
+                key={"coach-q-" + mood}
                 initial={{ opacity: 0, y: -6 }}
                 animate={{ opacity: 1, y: 0 }}
                 exit={{ opacity: 0 }}
@@ -434,13 +432,12 @@ export function CheckInPage() {
               >
                 💬 {coachQuestion(mood)}
               </motion.div>
-            )}
           </AnimatePresence>
 
           {/* Чипы быстрого действия (§9.3) */}
-          <AnimatePresence>
-            {moodTouched && (
+          <AnimatePresence mode="wait">
               <motion.div
+                key={"mood-chips-" + mood}
                 initial={{ opacity: 0, y: -4 }}
                 animate={{ opacity: 1, y: 0 }}
                 exit={{ opacity: 0 }}
@@ -458,7 +455,6 @@ export function CheckInPage() {
                   </motion.button>
                 ))}
               </motion.div>
-            )}
           </AnimatePresence>
         </GlassCard>
 
