@@ -10,13 +10,16 @@ from aiogram.types import KeyboardButton, ReplyKeyboardMarkup
 def main_menu_kb() -> ReplyKeyboardMarkup:
     """Возвращает клавиатуру главного меню."""
     rows: list[list[KeyboardButton]] = [
-        # Ряд: «Задачи», «⚙️ Настройки»
+        # Ряд: «Задачи», «🎯 Коучинг»
         [
             KeyboardButton(text="Задачи"),
-            KeyboardButton(text="⚙️ Настройки"),
+            KeyboardButton(text="🎯 Коучинг"),
         ],
-        # Ряд: «Помощь»
-        [KeyboardButton(text="Помощь")],
+        # Ряд: «⚙️ Настройки», «Помощь»
+        [
+            KeyboardButton(text="⚙️ Настройки"),
+            KeyboardButton(text="Помощь"),
+        ],
     ]
 
     return ReplyKeyboardMarkup(keyboard=rows, resize_keyboard=True)

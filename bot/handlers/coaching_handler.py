@@ -26,9 +26,11 @@ from bot.states import (
     CoachingCheckIn, CoachingWeeklyReview,
 )
 from bot.keyboards.coaching_keyboards import (
-    coaching_main_kb, goal_card_kb, goal_list_item_kb,
+    coaching_main_kb, goal_card_kb, goal_after_create_kb, goal_list_item_kb,
     habit_list_item_kb, habit_daily_kb, habit_missed_kb,
     goal_stuck_kb, goal_achieved_kb, weekly_review_kb,
+    checkin_after_mood_kb, review_goal_status_kb, motivational_kb,
+    momentum_kb, overload_kb, recovery_kb,
     onboarding_kb, onboarding_done_kb,
     onboarding_profile_intro_kb, onboarding_focus_area_kb, onboarding_tone_kb,
     onboarding_checkin_time_kb, onboarding_first_action_kb,
@@ -410,9 +412,10 @@ async def goal_done(callback: CallbackQuery) -> None:
         goal = await cs.update_goal(session, goal_id, user_id, status="achieved", progress_pct=100)
         await session.commit()
     if goal:
+        # Передаём goal_id чтобы кнопка рефлексии знала о какой цели речь
         await callback.message.edit_text(
             f"🏆 *ЦЕЛЬ ДОСТИГНУТА!*\n\n🎉 «{goal.title}»\n\nПоздравляю! Это большая победа! 💪\n\n_Что дальше?_",
-            reply_markup=goal_achieved_kb(),
+            reply_markup=goal_achieved_kb(goal_id),
             parse_mode="Markdown",
         )
     await callback.answer("🏆 Отличная работа!")
@@ -1009,6 +1012,398 @@ async def reject_orchestration(callback: CallbackQuery) -> None:
 
     await callback.message.answer("Действие отменено — ничего не создано.")
     await callback.answer()
+
+
+# ══════════════════════════════════════════════════════════════════════════════
+# КНОПКА «🎯 КОУЧИНГ» ИЗ ГЛАВНОГО МЕНЮ
+# ══════════════════════════════════════════════════════════════════════════════
+
+@router.message(F.text == "🎯 Коучинг")
+async def coaching_button(message: Message, state: FSMContext) -> None:
+    """Обработчик кнопки «🎯 Коучинг» из главного ReplyKeyboard-меню."""
+    await coaching_main(message, state)
+
+
+# ══════════════════════════════════════════════════════════════════════════════
+# 9.1 — ПОСЛЕ СОЗДАНИЯ ЦЕЛИ
+# ══════════════════════════════════════════════════════════════════════════════
+
+@router.callback_query(F.data.startswith("cg_g_steps_"))
+async def goal_steps(callback: CallbackQuery) -> None:
+    """Разбить цель на этапы — направляем в чат-коуча."""
+    goal_id = int(callback.data.split("_")[-1])
+    await callback.message.answer(
+        "💬 Напиши мне:\n"
+        f"«Разбей цель #{goal_id} на конкретные этапы»\n\n"
+        "Я помогу составить план! 🎯",
+    )
+    await callback.answer()
+
+
+@router.callback_query(F.data.startswith("cg_g_firstnow_"))
+async def goal_first_now(callback: CallbackQuery, state: FSMContext) -> None:
+    """Первый шаг прямо сейчас — запускаем check-in по цели."""
+    goal_id = int(callback.data.split("_")[-1])
+    await start_checkin_flow(callback, state, goal_id=goal_id)
+
+
+@router.callback_query(F.data.startswith("cg_g_openapp_"))
+async def goal_open_app(callback: CallbackQuery) -> None:
+    """Открыть цель в Mini App — генерируем magic link."""
+    import os
+    from aiogram.types import InlineKeyboardMarkup, InlineKeyboardButton
+    from api.deps import create_jwt
+    user_id = callback.from_user.id
+    miniapp_url = os.environ.get("MINIAPP_URL", "https://77-238-235-171.sslip.io")
+    magic_token = create_jwt(telegram_id=user_id, expires_in=300, purpose="magic")
+    link = f"{miniapp_url}/auth?token={magic_token}"
+    kb = InlineKeyboardMarkup(inline_keyboard=[
+        [InlineKeyboardButton(text="🌐 Открыть приложение", url=link)]
+    ])
+    await callback.message.answer("🌐 Открой цель в приложении:", reply_markup=kb)
+    await callback.answer()
+
+
+@router.callback_query(F.data.startswith("cg_g_reflect_"))
+async def goal_reflect(callback: CallbackQuery) -> None:
+    """Написать рефлексию после достижения или застрявшей цели."""
+    await callback.message.answer(
+        "📝 *Рефлексия:*\n\n"
+        "Напиши в свободной форме:\n"
+        "• Что получилось лучше всего?\n"
+        "• Что было самым сложным?\n"
+        "• Что бы сделал иначе?\n\n"
+        "_Я запомню это и учту при следующих целях._",
+        parse_mode="Markdown",
+    )
+    await callback.answer()
+
+
+@router.callback_query(F.data.startswith("cg_g_wstatus_"))
+async def goal_week_status(callback: CallbackQuery) -> None:
+    """Показать клавиатуру статуса цели на неделю (§9.4)."""
+    goal_id = int(callback.data.split("_")[-1])
+    user_id = callback.from_user.id
+    async with get_async_session() as session:
+        goal = await cs.get_goal(session, goal_id, user_id)
+    if not goal:
+        await callback.answer("Цель не найдена"); return
+    await callback.message.answer(
+        f"📊 *{goal.title}*\n\nКак идут дела по этой цели на этой неделе?",
+        reply_markup=review_goal_status_kb(goal_id),
+        parse_mode="Markdown",
+    )
+    await callback.answer()
+
+
+# ══════════════════════════════════════════════════════════════════════════════
+# 9.2 — ПРИВЫЧКИ: SNOOZE
+# ══════════════════════════════════════════════════════════════════════════════
+
+@router.callback_query(F.data.startswith("cg_h_snooze_"))
+async def habit_snooze(callback: CallbackQuery) -> None:
+    """Напомнить о привычке позже (snooze на ~2 часа)."""
+    await callback.answer("⏰ Ок! Напомню позже.", show_alert=False)
+
+
+# ══════════════════════════════════════════════════════════════════════════════
+# 9.3 — CHECK-IN FOLLOW-UP ПОСЛЕ ВЫБОРА НАСТРОЕНИЯ
+# ══════════════════════════════════════════════════════════════════════════════
+
+@router.callback_query(F.data == "cg_ci_fb_block")
+async def checkin_followup_block(callback: CallbackQuery, state: FSMContext) -> None:
+    """Follow-up: рассказать что мешало → переходим к блокерам."""
+    from bot.keyboards.coaching_keyboards import skip_cancel_kb
+    await state.set_state(CoachingCheckIn.waiting_blockers)
+    await callback.message.edit_text(
+        "🚧 *Что мешало?*\n_Напиши или пропусти:_",
+        reply_markup=skip_cancel_kb("cg_flow_skip_blockers"),
+        parse_mode="Markdown",
+    )
+    await callback.answer()
+
+
+@router.callback_query(F.data == "cg_ci_fb_step")
+async def checkin_followup_step(callback: CallbackQuery, state: FSMContext) -> None:
+    """Follow-up: дай следующий шаг → завершаем check-in и даём совет."""
+    await finish_checkin(callback, state, blockers="")
+
+
+@router.callback_query(F.data == "cg_ci_fb_ok")
+async def checkin_followup_ok(callback: CallbackQuery, state: FSMContext) -> None:
+    """Follow-up: всё ок → завершаем check-in без блокеров."""
+    await finish_checkin(callback, state, blockers="")
+
+
+# ══════════════════════════════════════════════════════════════════════════════
+# 9.4 — WEEKLY REVIEW: СТАТУС ЦЕЛЕЙ И ДЕЙСТВИЯ ПОСЛЕ
+# ══════════════════════════════════════════════════════════════════════════════
+
+@router.callback_query(F.data.startswith("cg_wr_gs_"))
+async def wr_goal_status(callback: CallbackQuery) -> None:
+    """Статус цели в рамках weekly review — формат cg_wr_gs_{id}_{status}."""
+    # Разбираем: cg_wr_gs_{goal_id}_{status}
+    parts = callback.data.split("_")  # ["cg","wr","gs","{id}","{status}"]
+    if len(parts) < 5:
+        await callback.answer("Ошибка"); return
+    try:
+        goal_id = int(parts[3])
+    except ValueError:
+        await callback.answer("Ошибка"); return
+    status = parts[4]  # ok, slow, stuck, freeze
+    user_id = callback.from_user.id
+    status_labels = {"ok": "🟢 Двигаюсь", "slow": "🟡 Медленно", "stuck": "🔴 Буксую", "freeze": "❄️ Заморожена"}
+    label = status_labels.get(status, status)
+    if status == "freeze":
+        async with get_async_session() as session:
+            await cs.update_goal(session, goal_id, user_id, is_frozen=True, frozen_reason="Заморожена по итогам review")
+            await session.commit()
+        await callback.answer(f"{label} — цель заморожена")
+    elif status == "stuck":
+        async with get_async_session() as session:
+            goal = await cs.get_goal(session, goal_id, user_id)
+        if goal:
+            await callback.message.answer(
+                f"🔴 *{goal.title}* буксует.\n\nЧто поможет сдвинуться?",
+                reply_markup=goal_stuck_kb(goal_id),
+                parse_mode="Markdown",
+            )
+        await callback.answer()
+    else:
+        await callback.answer(f"Записано: {label}")
+
+
+@router.callback_query(F.data == "cg_wr_after_adjust")
+async def wr_after_adjust(callback: CallbackQuery) -> None:
+    """После review: скорректировать план → список целей."""
+    await callback.message.answer(
+        "📝 *Корректируем план:*\n\nВыбери цель для изменения:",
+        reply_markup=coaching_main_kb(),
+        parse_mode="Markdown",
+    )
+    await callback.answer()
+
+
+@router.callback_query(F.data == "cg_wr_after_reduce")
+async def wr_after_reduce(callback: CallbackQuery) -> None:
+    """После review: снизить нагрузку → overload-меню."""
+    await callback.message.edit_text(
+        "📉 *Снижаем нагрузку:*\n\nЧто заморозим или упростим?",
+        reply_markup=overload_kb(),
+        parse_mode="Markdown",
+    )
+    await callback.answer()
+
+
+@router.callback_query(F.data == "cg_wr_after_boost")
+async def wr_after_boost(callback: CallbackQuery) -> None:
+    """После review: усилить темп → momentum-меню."""
+    await callback.message.edit_text(
+        "📈 *Усиляем темп!*\n\nОтлично, давай добавим ещё:",
+        reply_markup=momentum_kb(),
+        parse_mode="Markdown",
+    )
+    await callback.answer()
+
+
+@router.callback_query(F.data == "cg_wr_after_ok")
+async def wr_after_ok(callback: CallbackQuery) -> None:
+    """После review: всё устраивает → главное меню."""
+    await callback.message.edit_text(
+        "✅ *Отлично!* Продолжай в том же духе.\n\nДо следующего обзора! 💪",
+        reply_markup=coaching_main_kb(),
+        parse_mode="Markdown",
+    )
+    await callback.answer()
+
+
+# ══════════════════════════════════════════════════════════════════════════════
+# 9.5 — МОТИВАЦИОННЫЕ КНОПКИ
+# ══════════════════════════════════════════════════════════════════════════════
+
+@router.callback_query(F.data == "cg_mot_menu")
+async def motivational_menu(callback: CallbackQuery) -> None:
+    """Открыть мотивационное меню (§9.5)."""
+    await callback.message.edit_text(
+        "💪 *Мотивация — выбери формат:*",
+        reply_markup=motivational_kb(),
+        parse_mode="Markdown",
+    )
+    await callback.answer()
+
+
+@router.callback_query(F.data == "cg_mot_inspire")
+async def mot_inspire(callback: CallbackQuery) -> None:
+    """Подбодрить пользователя."""
+    await callback.message.answer(
+        "💪 *Ты уже делаешь больше, чем большинство!*\n\n"
+        "Каждый маленький шаг — это победа. Не сравнивай себя с другими, "
+        "сравнивай с собой вчерашним. Ты уже в пути — это главное! 🔥",
+        parse_mode="Markdown",
+    )
+    await callback.answer()
+
+
+@router.callback_query(F.data == "cg_mot_strict")
+async def mot_strict(callback: CallbackQuery) -> None:
+    """Жёсткий разбор целей — показываем отстающие."""
+    user_id = callback.from_user.id
+    async with get_async_session() as session:
+        goals = await cs.get_goals(session, user_id, status="active")
+    if not goals:
+        await callback.answer("Нет активных целей для разбора"); return
+    stuck = [g for g in goals if g.progress_pct < 30]
+    if not stuck:
+        await callback.message.answer(
+            "🔥 *Честно?* Всё идёт неплохо!\n\nПрогресс по целям есть. Продолжай в том же темпе.",
+            parse_mode="Markdown",
+        )
+    else:
+        lines = ["🔥 *Жёсткий разбор:*\n"]
+        for g in stuck[:3]:
+            lines.append(f"❗ *{g.title}* — {g.progress_pct}%. Что конкретно сделал за последнюю неделю?")
+        lines.append("\n_Напиши в чат что мешает — разберёмся вместе._")
+        await callback.message.answer("\n".join(lines), parse_mode="Markdown")
+    await callback.answer()
+
+
+@router.callback_query(F.data == "cg_mot_nextstep")
+async def mot_nextstep(callback: CallbackQuery) -> None:
+    """Показать следующий шаг по самой отстающей цели."""
+    user_id = callback.from_user.id
+    async with get_async_session() as session:
+        goals = await cs.get_goals(session, user_id, status="active")
+    if not goals:
+        await callback.answer("Сначала создай цель!"); return
+    # Берём цель с наименьшим прогрессом
+    focus = min(goals, key=lambda g: g.progress_pct)
+    first_step = focus.first_step or "Определи один конкретный шаг к этой цели"
+    await callback.message.answer(
+        f"🗺️ *Следующий шаг для «{focus.title}»:*\n\n"
+        f"➡️ {first_step}\n\n"
+        "_Сделай это прямо сейчас или запланируй на сегодня._",
+        reply_markup=goal_card_kb(focus.id, focus.is_frozen),
+        parse_mode="Markdown",
+    )
+    await callback.answer()
+
+
+@router.callback_query(F.data == "cg_mot_simplify")
+async def mot_simplify(callback: CallbackQuery) -> None:
+    """Упростить маршрут — фокус на одном."""
+    await callback.message.answer(
+        "🎯 *Упрости маршрут:*\n\n"
+        "Выбери ОДНУ главную цель на эту неделю и сосредоточься только на ней.\n\n"
+        "Остальное — заморозь. Фокус бьёт распределение!\n\n"
+        "_Какая цель для тебя сейчас самая важная?_",
+        reply_markup=coaching_main_kb(),
+        parse_mode="Markdown",
+    )
+    await callback.answer()
+
+
+# ══════════════════════════════════════════════════════════════════════════════
+# 9.7 — КОНТЕКСТНЫЕ СОСТОЯНИЯ
+# ══════════════════════════════════════════════════════════════════════════════
+
+@router.callback_query(F.data == "cg_s_reduce_load")
+async def state_reduce_load(callback: CallbackQuery) -> None:
+    """Снизить нагрузку — список целей для заморозки."""
+    user_id = callback.from_user.id
+    async with get_async_session() as session:
+        goals = await cs.get_goals(session, user_id, status="active")
+    if not goals:
+        await callback.answer("Активных целей нет"); return
+    from aiogram.types import InlineKeyboardMarkup, InlineKeyboardButton
+    kb = InlineKeyboardMarkup(inline_keyboard=[
+        [InlineKeyboardButton(text=f"❄️ {g.title[:30]}", callback_data=f"cg_g_freeze_{g.id}")]
+        for g in goals[:5]
+    ] + [[InlineKeyboardButton(text="↩️ Назад", callback_data="cg_g_list")]])
+    await callback.message.answer(
+        "📉 *Снижаем нагрузку*\n\nВыбери что заморозить:",
+        reply_markup=kb, parse_mode="Markdown",
+    )
+    await callback.answer()
+
+
+@router.callback_query(F.data == "cg_s_rebuild_plan")
+async def state_rebuild_plan(callback: CallbackQuery) -> None:
+    """Пересобрать план — предлагаем описать проблему в чат."""
+    await callback.message.answer(
+        "🔄 *Пересобрать план:*\n\n"
+        "Напиши мне что сейчас перегружает тебя больше всего — "
+        "и мы разберём что можно убрать или перенести.",
+        parse_mode="Markdown",
+    )
+    await callback.answer()
+
+
+@router.callback_query(F.data == "cg_s_freeze_extra")
+async def state_freeze_extra(callback: CallbackQuery) -> None:
+    """Заморозить лишнее — переиспользует логику reduce_load."""
+    await state_reduce_load(callback)
+
+
+@router.callback_query(F.data == "cg_s_restart")
+async def state_restart(callback: CallbackQuery) -> None:
+    """Начать заново — главное меню."""
+    await callback.message.answer(
+        "🔄 *Начнём заново!*\n\n"
+        "Иногда перезапуск — это не поражение, а мудрость.\n\nС чего начнём?",
+        reply_markup=coaching_main_kb(), parse_mode="Markdown",
+    )
+    await callback.answer()
+
+
+@router.callback_query(F.data == "cg_s_tell_story")
+async def state_tell_story(callback: CallbackQuery) -> None:
+    """Рассказать что случилось."""
+    await callback.message.answer(
+        "📝 *Расскажи что случилось:*\n\n"
+        "Напиши в свободной форме — я выслушаю и помогу разобраться.",
+        parse_mode="Markdown",
+    )
+    await callback.answer()
+
+
+@router.callback_query(F.data == "cg_s_simple_plan")
+async def state_simple_plan(callback: CallbackQuery) -> None:
+    """Простой план — один шаг на неделю."""
+    await callback.message.answer(
+        "🆕 *Простой план:*\n\n"
+        "Выбери одну цель и один маленький шаг на эту неделю.\n"
+        "Больше ничего — только это.",
+        reply_markup=coaching_main_kb(), parse_mode="Markdown",
+    )
+    await callback.answer()
+
+
+@router.callback_query(F.data == "cg_s_add_challenge")
+async def state_add_challenge(callback: CallbackQuery) -> None:
+    """Добавить вызов — предлагаем поднять планку."""
+    await callback.message.answer(
+        "📈 *Добавить вызов:*\n\n"
+        "Отлично, ты в потоке! Давай поднимем планку.\n\n"
+        "Создай новую цель или усиль существующую:",
+        reply_markup=coaching_main_kb(), parse_mode="Markdown",
+    )
+    await callback.answer()
+
+
+@router.callback_query(F.data == "cg_s_achievements")
+async def state_achievements(callback: CallbackQuery) -> None:
+    """Показать достигнутые цели."""
+    user_id = callback.from_user.id
+    async with get_async_session() as session:
+        achieved = await cs.get_goals(session, user_id, status="achieved")
+    if not achieved:
+        await callback.answer("Пока нет завершённых целей — всё впереди! 🚀"); return
+    lines = ["🏆 *Мои достижения:*\n"]
+    for g in achieved[:10]:
+        lines.append(f"✅ {g.title}")
+    await callback.message.answer("\n".join(lines), parse_mode="Markdown")
+    await callback.answer()
+
 
 # ══════════════════════════════════════════════════════════════════════════════
 # FSM TEXT MESSAGE HANDLERS

@@ -28,8 +28,8 @@ async def start_handler(message: Message, user_db: dict | None = None):
     text = (
         "Привет! Я мультиагентный ассистент.\n\n"
         f"Текущий режим: {mode_str}\n\n"
-        "Нажмите «Задачи», чтобы управлять списком дел. Остальные разделы появятся позже.\n"
-        "/help — помощь"
+        "Нажмите «Задачи» для управления делами или «🎯 Коучинг» для целей и привычек.\n"
+        "/help — список всех команд"
     )
     # Показываем ReplyKeyboard главного меню
     await message.answer(text, reply_markup=main_menu_kb())

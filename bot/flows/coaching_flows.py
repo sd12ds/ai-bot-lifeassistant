@@ -13,9 +13,9 @@ from bot.states import (
     CoachingCheckIn, CoachingWeeklyReview,
 )
 from bot.keyboards.coaching_keyboards import (
-    goal_card_kb, habit_daily_kb, skip_cancel_kb, cancel_flow_kb,
+    goal_card_kb, goal_after_create_kb, habit_daily_kb, skip_cancel_kb, cancel_flow_kb,
     goal_area_kb, habit_area_kb, checkin_progress_kb, checkin_mood_kb,
-    review_done_kb,
+    checkin_after_mood_kb, review_done_kb,
 )
 logger = logging.getLogger(__name__)
 
@@ -136,10 +136,11 @@ async def handle_goal_deadline(msg_or_cb, state: FSMContext, deadline: str = "")
            + (f"💡 Зачем: {goal.why_statement}\n" if goal.why_statement else "")
            + (f"⚡ Первый шаг: {goal.first_step}" if goal.first_step else "")
            + "\n\n_Хочешь разбить на конкретные этапы?_")
+    # После создания цели показываем кнопки следующих действий (§9.1)
     if isinstance(msg_or_cb, Message):
-        await msg_or_cb.answer(txt, reply_markup=goal_card_kb(goal.id), parse_mode="Markdown")
+        await msg_or_cb.answer(txt, reply_markup=goal_after_create_kb(goal.id), parse_mode="Markdown")
     else:
-        await msg_or_cb.message.answer(txt, reply_markup=goal_card_kb(goal.id), parse_mode="Markdown")
+        await msg_or_cb.message.answer(txt, reply_markup=goal_after_create_kb(goal.id), parse_mode="Markdown")
         await msg_or_cb.answer("Цель создана!")
 
 
@@ -291,15 +292,16 @@ async def handle_checkin_progress(msg_or_cb, state: FSMContext, progress: int) -
 
 
 async def handle_checkin_energy(callback: CallbackQuery, state: FSMContext, energy: int) -> None:
-    """Шаг 3: энергия → запрашиваем блокеры."""
+    """Шаг 3: настроение → показываем follow-up кнопки (§9.3)."""
     data = await state.get_data(); draft = data.get("checkin_draft", {})
     draft["energy_level"] = energy
     await state.update_data(checkin_draft=draft)
-    await state.set_state(CoachingCheckIn.waiting_blockers)
-    emojis = {1: "😴", 2: "😕", 3: "😐", 4: "😊", 5: "🔥"}
+    # Не меняем FSM-состояние — ждём выбора через cg_ci_fb_* callbacks
+    mood_labels = {1: "💀 Провал", 2: "😔 Тяжело", 3: "😐 Так себе", 4: "👍 Норм", 5: "🔥 Отлично"}
+    label = mood_labels.get(energy, str(energy))
     await callback.message.edit_text(
-        f"Энергия: {emojis.get(energy, '')} {energy}/5\n\n🚧 Шаг 4/4 — Что мешало?\n_Или пропусти:_",
-        reply_markup=skip_cancel_kb("cg_flow_skip_blockers"), parse_mode="Markdown",
+        f"Настроение: {label}\n\n_Что делаем дальше?_",
+        reply_markup=checkin_after_mood_kb(), parse_mode="Markdown",
     )
     await callback.answer()
 
