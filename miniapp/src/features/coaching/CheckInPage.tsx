@@ -15,6 +15,7 @@ import { motion, AnimatePresence } from 'framer-motion'
 import { ArrowLeft, Sun, Zap, Moon, ChevronDown, HelpCircle } from 'lucide-react'
 import {
   useCreateCheckIn,
+  useUpdateCheckIn,
   useCheckInByDate,
   useCheckInCalendar,
 } from '../../api/coaching'
@@ -240,7 +241,7 @@ function DayStrip({
 }
 
 // ── SlotReadonly: отображение уже заполненного слота ──────────────────────────
-function SlotReadonly({ checkin, slot }: { checkin: CheckIn; slot: SlotType }) {
+function SlotReadonly({ checkin, slot, onEdit }: { checkin: CheckIn; slot: SlotType; onEdit: () => void }) {
   const color = SLOTS.find(s => s.id === slot)?.color ?? '#818cf8'
   const moodNum = checkin.mood ? (MOOD_TO_NUM[checkin.mood] ?? null) : null
   const time = new Date(checkin.created_at).toLocaleTimeString('ru', {
@@ -314,11 +315,25 @@ function SlotReadonly({ checkin, slot }: { checkin: CheckIn; slot: SlotType }) {
           </p>
         </div>
       )}
+
+      {/* Кнопка редактирования */}
+      <motion.button
+        whileTap={{ scale: 0.96 }}
+        onClick={onEdit}
+        className="w-full mt-3 py-2.5 rounded-xl text-sm font-semibold"
+        style={{
+          background: 'rgba(255,255,255,0.06)',
+          border: '1px solid rgba(255,255,255,0.1)',
+          color: 'var(--app-hint)',
+        }}
+      >
+        ✏️ Изменить
+      </motion.button>
     </GlassCard>
   )
 }
 
-// ── Главный компонент ──────────────────────────────────────────────────────────
+// ══ Главный компонент ──────────────────────────────────────────────────────────
 export function CheckInPage() {
   const navigate = useNavigate()
   const today = toIso(new Date())
@@ -336,10 +351,12 @@ export function CheckInPage() {
   const [blockers, setBlockers] = useState('')
   const [wins, setWins] = useState('')
   const [submitError, setSubmitError] = useState<string | null>(null)
+  const [isEditMode, setIsEditMode] = useState(false)
 
   const { data: calendarData = {} } = useCheckInCalendar(15)
   const { data: dayData, isLoading } = useCheckInByDate(selectedDate)
   const createCheckIn = useCreateCheckIn()
+  const updateCheckIn = useUpdateCheckIn()
 
   const slotInfo = SLOTS.find(s => s.id === activeSlot)!
   const currentSlotData = dayData?.[activeSlot] as CheckIn | undefined
@@ -355,7 +372,19 @@ export function CheckInPage() {
     setWins('')
     setSubmitError(null)
     setShowHint(false)
+    setIsEditMode(false)   // сбросить режим редактирования при смене слота/дня
   }, [selectedDate, activeSlot])
+
+  // Пре-заполнение формы данными существующего чекина при входе в режим редактирования
+  useEffect(() => {
+    if (isEditMode && currentSlotData) {
+      setEnergy(currentSlotData.energy_level ?? 3)
+      setMood(MOOD_TO_NUM[currentSlotData.mood ?? 'ok'] ?? 3)
+      setNotes(currentSlotData.notes ?? '')
+      setBlockers(currentSlotData.blockers ?? '')
+      setWins(currentSlotData.wins ?? '')
+    }
+  }, [isEditMode])  // eslint-disable-line react-hooks/exhaustive-deps
 
   const handleSubmit = () => {
     setSubmitError(null)
@@ -383,10 +412,22 @@ export function CheckInPage() {
       if (wins.trim()) dto.wins = wins.trim()
     }
 
-    createCheckIn.mutate(dto, {
-      onSuccess: () => navigate('/coaching'),
-      onError: () => setSubmitError('Не удалось сохранить. Попробуй ещё раз.'),
-    })
+    if (isEditMode && currentSlotData) {
+      // PATCH — обновление существующего чекина
+      updateCheckIn.mutate(
+        { id: currentSlotData.id, ...dto },
+        {
+          onSuccess: () => setIsEditMode(false),
+          onError: () => setSubmitError('Не удалось обновить. Попробуй ещё раз.'),
+        },
+      )
+    } else {
+      // POST — создание нового чекина
+      createCheckIn.mutate(dto, {
+        onSuccess: () => navigate('/coaching'),
+        onError: () => setSubmitError('Не удалось сохранить. Попробуй ещё раз.'),
+      })
+    }
   }
 
   const isToday = selectedDate === today
@@ -547,12 +588,12 @@ export function CheckInPage() {
               animate={{ opacity: 1, y: 0 }}
               exit={{ opacity: 0 }}
             >
-              <SlotReadonly checkin={currentSlotData!} slot={activeSlot} />
+              <SlotReadonly checkin={currentSlotData!} slot={activeSlot} onEdit={() => setIsEditMode(true)} />
             </motion.div>
           </AnimatePresence>
 
-        ) : (
-          /* Форма */
+        ) : (!isFilled || isEditMode) && (
+          /* Форма (новая или редактирование) */
           <AnimatePresence mode="wait">
             <motion.div
               key={activeSlot + selectedDate + '-form'}
@@ -739,7 +780,7 @@ export function CheckInPage() {
       </div>
 
       {/* Кнопка отправки — только в режиме формы */}
-      {!isFilled && !isLoading && (
+      {(!isFilled || isEditMode) && !isLoading && (
         <div
           className="fixed bottom-0 inset-x-0 px-4 py-3"
           style={{
@@ -757,7 +798,7 @@ export function CheckInPage() {
           <motion.button
             whileTap={{ scale: 0.97 }}
             onClick={handleSubmit}
-            disabled={createCheckIn.isPending}
+            disabled={createCheckIn.isPending || updateCheckIn.isPending}
             className="w-full rounded-2xl py-4 font-bold flex items-center justify-center gap-2 disabled:opacity-40"
             style={{
               background: `linear-gradient(135deg, ${slotInfo.color}dd, ${slotInfo.color}88)`,
@@ -765,8 +806,10 @@ export function CheckInPage() {
             }}
           >
             {SLOT_ICONS[activeSlot]}
-            {createCheckIn.isPending
+            {(createCheckIn.isPending || updateCheckIn.isPending)
               ? 'Сохраняем...'
+              : isEditMode
+              ? 'Сохранить изменения'
               : `Сохранить — ${slotInfo.label}`}
           </motion.button>
         </div>
