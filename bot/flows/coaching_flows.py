@@ -443,3 +443,274 @@ async def finish_weekly_review(msg_or_cb, state: FSMContext, next_actions: str =
     else:
         await msg_or_cb.message.answer(txt, reply_markup=review_done_kb(goal_id), parse_mode="Markdown")
         await msg_or_cb.answer("Сохранено!")
+
+
+# ════════════════════════════════════════════════════════════════════════════════
+# ПРОАКТИВНЫЕ ДНЕВНЫЕ ЧЕКИНЫ: утро / день / вечер
+# ════════════════════════════════════════════════════════════════════════════════
+
+from datetime import date as _date
+from bot.states import DailyEveningReflection
+from bot.keyboards.coaching_keyboards import (
+    evening_day_result_kb, skip_step_kb,
+)
+
+
+async def save_morning_checkin(
+    callback,
+    energy: int,
+) -> None:
+    """
+    Сохраняет утренний чекин (time_slot=morning) после выбора уровня энергии.
+    Вызывается из coaching_handler при callback cg_daily_morning_e{1-5}.
+    """
+    user_id = callback.from_user.id
+    today = _date.today().isoformat()
+    try:
+        async with get_async_session() as session:
+            await cs.create_goal_checkin(
+                session,
+                goal_id=None,
+                user_id=user_id,
+                progress_pct=0,
+                energy_level=energy,
+                notes=None,
+                blockers=None,
+                wins=None,
+                mood=None,
+                time_slot="morning",
+                check_date=today,
+            )
+            await session.commit()
+    except Exception as e:
+        logger.error("Ошибка сохранения утреннего чекина: %s", e)
+        await callback.message.answer("\u274c Не удалось сохранить. Попробуй позже.")
+        await callback.answer()
+        return
+
+    # Эмодзи отражает уровень энергии 1-5
+    energy_emojis = {1: "\U0001f634", 2: "\U0001f615", 3: "\U0001f610", 4: "\U0001f642", 5: "\U0001f525"}
+    emoji = energy_emojis.get(energy, "")
+    await callback.message.edit_text(
+        "\u2705 *Утренний чекин сохранён!*\n\n"
+        f"Энергия: {emoji} {energy}/5\n\n"
+        "_Хорошего продуктивного дня! Ты справишься \U0001f4aa_",
+        parse_mode="Markdown",
+    )
+    await callback.answer("\u2705 Сохранено!")
+
+
+async def save_midday_checkin(
+    callback,
+    energy: int,
+) -> None:
+    """
+    Сохраняет дневной пульс (time_slot=midday) после выбора уровня энергии.
+    Вызывается из coaching_handler при callback cg_daily_midday_e{1-5}.
+    """
+    user_id = callback.from_user.id
+    today = _date.today().isoformat()
+    try:
+        async with get_async_session() as session:
+            await cs.create_goal_checkin(
+                session,
+                goal_id=None,
+                user_id=user_id,
+                progress_pct=0,
+                energy_level=energy,
+                notes=None,
+                blockers=None,
+                wins=None,
+                mood=None,
+                time_slot="midday",
+                check_date=today,
+            )
+            await session.commit()
+    except Exception as e:
+        logger.error("Ошибка сохранения дневного пульса: %s", e)
+        await callback.message.answer("\u274c Не удалось сохранить. Попробуй позже.")
+        await callback.answer()
+        return
+
+    energy_emojis = {1: "\U0001f634", 2: "\U0001f615", 3: "\U0001f610", 4: "\U0001f642", 5: "\U0001f525"}
+    emoji = energy_emojis.get(energy, "")
+    await callback.message.edit_text(
+        "\u2705 *Дневной пульс сохранён!*\n\n"
+        f"Энергия: {emoji} {energy}/5\n\n"
+        "_Ещё чуть-чуть — и вечер! Держись \U0001f4aa_",
+        parse_mode="Markdown",
+    )
+    await callback.answer("\u2705 Сохранено!")
+
+
+async def start_evening_reflection(
+    callback,
+    state: FSMContext,
+    mood: int,
+) -> None:
+    """
+    Шаг 0 вечерней рефлексии: настроение выбрано (cg_daily_evening_m{1-5}).
+    Сохраняем mood в FSM data, переходим к шагу 1 — итог дня.
+    """
+    await state.update_data(mood=mood)
+    await state.set_state(DailyEveningReflection.waiting_day_result)
+
+    mood_emojis = {1: "\U0001f622", 2: "\U0001f615", 3: "\U0001f610", 4: "\U0001f642", 5: "\U0001f604"}
+    emoji = mood_emojis.get(mood, "")
+    await callback.message.edit_text(
+        "\U0001f319 *Вечерняя рефлексия*\n\n"
+        f"Настроение: {emoji} {mood}/5\n\n"
+        "*Как прошёл сегодняшний день?*\n"
+        "_Выбери или напиши сам:_",
+        parse_mode="Markdown",
+        reply_markup=evening_day_result_kb(),
+    )
+    await callback.answer()
+
+
+async def handle_evening_day_result(
+    callback_or_msg,
+    state: FSMContext,
+    day_result: str,
+) -> None:
+    """
+    Шаг 1: получен итог дня (quick-кнопка или текст).
+    Сохраняем day_result → переходим к шагу 2: как прошёл день подробнее.
+    """
+    await state.update_data(day_result=day_result)
+    await state.set_state(DailyEveningReflection.waiting_notes)
+
+    result_labels = {
+        "great": "\U0001f525 Продуктивный",
+        "ok": "\U0001f44d Нормально",
+        "hard": "\U0001f614 Тяжёлый",
+    }
+    result_text = result_labels.get(day_result, f"\U0001f4dd {day_result[:50]}")
+
+    text = (
+        f"День: {result_text}\n\n"
+        "*Как прошёл день подробнее?* Что важного произошло?\n"
+        "_Напиши пару строк или пропусти:_"
+    )
+    kb = skip_step_kb("cg_daily_evening_skip_notes")
+
+    if hasattr(callback_or_msg, 'message'):
+        # CallbackQuery — редактируем сообщение
+        await callback_or_msg.message.edit_text(text, parse_mode="Markdown", reply_markup=kb)
+        await callback_or_msg.answer()
+    else:
+        # Message — текстовый ввод пользователя
+        await callback_or_msg.answer(text, parse_mode="Markdown", reply_markup=kb)
+
+
+async def handle_evening_notes(msg_or_cb, state: FSMContext, notes: str) -> None:
+    """
+    Шаг 2: получены заметки о дне (или пропуск).
+    Переходим к шагу 3: что мешало.
+    """
+    await state.update_data(notes=notes)
+    await state.set_state(DailyEveningReflection.waiting_blockers)
+
+    text = (
+        "*Что мешало сегодня?* Блокеры, трудности, отвлечения...\n"
+        "_Напиши или пропусти:_"
+    )
+    kb = skip_step_kb("cg_daily_evening_skip_blockers")
+
+    if hasattr(msg_or_cb, 'message'):
+        await msg_or_cb.message.answer(text, parse_mode="Markdown", reply_markup=kb)
+        await msg_or_cb.answer()
+    else:
+        await msg_or_cb.answer(text, parse_mode="Markdown", reply_markup=kb)
+
+
+async def handle_evening_blockers(msg_or_cb, state: FSMContext, blockers: str) -> None:
+    """
+    Шаг 3: получены блокеры (или пропуск).
+    Переходим к шагу 4: победы дня.
+    """
+    await state.update_data(blockers=blockers)
+    await state.set_state(DailyEveningReflection.waiting_wins)
+
+    text = (
+        "*Победы дня!* \U0001f3c6 Что удалось, пусть даже маленькое?\n"
+        "_Напиши или пропусти:_"
+    )
+    kb = skip_step_kb("cg_daily_evening_skip_wins")
+
+    if hasattr(msg_or_cb, 'message'):
+        await msg_or_cb.message.answer(text, parse_mode="Markdown", reply_markup=kb)
+        await msg_or_cb.answer()
+    else:
+        await msg_or_cb.answer(text, parse_mode="Markdown", reply_markup=kb)
+
+
+async def finish_evening_reflection(msg_or_cb, state: FSMContext, wins: str) -> None:
+    """
+    Шаг 4 (финал): сохраняем весь вечерний чекин в БД.
+    Собирает данные из FSM data: mood, day_result, notes, blockers + wins из аргумента.
+    """
+    data = await state.get_data()
+    await state.clear()
+
+    # Определяем user_id из обоих типов входящего объекта
+    user_id = msg_or_cb.from_user.id
+    today = _date.today().isoformat()
+    mood = data.get("mood", 3)
+    day_result = data.get("day_result", "")
+    notes = data.get("notes") or None
+    blockers = data.get("blockers") or None
+
+    # Объединяем итог дня + заметки в поле notes
+    full_notes_parts = [p for p in [day_result, notes] if p]
+    full_notes = "\n".join(full_notes_parts) if full_notes_parts else None
+
+    try:
+        async with get_async_session() as session:
+            await cs.create_goal_checkin(
+                session,
+                goal_id=None,
+                user_id=user_id,
+                progress_pct=0,
+                energy_level=None,
+                notes=full_notes,
+                blockers=blockers,
+                wins=wins if wins else None,
+                mood=str(mood),
+                time_slot="evening",
+                check_date=today,
+            )
+            await session.commit()
+    except Exception as e:
+        logger.error("Ошибка сохранения вечернего чекина: %s", e)
+        text = "\u274c Не удалось сохранить рефлексию. Попробуй позже."
+        if hasattr(msg_or_cb, 'message'):
+            await msg_or_cb.message.answer(text)
+        else:
+            await msg_or_cb.answer(text)
+        return
+
+    # Формируем итоговое сообщение со summary рефлексии
+    mood_emojis = {1: "\U0001f622", 2: "\U0001f615", 3: "\U0001f610", 4: "\U0001f642", 5: "\U0001f604"}
+    mood_emoji = mood_emojis.get(mood, "")
+    result_labels = {"great": "\U0001f525 Продуктивный", "ok": "\U0001f44d Нормально", "hard": "\U0001f614 Тяжёлый"}
+
+    summary_parts = [
+        "\u2705 *Вечерняя рефлексия сохранена!*\n",
+        f"Настроение: {mood_emoji} {mood}/5",
+    ]
+    if day_result:
+        summary_parts.append(f"День: {result_labels.get(day_result, day_result)}")
+    if wins:
+        summary_parts.append(f"\n\U0001f3c6 *Победы:* {wins[:100]}")
+    if blockers:
+        summary_parts.append(f"\u26a0\ufe0f *Что мешало:* {blockers[:100]}")
+    summary_parts.append("\n_Отличная рефлексия! До завтра \U0001f319_")
+
+    summary = "\n".join(summary_parts)
+
+    if hasattr(msg_or_cb, 'message'):
+        await msg_or_cb.message.answer(summary, parse_mode="Markdown")
+        await msg_or_cb.answer("\u2705 Сохранено!")
+    else:
+        await msg_or_cb.answer(summary, parse_mode="Markdown")

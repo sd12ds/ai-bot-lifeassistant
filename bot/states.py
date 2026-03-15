@@ -56,3 +56,15 @@ class CoachingWeeklyReview(StatesGroup):
     waiting_highlights   = State()  # Шаг 2: главные достижения (текст или skip)
     waiting_blockers     = State()  # Шаг 3: трудности (текст или skip)
     waiting_next_actions = State()  # Шаг 4: план на следующую неделю (текст или skip)
+
+
+class DailyEveningReflection(StatesGroup):
+    """
+    FSM для вечерней рефлексии дня (проактивный ритуал 19-21h).
+    Запускается из coaching_proactive через cg_daily_evening_m* callback.
+    Данные накапливаются в FSM data под ключами: mood, day_result, notes, blockers, wins.
+    """
+    waiting_day_result = State()  # Шаг 1: итог дня (quick-кнопки или текст)
+    waiting_notes      = State()  # Шаг 2: как прошёл день подробнее (текст или skip)
+    waiting_blockers   = State()  # Шаг 3: что мешало (текст или skip)
+    waiting_wins       = State()  # Шаг 4: победы дня (текст или skip)

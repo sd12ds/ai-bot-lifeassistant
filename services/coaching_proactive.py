@@ -32,6 +32,7 @@ from bot.keyboards.coaching_keyboards import (
     goal_card_kb, habit_daily_kb, habit_missed_kb,
     weekly_review_kb, recovery_kb, momentum_kb, overload_kb,
     checkin_mood_kb, onboarding_kb,
+    morning_energy_kb, midday_energy_kb, evening_mood_kb,
 )
 
 logger = logging.getLogger(__name__)
@@ -550,7 +551,24 @@ async def evaluate_rituals(
             nudge_type="morning_brief",
             priority=PRIORITY_MEDIUM,
             text=brief_text,
-            keyboard=checkin_mood_kb(focus_goal.id if focus_goal else 0),
+            keyboard=morning_energy_kb(),  # утренний чекин: энергия 1-5
+            context={},
+        ))
+
+
+
+    # ── MIDDAY PULSE (13:00-14:00) ───────────────────────────────────────────
+    midday_enabled = getattr(profile, 'midday_pulse_enabled', True) if profile else True
+    if midday_enabled and 13 <= hour <= 14:
+        candidates.append(NudgeCandidate(
+            nudge_type="midday_pulse",
+            priority=PRIORITY_MEDIUM,
+            text=(
+                "\u26a1 *Дневной пульс!*\n\n"
+                "Середина дня — как энергия?\n\n"
+                "_Отметь уровень (1=истощён, 5=заряжен):_"
+            ),
+            keyboard=midday_energy_kb(),  # дневной пульс: энергия 1-5
             context={},
         ))
 
@@ -564,9 +582,9 @@ async def evaluate_rituals(
             text=(
                 "🌙 *Вечерний check-in.*\n\n"
                 f"Привычки сегодня: {habits_done_today}/{len(habits)} ✅\n\n"
-                "_Как прошёл день? Что удалось?_"
+                "_Как настроение? Выбери цифру:_"
             ),
-            keyboard=checkin_mood_kb(focus_goal.id if focus_goal else 0),
+            keyboard=evening_mood_kb(),  # вечерний чекин: настроение 1-5
             context={},
         ))
 

@@ -24,6 +24,7 @@ from aiogram.types import Message, CallbackQuery
 from bot.states import (
     CoachingGoalCreation, CoachingHabitCreation,
     CoachingCheckIn, CoachingWeeklyReview,
+    DailyEveningReflection,
 )
 from bot.keyboards.coaching_keyboards import (
     coaching_main_kb, goal_card_kb, goal_after_create_kb, goal_list_item_kb,
@@ -44,6 +45,9 @@ from bot.flows.coaching_flows import (
     handle_checkin_energy, finish_checkin,
     start_weekly_review, handle_review_summary, handle_review_highlights,
     handle_review_blockers, finish_weekly_review,
+    save_morning_checkin, save_midday_checkin,
+    start_evening_reflection, handle_evening_day_result,
+    handle_evening_notes, handle_evening_blockers, finish_evening_reflection,
 )
 from db.session import get_async_session
 from db import coaching_storage as cs
@@ -1477,3 +1481,127 @@ async def fsm_review_blockers(message: Message, state: FSMContext) -> None:
 @router.message(StateFilter(CoachingWeeklyReview.waiting_next_actions), F.text)
 async def fsm_review_next_actions(message: Message, state: FSMContext) -> None:
     await finish_weekly_review(message, state)
+
+
+# ════════════════════════════════════════════════════════════════════════════════
+# ПРОАКТИВНЫЕ ДНЕВНЫЕ ЧЕКИНЫ: callback handlers
+# Обрабатывают нажатия кнопок из утренних/дневных/вечерних проактивных сообщений
+# ════════════════════════════════════════════════════════════════════════════════
+
+@router.callback_query(F.data.startswith("cg_daily_morning_e"))
+async def daily_morning_energy_cb(callback: CallbackQuery) -> None:
+    """
+    Обработчик утреннего чекина энергии.
+    Формат: cg_daily_morning_e{1-5}.
+    Сохраняет energy в time_slot=morning через save_morning_checkin.
+    """
+    # Извлекаем цифру уровня энергии из конца callback_data
+    e_str = callback.data.replace("cg_daily_morning_e", "")
+    try:
+        energy = int(e_str)
+        if energy < 1 or energy > 5:
+            raise ValueError
+    except ValueError:
+        await callback.answer("\u26a0\ufe0f Неверный формат")
+        return
+    await save_morning_checkin(callback, energy=energy)
+
+
+@router.callback_query(F.data.startswith("cg_daily_midday_e"))
+async def daily_midday_energy_cb(callback: CallbackQuery) -> None:
+    """
+    Обработчик дневного пульса энергии.
+    Формат: cg_daily_midday_e{1-5}.
+    Сохраняет energy в time_slot=midday через save_midday_checkin.
+    """
+    e_str = callback.data.replace("cg_daily_midday_e", "")
+    try:
+        energy = int(e_str)
+        if energy < 1 or energy > 5:
+            raise ValueError
+    except ValueError:
+        await callback.answer("\u26a0\ufe0f Неверный формат")
+        return
+    await save_midday_checkin(callback, energy=energy)
+
+
+@router.callback_query(F.data.startswith("cg_daily_evening_m"))
+async def daily_evening_mood_cb(callback: CallbackQuery, state: FSMContext) -> None:
+    """
+    Обработчик выбора настроения вечернего чекина.
+    Формат: cg_daily_evening_m{1-5}.
+    Запускает FSM вечерней рефлексии через start_evening_reflection.
+    """
+    m_str = callback.data.replace("cg_daily_evening_m", "")
+    try:
+        mood = int(m_str)
+        if mood < 1 or mood > 5:
+            raise ValueError
+    except ValueError:
+        await callback.answer("\u26a0\ufe0f Неверный формат")
+        return
+    await start_evening_reflection(callback, state, mood=mood)
+
+
+@router.callback_query(F.data.startswith("cg_daily_evening_day_"))
+async def daily_evening_day_result_cb(callback: CallbackQuery, state: FSMContext) -> None:
+    """
+    Обработчик выбора итога дня (quick-кнопки).
+    Формат: cg_daily_evening_day_{great|ok|hard|text}.
+    При text — ожидаем FSM текстовый ввод (уже в состоянии waiting_day_result).
+    """
+    result = callback.data.replace("cg_daily_evening_day_", "")
+    if result == "text":
+        # Пользователь выбрал «напишу сам» — остаёмся в состоянии, ждём текст
+        await callback.message.edit_text(
+            "*Как прошёл день?* Напиши своими словами:\n"
+            "_Например: «Продуктивно, закрыл 3 задачи, но устал к вечеру»_",
+            parse_mode="Markdown",
+        )
+        await callback.answer()
+        return
+    await handle_evening_day_result(callback, state, day_result=result)
+
+
+@router.callback_query(F.data == "cg_daily_evening_skip_notes")
+async def daily_evening_skip_notes_cb(callback: CallbackQuery, state: FSMContext) -> None:
+    """Пропуск шага 'заметки о дне' — переходим к блокерам."""
+    await handle_evening_notes(callback, state, notes="")
+
+
+@router.callback_query(F.data == "cg_daily_evening_skip_blockers")
+async def daily_evening_skip_blockers_cb(callback: CallbackQuery, state: FSMContext) -> None:
+    """Пропуск шага 'блокеры' — переходим к победам."""
+    await handle_evening_blockers(callback, state, blockers="")
+
+
+@router.callback_query(F.data == "cg_daily_evening_skip_wins")
+async def daily_evening_skip_wins_cb(callback: CallbackQuery, state: FSMContext) -> None:
+    """Пропуск шага 'победы' — завершаем вечернюю рефлексию."""
+    await finish_evening_reflection(callback, state, wins="")
+
+
+# -- FSM text handlers для вечерней рефлексии ----------------------------------
+
+@router.message(StateFilter(DailyEveningReflection.waiting_day_result))
+async def evening_day_result_text_handler(message: Message, state: FSMContext) -> None:
+    """Текстовый ввод итога дня (когда выбрал 'напишу сам')."""
+    await handle_evening_day_result(message, state, day_result=message.text.strip())
+
+
+@router.message(StateFilter(DailyEveningReflection.waiting_notes))
+async def evening_notes_text_handler(message: Message, state: FSMContext) -> None:
+    """Текстовый ввод заметок о дне (шаг 2 вечерней рефлексии)."""
+    await handle_evening_notes(message, state, notes=message.text.strip())
+
+
+@router.message(StateFilter(DailyEveningReflection.waiting_blockers))
+async def evening_blockers_text_handler(message: Message, state: FSMContext) -> None:
+    """Текстовый ввод блокеров (шаг 3 вечерней рефлексии)."""
+    await handle_evening_blockers(message, state, blockers=message.text.strip())
+
+
+@router.message(StateFilter(DailyEveningReflection.waiting_wins))
+async def evening_wins_text_handler(message: Message, state: FSMContext) -> None:
+    """Текстовый ввод побед дня (шаг 4 — финал вечерней рефлексии)."""
+    await finish_evening_reflection(message, state, wins=message.text.strip())

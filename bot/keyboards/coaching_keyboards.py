@@ -515,3 +515,59 @@ def onboarding_first_action_kb() -> InlineKeyboardMarkup:
         [InlineKeyboardButton(text="👀 Посмотреть примеры", callback_data="cg_ob_examples")],
         [InlineKeyboardButton(text="🏠 В главное меню", callback_data="cg_ob_done_main")],
     ])
+
+
+# -- Проактивные чекины: кнопки 1-5 для утра / дня / вечера -------------------------
+
+def morning_energy_kb() -> InlineKeyboardMarkup:
+    """Кнопки уровня энергии для утреннего чекина (1-5)."""
+    return InlineKeyboardMarkup(inline_keyboard=[[
+        InlineKeyboardButton(text="😴 1", callback_data="cg_daily_morning_e1"),
+        InlineKeyboardButton(text="😕 2", callback_data="cg_daily_morning_e2"),
+        InlineKeyboardButton(text="😐 3", callback_data="cg_daily_morning_e3"),
+        InlineKeyboardButton(text="🙂 4", callback_data="cg_daily_morning_e4"),
+        InlineKeyboardButton(text="🔥 5", callback_data="cg_daily_morning_e5"),
+    ]])
+
+
+def midday_energy_kb() -> InlineKeyboardMarkup:
+    """Кнопки уровня энергии для дневного пульса (1-5)."""
+    return InlineKeyboardMarkup(inline_keyboard=[[
+        InlineKeyboardButton(text="😴 1", callback_data="cg_daily_midday_e1"),
+        InlineKeyboardButton(text="😕 2", callback_data="cg_daily_midday_e2"),
+        InlineKeyboardButton(text="😐 3", callback_data="cg_daily_midday_e3"),
+        InlineKeyboardButton(text="🙂 4", callback_data="cg_daily_midday_e4"),
+        InlineKeyboardButton(text="🔥 5", callback_data="cg_daily_midday_e5"),
+    ]])
+
+
+def evening_mood_kb() -> InlineKeyboardMarkup:
+    """Кнопки настроения для вечернего чекина (1-5)."""
+    return InlineKeyboardMarkup(inline_keyboard=[[
+        InlineKeyboardButton(text="😢 1", callback_data="cg_daily_evening_m1"),
+        InlineKeyboardButton(text="😕 2", callback_data="cg_daily_evening_m2"),
+        InlineKeyboardButton(text="😐 3", callback_data="cg_daily_evening_m3"),
+        InlineKeyboardButton(text="🙂 4", callback_data="cg_daily_evening_m4"),
+        InlineKeyboardButton(text="😄 5", callback_data="cg_daily_evening_m5"),
+    ]])
+
+
+def evening_day_result_kb() -> InlineKeyboardMarkup:
+    """Быстрый выбор итога дня для вечерней рефлексии."""
+    return InlineKeyboardMarkup(inline_keyboard=[
+        [
+            InlineKeyboardButton(text="🔥 Продуктивный", callback_data="cg_daily_evening_day_great"),
+            InlineKeyboardButton(text="👍 Нормально", callback_data="cg_daily_evening_day_ok"),
+        ],
+        [
+            InlineKeyboardButton(text="😔 Тяжёлый", callback_data="cg_daily_evening_day_hard"),
+            InlineKeyboardButton(text="📝 Напишу сам", callback_data="cg_daily_evening_day_text"),
+        ],
+    ])
+
+
+def skip_step_kb(cb_data: str) -> InlineKeyboardMarkup:
+    """Кнопка пропуска шага в рефлексии."""
+    return InlineKeyboardMarkup(inline_keyboard=[
+        [InlineKeyboardButton(text="⏭ Пропустить", callback_data=cb_data)],
+    ])
