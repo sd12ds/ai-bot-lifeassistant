@@ -11,4 +11,9 @@ export default defineConfig({
     host: true,
     port: 5173,
   },
+  build: {
+    // Собираем прямо в nginx webroot чтобы не копировать вручную
+    outDir: '/var/www/jarvis',
+    emptyOutDir: false, // не удаляем uploads/ и другие папки nginx
+  },
 })
