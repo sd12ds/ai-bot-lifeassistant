@@ -544,6 +544,23 @@ export function CoachingDashboard() {
                     onClick={() => navigate(`/coaching/goals/${g.id}`)}
                   />
                 ))}
+                {/* Кнопка добавления ещё одной цели — всегда видна */}
+                <motion.button
+                  whileTap={{ scale: 0.97 }}
+                  onClick={() => navigate('/coaching/goals')}
+                  className="w-full rounded-[16px] border border-dashed border-white/[0.10] p-3 flex items-center gap-3 text-left"
+                  style={{ background: 'rgba(255,255,255,0.02)' }}
+                >
+                  <div
+                    className="w-7 h-7 rounded-xl flex items-center justify-center shrink-0"
+                    style={{ background: 'rgba(99,102,241,0.12)' }}
+                  >
+                    <Plus size={14} style={{ color: '#818cf8' }} />
+                  </div>
+                  <span className="text-xs font-medium" style={{ color: '#818cf8' }}>
+                    Добавить ещё цель
+                  </span>
+                </motion.button>
               </div>
             ) : (
               /* Пустое состояние целей с CoachPromptBubble (§10.2) */
