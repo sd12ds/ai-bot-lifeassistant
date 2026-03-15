@@ -74,13 +74,23 @@ export interface Habit {
 export interface CheckIn {
   id: number
   goal_id: number | null
-  energy_level: number  // 1-5
+  energy_level: number | null  // 1-5
   mood: string | null
   notes: string | null
   blockers: string | null
   wins: string | null
   progress_pct: number | null
+  time_slot: string | null    // 'morning' | 'midday' | 'evening' | 'manual'
+  check_date: string | null   // YYYY-MM-DD
   created_at: string
+}
+
+// Слоты дня: ответ GET /coaching/checkins/by-date
+export interface CheckInByDate {
+  morning?: CheckIn
+  midday?: CheckIn
+  evening?: CheckIn
+  manual?: CheckIn
 }
 
 export interface Review {
@@ -184,7 +194,7 @@ export interface CreateHabitDto {
 }
 
 export interface CreateCheckInDto {
-  energy_level: number
+  energy_level?: number
   mood?: string
   notes?: string
   blockers?: string
@@ -195,6 +205,8 @@ export interface CreateCheckInDto {
   reflection?: string
   next_priorities?: string
   is_extended?: boolean
+  time_slot?: string       // 'morning' | 'midday' | 'evening' | 'manual'
+  check_date?: string      // YYYY-MM-DD
 }
 
 export interface UpdateProfileDto {
@@ -307,6 +319,24 @@ const fetchCheckInHistory = async (limit = 20): Promise<CheckIn[]> => {
   return data
 }
 
+// Слоты по дате: GET /coaching/checkins/by-date?date=YYYY-MM-DD
+const fetchCheckInByDate = async (date: string): Promise<CheckInByDate> => {
+  const { data } = await apiClient.get<CheckInByDate>('/coaching/checkins/by-date', { params: { date } })
+  return data
+}
+
+// Календарь: GET /coaching/checkins/calendar?days=N → { 'YYYY-MM-DD': ['morning', 'evening'] }
+const fetchCheckInCalendar = async (days = 15): Promise<Record<string, string[]>> => {
+  const { data } = await apiClient.get<Record<string, string[]>>('/coaching/checkins/calendar', { params: { days } })
+  return data
+}
+
+// Обновление чекина: PATCH /coaching/checkins/{id}
+const updateCheckIn = async ({ id, ...dto }: { id: number } & Partial<CreateCheckInDto>): Promise<CheckIn> => {
+  const { data } = await apiClient.patch<CheckIn>(`/coaching/checkins/${id}`, dto)
+  return data
+}
+
 // -- Reviews --
 const fetchLatestReview = async (): Promise<Review | null> => {
   const { data } = await apiClient.get<Review | null>('/coaching/reviews/latest')
@@ -376,6 +406,8 @@ export const coachingKeys = {
   habitTemplates: (area?: string) => ['coaching', 'habit-templates', area] as const,
   todayCheckIn: ['coaching', 'checkin-today'] as const,
   checkInHistory: ['coaching', 'checkin-history'] as const,
+  checkInByDate: (date: string) => ['coaching', 'checkin-by-date', date] as const,
+  checkInCalendar: (days: number) => ['coaching', 'checkin-calendar', days] as const,
   latestReview: ['coaching', 'review-latest'] as const,
   profile: ['coaching', 'profile'] as const,
   onboarding: ['coaching', 'onboarding'] as const,
@@ -547,6 +579,40 @@ export function useCreateCheckIn() {
     mutationFn: createCheckIn,
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: coachingKeys.todayCheckIn })
+      qc.invalidateQueries({ queryKey: ['coaching', 'checkin-by-date'] })
+      qc.invalidateQueries({ queryKey: ['coaching', 'checkin-calendar'] })
+      qc.invalidateQueries({ queryKey: coachingKeys.dashboard })
+    },
+  })
+}
+
+// Хук: чекины по конкретной дате (все слоты сразу)
+export function useCheckInByDate(date: string) {
+  return useQuery({
+    queryKey: coachingKeys.checkInByDate(date),
+    queryFn: () => fetchCheckInByDate(date),
+    staleTime: 60_000,
+    enabled: !!date,
+  })
+}
+
+// Хук: календарь чекинов (dots по дням)
+export function useCheckInCalendar(days = 15) {
+  return useQuery({
+    queryKey: coachingKeys.checkInCalendar(days),
+    queryFn: () => fetchCheckInCalendar(days),
+    staleTime: 60_000,
+  })
+}
+
+// Хук: обновление существующего чекина
+export function useUpdateCheckIn() {
+  const qc = useQueryClient()
+  return useMutation({
+    mutationFn: updateCheckIn,
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ['coaching', 'checkin-by-date'] })
+      qc.invalidateQueries({ queryKey: ['coaching', 'checkin-calendar'] })
       qc.invalidateQueries({ queryKey: coachingKeys.dashboard })
     },
   })

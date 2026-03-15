@@ -1,329 +1,400 @@
 /**
- * CheckInPage v2 — экран чекина дня.
+ * CheckInPage v3 — чекин дня с календарной лентой и слотами времени.
  *
- * Изменения согласно docs/coaching-architecture.md:
- *  §13.5 — прогресс-индикатор, quick/extended режимы, привязка к цели
- *  §9.3  — чипы быстрого ответа после выбора настроения
- *  §8.1  — адаптивный вопрос коуча на основе выбранного настроения
- *  §11.3 — примеры-чипы в текстовых полях для подсказки
- *  §13.9 — голосовой ввод (SpeechRecognition API), chat bridge
+ * Ключевые возможности:
+ *  - DayStrip: 15 дней с цветными точками по слотам (утро/день/вечер)
+ *  - SlotTabs: переключение между Утром / Днём / Вечером
+ *  - Форма зависит от выбранного слота
+ *  - Read-only если слот уже заполнен для выбранного дня
+ *  - Подсказки о том, когда и зачем заполнять каждый слот
+ *  - submit сохраняет time_slot + check_date
  */
-import { useState, useRef, useEffect } from 'react'
+import { useState, useMemo, useEffect, useRef } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { motion, AnimatePresence } from 'framer-motion'
+import { ArrowLeft, Sun, Zap, Moon, ChevronDown } from 'lucide-react'
 import {
-  ArrowLeft, Send, Mic, MicOff,
-  ChevronDown, ChevronUp, Target, MessageCircle,
-} from 'lucide-react'
-import { useCreateCheckIn, useGoals } from '../../api/coaching'
-import type { CreateCheckInDto } from '../../api/coaching'
+  useCreateCheckIn,
+  useCheckInByDate,
+  useCheckInCalendar,
+} from '../../api/coaching'
+import type { CheckIn, CreateCheckInDto } from '../../api/coaching'
 import { GlassCard } from '../../shared/ui/GlassCard'
 
-// ── Конфигурация шкал ─────────────────────────────────────────────────────────
-const ENERGY_EMOJI = ['😴', '😔', '😐', '🙂', '🔥']
+// ── Типы ──────────────────────────────────────────────────────────────────────
+type SlotType = 'morning' | 'midday' | 'evening'
+
+// ── Утилиты дат ───────────────────────────────────────────────────────────────
+const toIso = (d: Date): string => d.toISOString().split('T')[0]
+
+// Генерация последних N дней (сегодня — последний элемент)
+function generateDays(count = 15): string[] {
+  const today = new Date()
+  return Array.from({ length: count }, (_, i) => {
+    const d = new Date(today)
+    d.setDate(d.getDate() - (count - 1 - i))
+    return toIso(d)
+  })
+}
+
+// Определяем рекомендуемый слот по текущему времени (МСК = UTC+3)
+function getDefaultSlot(): SlotType {
+  const h = (new Date().getUTCHours() + 3) % 24
+  if (h >= 7 && h < 13) return 'morning'
+  if (h >= 13 && h < 19) return 'midday'
+  return 'evening'
+}
+
+// ── Конфиг слотов ─────────────────────────────────────────────────────────────
+interface SlotConfig {
+  id: SlotType
+  label: string
+  color: string
+  hint: string
+}
+
+const SLOTS: SlotConfig[] = [
+  {
+    id: 'morning',
+    label: 'Утро',
+    color: '#fbbf24',
+    hint: 'Утренний чекин фиксирует твою энергию в начале дня (7–12h). Заполняй каждое утро — так ты отслеживаешь паттерны и понимаешь, в какие дни ты на подъёме.',
+  },
+  {
+    id: 'midday',
+    label: 'День',
+    color: '#22d3ee',
+    hint: 'Дневной пульс (13–17h) — короткая отметка в середине дня. Помогает скорректировать вторую половину: низкая энергия — сделай перерыв, высокая — используй для важных задач.',
+  },
+  {
+    id: 'evening',
+    label: 'Вечер',
+    color: '#a78bfa',
+    hint: 'Вечерняя рефлексия (19–22h) — самый важный слот. Фиксируй настроение, итог дня, победы и блокеры. Именно эти данные бот использует для персональных советов.',
+  },
+]
+
+const SLOT_ICONS: Record<SlotType, React.ReactNode> = {
+  morning: <Sun size={13} />,
+  midday: <Zap size={13} />,
+  evening: <Moon size={13} />,
+}
+
+// ── Шкала эмодзи ──────────────────────────────────────────────────────────────
+const ENERGY_EMOJI = ['😴', '😕', '😐', '🙂', '🔥']
 const ENERGY_TEXT  = ['Истощён', 'Устал', 'Нейтрально', 'Бодро', 'Горю!']
+const MOOD_EMOJI   = ['😢', '😕', '😐', '🙂', '😄']
+const MOOD_TEXT    = ['Плохо', 'Грустно', 'Нейтрально', 'Хорошо', 'Отлично!']
 
-const MOOD_EMOJI = ['😢', '😕', '😐', '🙂', '😄']
-const MOOD_TEXT  = ['Плохо', 'Грустно', 'Нейтрально', 'Хорошо', 'Отлично!']
-
-// Маппинг числового значения настроения в строковый enum API
-const MOOD_MAP: Record<number, string> = {
-  1: 'bad', 2: 'tired', 3: 'ok', 4: 'good', 5: 'great',
+// Маппинг строкового mood → число
+const MOOD_TO_NUM: Record<string, number> = {
+  bad: 1, tired: 2, ok: 3, good: 4, great: 5,
+  '1': 1, '2': 2, '3': 3, '4': 4, '5': 5,
 }
 
-// ── Адаптивный вопрос коуча после выбора настроения (§8.1) ────────────────────
-function coachQuestion(mood: number): string {
-  if (mood <= 2) return 'Что случилось? Иногда просто написать об этом — уже шаг вперёд.'
-  if (mood === 3) return 'Ничего особенного? Что хотя бы немного порадовало сегодня?'
-  return 'Отлично! Что именно сделало этот день хорошим?'
-}
-
-// ── Адаптивный placeholder для рефлексии в зависимости от настроения ─────────
-function reflectionHint(mood: number): string {
-  if (mood <= 2) return 'Расскажи, что было тяжело. Писать об этом — тоже шаг вперёд...'
-  if (mood >= 4) return 'Что сделало этот день хорошим? Чем гордишься?'
-  return 'Как прошёл день? Что было важным?'
-}
-
-// ── Чипы-примеры для текстовых полей (§11.3) ─────────────────────────────────
-const REFLECTION_CHIPS = [
-  'Продуктивный день 💪',
-  'Всё шло по плану',
-  'Были трудности, но справился',
-  'Тяжёлый день',
-]
-const BLOCKERS_CHIPS = [
-  'Отвлекался на несрочное',
-  'Не хватило времени',
-  'Усталость',
-  'Внешние помехи',
-]
-const WINS_CHIPS = [
-  'Завершил важную задачу',
-  'Держал все привычки',
-  'Сделал сложный шаг',
-  'Помог кому-то',
+// Варианты итога дня для вечернего слота
+const DAY_RESULTS: Array<{ key: string; label: string }> = [
+  { key: 'great', label: '🔥 Продуктивный' },
+  { key: 'ok',    label: '👍 Нормально' },
+  { key: 'hard',  label: '😔 Тяжёлый' },
+  { key: 'mixed', label: '⚡ Неоднозначно' },
 ]
 
-// ── Чипы быстрого действия после выбора настроения (§9.3) ────────────────────
-type QuickAction = 'expand_blockers' | 'expand_wins' | 'submit'
-interface QuickChip { label: string; action: QuickAction }
-
-function getMoodChips(mood: number): QuickChip[] {
-  if (mood <= 2) return [
-    { label: '😔 Расскажу что мешало', action: 'expand_blockers' },
-    { label: '💡 Дай следующий шаг',   action: 'submit' },
-  ]
-  if (mood >= 4) return [
-    { label: '🏆 Записать победы',   action: 'expand_wins' },
-    { label: '✅ Всё ок, сохранить', action: 'submit' },
-  ]
-  return [
-    { label: '📝 Расскажу подробнее', action: 'expand_blockers' },
-    { label: '✅ Всё в порядке',      action: 'submit' },
-  ]
-}
-
-// ── ScaleSelector: шкала 1-5 с эмодзи и текстовым лейблом ───────────────────
-interface ScaleSelectorProps {
+// ── ScaleSelector ─────────────────────────────────────────────────────────────
+function ScaleSelector({
+  value, onChange, emojis, texts, color = '#818cf8',
+}: {
   value: number
   onChange: (v: number) => void
   emojis: string[]
   texts: string[]
-  accentColor?: string
-}
-
-function ScaleSelector({
-  value, onChange, emojis, texts, accentColor = 'rgba(99,102,241,0.35)',
-}: ScaleSelectorProps) {
+  color?: string
+}) {
   return (
     <div>
       <div className="flex gap-2 justify-between">
         {[1, 2, 3, 4, 5].map(n => (
           <motion.button
             key={n}
-            whileTap={{ scale: 0.85 }}
+            whileTap={{ scale: 0.82 }}
             onClick={() => onChange(n)}
             className="flex-1 aspect-square rounded-xl text-2xl flex items-center justify-center transition-all"
             style={
               value === n
-                ? { background: accentColor, border: '1px solid rgba(99,102,241,0.5)' }
-                : { background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.06)' }
+                ? { background: `${color}30`, border: `1.5px solid ${color}80` }
+                : { background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.07)' }
             }
           >
             {emojis[n - 1]}
           </motion.button>
         ))}
       </div>
-      {/* Текстовый лейбл выбранного значения */}
-      <p
-        className="text-center text-xs mt-2 font-medium transition-all"
-        style={{ color: '#a5b4fc' }}
-      >
+      <p className="text-center text-xs mt-2 font-medium" style={{ color }}>
         {texts[value - 1]}
       </p>
     </div>
   )
 }
 
-// ── ExampleChips: горизонтальные чипы-примеры для textarea ───────────────────
-function ExampleChips({
-  chips, onSelect,
-}: { chips: string[]; onSelect: (chip: string) => void }) {
+// ── DayStrip ──────────────────────────────────────────────────────────────────
+function DayStrip({
+  days, selectedDate, onSelect, calendarData,
+}: {
+  days: string[]
+  selectedDate: string
+  onSelect: (d: string) => void
+  calendarData: Record<string, string[]>
+}) {
+  const today = toIso(new Date())
+  const scrollRef = useRef<HTMLDivElement>(null)
+
+  useEffect(() => {
+    const el = scrollRef.current
+    if (!el) return
+    const idx = days.indexOf(today)
+    const cellW = 52
+    el.scrollLeft = Math.max(0, idx * cellW - el.clientWidth / 2 + cellW / 2)
+  }, [days, today])
+
+  const DOT_COLORS: Record<string, string> = {
+    morning: '#fbbf24',
+    midday: '#22d3ee',
+    evening: '#a78bfa',
+  }
+
   return (
-    <div className="flex gap-2 flex-wrap mt-2">
-      {chips.map(chip => (
-        <motion.button
-          key={chip}
-          whileTap={{ scale: 0.95 }}
-          onClick={() => onSelect(chip)}
-          className="px-2.5 py-1 rounded-xl text-xs border border-white/[0.08] whitespace-nowrap"
-          style={{ background: 'rgba(99,102,241,0.08)', color: '#a5b4fc' }}
-        >
-          {chip}
-        </motion.button>
-      ))}
+    <div
+      ref={scrollRef}
+      className="flex gap-1.5 overflow-x-auto pb-1"
+      style={{ scrollbarWidth: 'none' }}
+    >
+      {days.map(dateStr => {
+        const d = new Date(dateStr + 'T00:00:00')
+        const isToday = dateStr === today
+        const isSelected = dateStr === selectedDate
+        const slots = calendarData[dateStr] ?? []
+
+        return (
+          <motion.button
+            key={dateStr}
+            whileTap={{ scale: 0.88 }}
+            onClick={() => onSelect(dateStr)}
+            className="flex-shrink-0 flex flex-col items-center gap-0.5 py-2 px-2 rounded-xl transition-all"
+            style={{
+              minWidth: 44,
+              background: isSelected
+                ? 'rgba(99,102,241,0.22)'
+                : isToday
+                ? 'rgba(255,255,255,0.06)'
+                : 'transparent',
+              border: isSelected
+                ? '1.5px solid rgba(99,102,241,0.5)'
+                : isToday
+                ? '1px solid rgba(255,255,255,0.12)'
+                : '1px solid transparent',
+            }}
+          >
+            <span
+              className="text-[9px] font-medium uppercase"
+              style={{ color: isSelected ? '#a5b4fc' : 'var(--app-hint)' }}
+            >
+              {d.toLocaleDateString('ru', { weekday: 'short' }).slice(0, 2)}
+            </span>
+            <span
+              className="text-sm font-bold"
+              style={{
+                color: isSelected
+                  ? '#c4b5fd'
+                  : isToday
+                  ? 'var(--app-text)'
+                  : 'var(--app-hint)',
+              }}
+            >
+              {d.getDate()}
+            </span>
+            {/* Цветные точки по заполненным слотам */}
+            <div className="flex gap-0.5 items-center">
+              {(['morning', 'midday', 'evening'] as SlotType[]).map(slot => (
+                <div
+                  key={slot}
+                  className="rounded-full"
+                  style={{
+                    width: 4,
+                    height: 4,
+                    background: slots.includes(slot)
+                      ? DOT_COLORS[slot]
+                      : 'rgba(255,255,255,0.1)',
+                  }}
+                />
+              ))}
+            </div>
+          </motion.button>
+        )
+      })}
     </div>
   )
 }
 
-// ── VoiceMicButton: кнопка голосового ввода (SpeechRecognition) ───────────────
-// Использует Web Speech API.
-// Паттерн useRef для onAppend — исключает stale closure при повторных рендерах.
-function VoiceMicButton({ onAppend }: { onAppend: (text: string) => void }) {
-  const [listening, setListening] = useState(false)
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const recRef = useRef<any>(null)
-  // Всегда актуальная ссылка на коллбэк — обновляется синхронно при каждом рендере
-  const onAppendRef = useRef(onAppend)
-  onAppendRef.current = onAppend
-
-  // Проверяем поддержку SpeechRecognition в браузере
-  const isSupported =
-    typeof window !== 'undefined' &&
-    ('SpeechRecognition' in window || 'webkitSpeechRecognition' in window)
-
-  function handleToggle() {
-    if (listening) {
-      // abort не ждёт результата — сразу останавливает
-      recRef.current?.abort?.()
-      recRef.current?.stop?.()
-      setListening(false)
-      return
-    }
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const SR = (window as any).SpeechRecognition || (window as any).webkitSpeechRecognition
-    const rec = new SR()
-    rec.lang = 'ru-RU'
-    rec.continuous = false
-    rec.interimResults = false
-    rec.maxAlternatives = 1
-    // Используем onAppendRef.current — всегда свежий коллбэк без stale closure
-    rec.onresult = (e: any) => {  // eslint-disable-line @typescript-eslint/no-explicit-any
-      let transcript = ''
-      for (let i = e.resultIndex; i < e.results.length; i++) {
-        transcript += e.results[i][0].transcript
-      }
-      if (transcript.trim()) onAppendRef.current(transcript.trim() + ' ')
-    }
-    rec.onend   = () => setListening(false)
-    rec.onerror = (e: any) => {  // eslint-disable-line @typescript-eslint/no-explicit-any
-      console.warn('SpeechRecognition error:', e.error)
-      setListening(false)
-    }
-    recRef.current = rec
-    try {
-      rec.start()
-      setListening(true)
-    } catch {
-      setListening(false)
-    }
-  }
-
-  if (!isSupported) return null
+// ── SlotReadonly: отображение уже заполненного слота ──────────────────────────
+function SlotReadonly({ checkin, slot }: { checkin: CheckIn; slot: SlotType }) {
+  const color = SLOTS.find(s => s.id === slot)?.color ?? '#818cf8'
+  const moodNum = checkin.mood ? (MOOD_TO_NUM[checkin.mood] ?? null) : null
+  const time = new Date(checkin.created_at).toLocaleTimeString('ru', {
+    hour: '2-digit', minute: '2-digit',
+  })
 
   return (
-    <motion.button
-      whileTap={{ scale: 0.85 }}
-      onClick={handleToggle}
-      className="p-1.5 rounded-lg flex items-center gap-1"
-      style={{
-        background: listening ? 'rgba(239,68,68,0.2)' : 'rgba(99,102,241,0.1)',
-      }}
-      title={listening ? 'Остановить запись' : 'Голосовой ввод'}
-    >
-      {listening
-        ? <MicOff size={14} style={{ color: '#f87171' }} />
-        : <Mic     size={14} style={{ color: '#818cf8' }} />
-      }
-      {listening && (
-        <span className="text-[10px]" style={{ color: '#f87171' }}>Слушаю...</span>
+    <GlassCard>
+      <div className="flex items-center gap-2 mb-3">
+        <div className="w-2 h-2 rounded-full" style={{ background: color }} />
+        <span className="text-xs font-semibold" style={{ color }}>
+          Слот заполнен
+        </span>
+        <span className="ml-auto text-xs" style={{ color: 'var(--app-hint)' }}>
+          {time}
+        </span>
+      </div>
+
+      {checkin.energy_level != null && (
+        <div className="flex items-center gap-3 mb-2">
+          <span className="text-2xl">{ENERGY_EMOJI[(checkin.energy_level ?? 1) - 1]}</span>
+          <div>
+            <p className="text-[11px]" style={{ color: 'var(--app-hint)' }}>Энергия</p>
+            <p className="text-sm font-semibold" style={{ color: 'var(--app-text)' }}>
+              {checkin.energy_level}/5 — {ENERGY_TEXT[(checkin.energy_level ?? 1) - 1]}
+            </p>
+          </div>
+        </div>
       )}
-    </motion.button>
+
+      {moodNum != null && (
+        <div className="flex items-center gap-3 mb-2">
+          <span className="text-2xl">{MOOD_EMOJI[moodNum - 1]}</span>
+          <div>
+            <p className="text-[11px]" style={{ color: 'var(--app-hint)' }}>Настроение</p>
+            <p className="text-sm font-semibold" style={{ color: 'var(--app-text)' }}>
+              {moodNum}/5 — {MOOD_TEXT[moodNum - 1]}
+            </p>
+          </div>
+        </div>
+      )}
+
+      {checkin.notes && (
+        <div
+          className="mt-2 px-3 py-2 rounded-xl"
+          style={{ background: 'rgba(255,255,255,0.04)' }}
+        >
+          <p className="text-[11px] mb-1" style={{ color: 'var(--app-hint)' }}>
+            Как прошёл день
+          </p>
+          <p className="text-sm" style={{ color: 'var(--app-text)' }}>
+            {checkin.notes}
+          </p>
+        </div>
+      )}
+
+      {checkin.wins && (
+        <div className="mt-2">
+          <p className="text-xs">
+            <span style={{ color: '#fbbf24' }}>🏆 Победы: </span>
+            <span style={{ color: 'var(--app-text)' }}>{checkin.wins}</span>
+          </p>
+        </div>
+      )}
+
+      {checkin.blockers && (
+        <div className="mt-1">
+          <p className="text-xs">
+            <span style={{ color: '#f87171' }}>⚠️ Мешало: </span>
+            <span style={{ color: 'var(--app-text)' }}>{checkin.blockers}</span>
+          </p>
+        </div>
+      )}
+    </GlassCard>
   )
 }
 
-// ── Открыть чат Telegram (закрыть Mini App) ───────────────────────────────────
-function openTelegramChat() {
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  ;(window as any).Telegram?.WebApp?.close()
-}
-
-// Ключ черновика в sessionStorage — форма восстанавливается при возвращении на страницу
-const DRAFT_KEY = 'checkin_draft'
-
+// ── Главный компонент ──────────────────────────────────────────────────────────
 export function CheckInPage() {
   const navigate = useNavigate()
+  const today = toIso(new Date())
+  const days = useMemo(() => generateDays(15), [])
 
-  // ── Загружаем черновик из sessionStorage (если пользователь вернулся назад) ──
-  const savedDraft = (() => {
-    try { return JSON.parse(sessionStorage.getItem(DRAFT_KEY) ?? 'null') } catch { return null }
-  })()
+  const [selectedDate, setSelectedDate] = useState(today)
+  const [activeSlot, setActiveSlot] = useState<SlotType>(getDefaultSlot())
+  const [showHint, setShowHint] = useState(false)
 
-  // ── Состояние формы — восстанавливается из черновика, иначе дефолты ─────────
-  const [extended, setExtended]         = useState<boolean>(savedDraft?.extended   ?? true)
-  const [energy, setEnergy]             = useState<number>(savedDraft?.energy      ?? 3)
-  const [mood, setMood]                 = useState<number>(savedDraft?.mood        ?? 3)
-  const [reflection, setReflection]     = useState<string>(savedDraft?.reflection  ?? '')
-  const [blockers, setBlockers]         = useState<string>(savedDraft?.blockers    ?? '')
-  const [wins, setWins]                 = useState<string>(savedDraft?.wins        ?? '')
-  const [goalId, setGoalId]             = useState<number | undefined>(savedDraft?.goalId)
+  // Состояние форм
+  const [energy, setEnergy] = useState(3)
+  const [mood, setMood] = useState(3)
+  const [dayResult, setDayResult] = useState('')
+  const [notes, setNotes] = useState('')
+  const [blockers, setBlockers] = useState('')
+  const [wins, setWins] = useState('')
   const [submitError, setSubmitError] = useState<string | null>(null)
 
-  // Ref для прокрутки к полю блокеров при чипе «Расскажу что мешало»
-  const blockersRef = useRef<HTMLDivElement>(null)
-  const winsRef     = useRef<HTMLDivElement>(null)
-
+  const { data: calendarData = {} } = useCheckInCalendar(15)
+  const { data: dayData, isLoading } = useCheckInByDate(selectedDate)
   const createCheckIn = useCreateCheckIn()
-  // Загружаем активные цели для выбора привязки (§13.5)
-  const { data: activeGoals = [] } = useGoals('active')
 
-  // ── Сохраняем черновик при каждом изменении полей ─────────────────────────
+  const slotInfo = SLOTS.find(s => s.id === activeSlot)!
+  const currentSlotData = dayData?.[activeSlot] as CheckIn | undefined
+  const isFilled = !!currentSlotData
+
+  // Сброс формы при смене даты или слота
   useEffect(() => {
-    try {
-      sessionStorage.setItem(DRAFT_KEY, JSON.stringify({
-        extended, energy, mood, reflection, blockers, wins, goalId,
-      }))
-    } catch { /* sessionStorage недоступен */ }
-  }, [extended, energy, mood, reflection, blockers, wins, goalId])
+    setEnergy(3)
+    setMood(3)
+    setDayResult('')
+    setNotes('')
+    setBlockers('')
+    setWins('')
+    setSubmitError(null)
+    setShowHint(false)
+  }, [selectedDate, activeSlot])
 
-  // ── Прогресс-индикатор ──────────────────────────────────────────────────────
-  // Считаем заполненные поля: energy + mood всегда заполнены (есть дефолт),
-  // текстовые поля — когда написано > 3 символов
-  const textFilled    = [reflection, ...(extended ? [blockers, wins] : [])].filter(s => s.trim().length > 3).length
-  const totalFields   = extended ? 5 : 3    // energy + mood + текстовые
-  const filledFields  = 2 + textFilled       // energy и mood всегда 2
-  const progressPct   = Math.round((filledFields / totalFields) * 100)
-
-  // Цвет прогресс-бара по заполненности
-  const progressColor =
-    progressPct >= 80 ? '#4ade80' :
-    progressPct >= 50 ? '#818cf8' : '#fbbf24'
-
-  // ── Обработка смены настроения ───────────────────────────────────────────────
-  const handleMoodChange = (v: number) => {
-    setMood(v)
-  }
-
-  // ── Обработка быстрых чипов после настроения (§9.3) ─────────────────────────
-  const handleQuickChip = (action: QuickAction) => {
-    if (action === 'expand_blockers') {
-      setExtended(true)
-      // Прокручиваем к полю блокеров через небольшую задержку
-      setTimeout(() => blockersRef.current?.scrollIntoView({ behavior: 'smooth', block: 'center' }), 150)
-    } else if (action === 'expand_wins') {
-      setExtended(true)
-      setTimeout(() => winsRef.current?.scrollIntoView({ behavior: 'smooth', block: 'center' }), 150)
-    } else if (action === 'submit') {
-      handleSubmit()
-    }
-  }
-
-  // ── Отправка чекина ──────────────────────────────────────────────────────────
   const handleSubmit = () => {
     setSubmitError(null)
+
     const dto: CreateCheckInDto = {
-      energy_level: energy,
-      mood:         MOOD_MAP[mood],
-      notes:        reflection.trim()  || undefined,
-      blockers:     blockers.trim()    || undefined,
-      wins:         wins.trim()        || undefined,
-      goal_id:      goalId,
+      time_slot: activeSlot,
+      check_date: selectedDate,
     }
+
+    if (activeSlot === 'morning') {
+      dto.energy_level = energy
+    } else if (activeSlot === 'midday') {
+      dto.energy_level = energy
+      if (notes.trim()) dto.notes = notes.trim()
+    } else {
+      // evening: настроение + итог дня + победы + блокеры
+      dto.mood = String(mood)
+      const noteParts = [
+        dayResult ? DAY_RESULTS.find(r => r.key === dayResult)?.label ?? '' : '',
+        notes.trim(),
+      ].filter(Boolean)
+      if (noteParts.length > 0) dto.notes = noteParts.join('\n')
+      if (blockers.trim()) dto.blockers = blockers.trim()
+      if (wins.trim()) dto.wins = wins.trim()
+    }
+
     createCheckIn.mutate(dto, {
-      onSuccess: () => {
-        // Очищаем черновик при успешной отправке
-        try { sessionStorage.removeItem(DRAFT_KEY) } catch {}
-        navigate('/coaching')
-      },
-      onError:   () => setSubmitError('Не удалось сохранить чекин. Попробуй ещё раз.'),
+      onSuccess: () => navigate('/coaching'),
+      onError: () => setSubmitError('Не удалось сохранить. Попробуй ещё раз.'),
     })
   }
+
+  const isToday = selectedDate === today
+  const dateLabel = isToday
+    ? 'Сегодня'
+    : new Date(selectedDate + 'T00:00:00').toLocaleDateString('ru', {
+        day: 'numeric', month: 'long',
+      })
 
   return (
     <div className="h-full flex flex-col overflow-hidden">
 
-      {/* ── Шапка ─────────────────────────────────────────────────────────── */}
+      {/* Шапка */}
       <div className="px-4 pt-6 pb-2 flex items-center gap-3 shrink-0">
         <button
           onClick={() => navigate('/coaching')}
@@ -332,286 +403,358 @@ export function CheckInPage() {
         >
           <ArrowLeft size={20} style={{ color: 'var(--app-text)' }} />
         </button>
-        <h1 className="text-xl font-black flex-1" style={{ color: 'var(--app-text)' }}>
-          Чекин дня
-        </h1>
-        {/* Кнопка чата (§13.9 — chat bridge) */}
-        <button
-          onClick={openTelegramChat}
-          className="w-9 h-9 rounded-xl flex items-center justify-center"
-          style={{ background: 'rgba(255,255,255,0.06)' }}
-          title="Открыть в чате"
-        >
-          <MessageCircle size={18} style={{ color: '#818cf8' }} />
-        </button>
-        {/* Переключатель режима */}
-        <button
-          onClick={() => setExtended(v => !v)}
-          className="flex items-center gap-1 text-xs font-medium px-3 py-1.5 rounded-xl border border-white/[0.08]"
-          style={{ background: 'rgba(255,255,255,0.05)', color: '#818cf8' }}
-        >
-          {extended
-            ? <><ChevronUp size={14} /> Кратко</>
-            : <><ChevronDown size={14} /> Подробно</>
-          }
-        </button>
+        <div className="flex-1 min-w-0">
+          <h1 className="text-xl font-black" style={{ color: 'var(--app-text)' }}>
+            Чекин дня
+          </h1>
+          <p className="text-xs font-medium" style={{ color: slotInfo.color }}>
+            {dateLabel} · {slotInfo.label}
+          </p>
+        </div>
       </div>
 
-      {/* ── Прогресс-индикатор (§13.5) ────────────────────────────────────── */}
+      {/* DayStrip: 15 дней с точками */}
       <div className="px-4 pb-3 shrink-0">
-        <div className="flex items-center justify-between mb-1.5">
-          <span className="text-[11px]" style={{ color: 'var(--app-hint)' }}>
-            Заполнено
-          </span>
-          <span
-            className="text-[11px] font-semibold"
-            style={{ color: progressColor }}
-          >
-            {filledFields}/{totalFields}
-          </span>
-        </div>
+        <DayStrip
+          days={days}
+          selectedDate={selectedDate}
+          onSelect={setSelectedDate}
+          calendarData={calendarData}
+        />
+      </div>
+
+      {/* SlotTabs: Утро / День / Вечер */}
+      <div className="px-4 pb-3 shrink-0">
         <div
-          className="h-1 rounded-full overflow-hidden"
-          style={{ background: 'rgba(255,255,255,0.08)' }}
+          className="flex rounded-2xl p-1"
+          style={{ background: 'rgba(255,255,255,0.05)' }}
         >
-          <motion.div
-            className="h-full rounded-full"
-            initial={{ width: 0 }}
-            animate={{ width: `${progressPct}%` }}
-            transition={{ duration: 0.4 }}
-            style={{ background: progressColor }}
-          />
+          {SLOTS.map(slot => {
+            const isActive = activeSlot === slot.id
+            const filled = (calendarData[selectedDate] ?? []).includes(slot.id)
+            return (
+              <motion.button
+                key={slot.id}
+                whileTap={{ scale: 0.95 }}
+                onClick={() => setActiveSlot(slot.id)}
+                className="flex-1 flex items-center justify-center gap-1.5 py-2.5 rounded-xl text-xs font-semibold transition-all"
+                style={
+                  isActive
+                    ? {
+                        background: `${slot.color}22`,
+                        color: slot.color,
+                        border: `1px solid ${slot.color}40`,
+                      }
+                    : {
+                        color: filled ? slot.color : 'var(--app-hint)',
+                        border: '1px solid transparent',
+                        opacity: filled ? 0.75 : 1,
+                      }
+                }
+              >
+                <span
+                  style={{
+                    color: isActive ? slot.color : 'var(--app-hint)',
+                    opacity: isActive ? 1 : 0.5,
+                  }}
+                >
+                  {SLOT_ICONS[slot.id]}
+                </span>
+                {slot.label}
+                {filled && !isActive && (
+                  <div
+                    className="w-1.5 h-1.5 rounded-full"
+                    style={{ background: slot.color }}
+                  />
+                )}
+              </motion.button>
+            )
+          })}
         </div>
       </div>
 
-      {/* ── Скролл-область ────────────────────────────────────────────────── */}
-      <div className="flex-1 overflow-y-auto px-4 pb-28 space-y-4">
+      {/* Скролл-область */}
+      <div className="flex-1 overflow-y-auto px-4 pb-28 space-y-3">
 
-        {/* ── Энергия ─────────────────────────────────────────────────────── */}
-        <GlassCard>
-          <div className="flex items-center justify-between mb-3">
-            <p className="font-semibold" style={{ color: 'var(--app-text)' }}>⚡ Энергия</p>
-            <span className="text-xs font-medium px-2 py-0.5 rounded-lg"
-              style={{ background: 'rgba(99,102,241,0.15)', color: '#a5b4fc' }}>
-              {ENERGY_TEXT[energy - 1]}
-            </span>
-          </div>
-          <ScaleSelector
-            value={energy}
-            onChange={setEnergy}
-            emojis={ENERGY_EMOJI}
-            texts={ENERGY_TEXT}
-          />
-        </GlassCard>
-
-        {/* ── Настроение ──────────────────────────────────────────────────── */}
-        <GlassCard>
-          <div className="flex items-center justify-between mb-3">
-            <p className="font-semibold" style={{ color: 'var(--app-text)' }}>😊 Настроение</p>
-            <span className="text-xs font-medium px-2 py-0.5 rounded-lg"
-              style={{ background: 'rgba(99,102,241,0.15)', color: '#a5b4fc' }}>
-              {MOOD_TEXT[mood - 1]}
-            </span>
-          </div>
-          <ScaleSelector
-            value={mood}
-            onChange={handleMoodChange}
-            emojis={MOOD_EMOJI}
-            texts={MOOD_TEXT}
-          />
-
-          {/* Адаптивный вопрос коуча (§8.1) — появляется после первого выбора настроения */}
-          <AnimatePresence mode="wait">
-              <motion.div
-                key={"coach-q-" + mood}
-                initial={{ opacity: 0, y: -6 }}
-                animate={{ opacity: 1, y: 0 }}
-                exit={{ opacity: 0 }}
-                className="mt-3 px-3 py-2 rounded-xl text-xs leading-relaxed"
-                style={{ background: 'rgba(99,102,241,0.1)', color: '#c4b5fd' }}
-              >
-                💬 {coachQuestion(mood)}
-              </motion.div>
-          </AnimatePresence>
-
-          {/* Чипы быстрого действия (§9.3) */}
-          <AnimatePresence mode="wait">
-              <motion.div
-                key={"mood-chips-" + mood}
-                initial={{ opacity: 0, y: -4 }}
-                animate={{ opacity: 1, y: 0 }}
-                exit={{ opacity: 0 }}
-                className="flex gap-2 mt-3 flex-wrap"
-              >
-                {getMoodChips(mood).map(chip => (
-                  <motion.button
-                    key={chip.label}
-                    whileTap={{ scale: 0.93 }}
-                    onClick={() => handleQuickChip(chip.action)}
-                    className="px-3 py-1.5 rounded-xl text-xs font-medium border border-white/[0.08]"
-                    style={{ background: 'rgba(139,92,246,0.12)', color: '#c4b5fd' }}
-                  >
-                    {chip.label}
-                  </motion.button>
-                ))}
-              </motion.div>
-          </AnimatePresence>
-        </GlassCard>
-
-        {/* ── Рефлексия — «Как прошёл день?» ─────────────────────────────── */}
-        <GlassCard>
-          <div className="flex items-center justify-between mb-2">
-            <p className="font-semibold" style={{ color: 'var(--app-text)' }}>
-              💬 Как прошёл день?
+        {/* Подсказка — когда и зачем */}
+        <button
+          onClick={() => setShowHint(v => !v)}
+          className="w-full text-left px-3 py-2 rounded-xl flex items-start gap-2"
+          style={{
+            background: 'rgba(99,102,241,0.07)',
+            border: '1px solid rgba(99,102,241,0.15)',
+          }}
+        >
+          <span className="text-sm mt-0.5 shrink-0">ℹ️</span>
+          <div className="flex-1 min-w-0">
+            <p className="text-xs font-medium" style={{ color: '#a5b4fc' }}>
+              {slotInfo.label} — когда и зачем?
             </p>
-            {/* Голосовой ввод (§13.9) */}
-            <VoiceMicButton onAppend={text => setReflection(prev => prev + text)} />
+            <AnimatePresence>
+              {showHint && (
+                <motion.p
+                  initial={{ opacity: 0, height: 0 }}
+                  animate={{ opacity: 1, height: 'auto' }}
+                  exit={{ opacity: 0, height: 0 }}
+                  className="text-xs mt-1 leading-relaxed overflow-hidden"
+                  style={{ color: '#c4b5fd' }}
+                >
+                  {slotInfo.hint}
+                </motion.p>
+              )}
+            </AnimatePresence>
           </div>
-          <textarea
-            placeholder={reflectionHint(mood)}
-            value={reflection}
-            onChange={e => setReflection(e.target.value)}
-            rows={3}
-            className="w-full text-sm outline-none resize-none bg-transparent"
-            style={{ color: 'var(--app-text)', caretColor: '#818cf8' }}
+          <ChevronDown
+            size={14}
+            style={{
+              color: '#818cf8',
+              transform: showHint ? 'rotate(180deg)' : 'rotate(0)',
+              transition: 'transform 0.2s',
+              flexShrink: 0,
+            }}
           />
-          {/* Примеры-чипы для заполнения поля (§11.3) */}
-          <ExampleChips
-            chips={REFLECTION_CHIPS}
-            onSelect={chip => setReflection(prev => prev ? `${prev} ${chip}` : chip)}
-          />
-        </GlassCard>
+        </button>
 
-        {/* ── Расширенный режим (§13.5) ────────────────────────────────────── */}
-        <AnimatePresence>
-          {extended && (
+        {/* Лоадер */}
+        {isLoading ? (
+          <div className="flex justify-center py-10">
+            <div
+              className="w-6 h-6 rounded-full border-2 border-t-transparent animate-spin"
+              style={{ borderColor: `${slotInfo.color} transparent ${slotInfo.color} transparent` }}
+            />
+          </div>
+
+        ) : isFilled ? (
+          /* Read-only вид */
+          <AnimatePresence mode="wait">
             <motion.div
-              initial={{ opacity: 0, y: 10 }}
+              key={activeSlot + selectedDate + '-ro'}
+              initial={{ opacity: 0, y: 6 }}
               animate={{ opacity: 1, y: 0 }}
-              exit={{ opacity: 0, y: -6 }}
-              className="space-y-4"
+              exit={{ opacity: 0 }}
             >
-              {/* Блокеры */}
-              <div ref={blockersRef}>
-                <GlassCard>
-                  <div className="flex items-center justify-between mb-2">
-                    <p className="font-semibold" style={{ color: 'var(--app-text)' }}>
-                      🚧 Что мешало?
-                    </p>
-                    <VoiceMicButton onAppend={text => setBlockers(prev => prev + text)} />
-                  </div>
-                  <textarea
-                    placeholder="Расскажи, что блокировало прогресс..."
-                    value={blockers}
-                    onChange={e => setBlockers(e.target.value)}
-                    rows={2}
-                    className="w-full text-sm outline-none resize-none bg-transparent"
-                    style={{ color: 'var(--app-text)', caretColor: '#818cf8' }}
-                  />
-                  <ExampleChips
-                    chips={BLOCKERS_CHIPS}
-                    onSelect={chip => setBlockers(prev => prev ? `${prev}, ${chip}` : chip)}
-                  />
-                </GlassCard>
-              </div>
+              <SlotReadonly checkin={currentSlotData!} slot={activeSlot} />
+            </motion.div>
+          </AnimatePresence>
 
-              {/* Победы */}
-              <div ref={winsRef}>
-                <GlassCard>
-                  <div className="flex items-center justify-between mb-2">
-                    <p className="font-semibold" style={{ color: 'var(--app-text)' }}>
-                      🏆 Победы дня
-                    </p>
-                    <VoiceMicButton onAppend={text => setWins(prev => prev + text)} />
-                  </div>
-                  <textarea
-                    placeholder="Чем гордишься сегодня?"
-                    value={wins}
-                    onChange={e => setWins(e.target.value)}
-                    rows={2}
-                    className="w-full text-sm outline-none resize-none bg-transparent"
-                    style={{ color: 'var(--app-text)', caretColor: '#818cf8' }}
-                  />
-                  <ExampleChips
-                    chips={WINS_CHIPS}
-                    onSelect={chip => setWins(prev => prev ? `${prev}, ${chip}` : chip)}
-                  />
-                </GlassCard>
-              </div>
+        ) : (
+          /* Форма */
+          <AnimatePresence mode="wait">
+            <motion.div
+              key={activeSlot + selectedDate + '-form'}
+              initial={{ opacity: 0, y: 8 }}
+              animate={{ opacity: 1, y: 0 }}
+              exit={{ opacity: 0 }}
+              className="space-y-3"
+            >
 
-              {/* Привязка к цели (§13.5) */}
-              {activeGoals.length > 0 && (
+              {/* УТРО: только энергия */}
+              {activeSlot === 'morning' && (
                 <GlassCard>
-                  <div className="flex items-center gap-2 mb-3">
-                    <Target size={16} style={{ color: '#818cf8' }} />
-                    <p className="font-semibold text-sm" style={{ color: 'var(--app-text)' }}>
-                      Привязать к цели
+                  <div className="flex items-center justify-between mb-1">
+                    <p className="font-semibold" style={{ color: 'var(--app-text)' }}>
+                      ⚡ Уровень энергии
                     </p>
-                    {goalId && (
-                      <button
-                        onClick={() => setGoalId(undefined)}
-                        className="ml-auto text-xs"
-                        style={{ color: 'var(--app-hint)' }}
-                      >
-                        Снять
-                      </button>
-                    )}
+                    <span
+                      className="text-xs font-medium px-2 py-0.5 rounded-lg"
+                      style={{ background: 'rgba(251,191,36,0.15)', color: '#fbbf24' }}
+                    >
+                      {ENERGY_TEXT[energy - 1]}
+                    </span>
                   </div>
-                  {/* Горизонтальный скролл-список активных целей */}
-                  <div
-                    className="flex gap-2 overflow-x-auto pb-1"
-                    style={{ scrollbarWidth: 'none' }}
-                  >
-                    {activeGoals.slice(0, 6).map(g => (
-                      <motion.button
-                        key={g.id}
-                        whileTap={{ scale: 0.93 }}
-                        onClick={() => setGoalId(g.id === goalId ? undefined : g.id)}
-                        className="flex-shrink-0 px-3 py-2 rounded-xl text-xs font-medium border border-white/[0.08] text-left"
-                        style={{
-                          maxWidth: 140,
-                          background: goalId === g.id
-                            ? 'rgba(99,102,241,0.25)'
-                            : 'rgba(255,255,255,0.05)',
-                          color: goalId === g.id ? '#c4b5fd' : 'var(--app-hint)',
-                          borderColor: goalId === g.id ? 'rgba(99,102,241,0.5)' : 'rgba(255,255,255,0.06)',
-                          overflow: 'hidden',
-                          whiteSpace: 'nowrap',
-                          textOverflow: 'ellipsis',
-                        }}
-                      >
-                        {g.id === goalId ? '✓ ' : ''}{g.title}
-                      </motion.button>
-                    ))}
-                  </div>
+                  <p className="text-xs mb-3" style={{ color: 'var(--app-hint)' }}>
+                    1 — истощён, 5 — горю 🔥
+                  </p>
+                  <ScaleSelector
+                    value={energy}
+                    onChange={setEnergy}
+                    emojis={ENERGY_EMOJI}
+                    texts={ENERGY_TEXT}
+                    color="#fbbf24"
+                  />
                 </GlassCard>
               )}
+
+              {/* ДЕНЬ: энергия + короткая заметка */}
+              {activeSlot === 'midday' && (
+                <>
+                  <GlassCard>
+                    <div className="flex items-center justify-between mb-1">
+                      <p className="font-semibold" style={{ color: 'var(--app-text)' }}>
+                        ⚡ Энергия сейчас
+                      </p>
+                      <span
+                        className="text-xs font-medium px-2 py-0.5 rounded-lg"
+                        style={{ background: 'rgba(34,211,238,0.15)', color: '#22d3ee' }}
+                      >
+                        {ENERGY_TEXT[energy - 1]}
+                      </span>
+                    </div>
+                    <p className="text-xs mb-3" style={{ color: 'var(--app-hint)' }}>
+                      1 — еле живой, 5 — на подъёме
+                    </p>
+                    <ScaleSelector
+                      value={energy}
+                      onChange={setEnergy}
+                      emojis={ENERGY_EMOJI}
+                      texts={ENERGY_TEXT}
+                      color="#22d3ee"
+                    />
+                  </GlassCard>
+                  <GlassCard>
+                    <p className="font-semibold mb-2" style={{ color: 'var(--app-text)' }}>
+                      💬 Коротко о дне
+                    </p>
+                    <textarea
+                      placeholder="Как идут дела? Что в фокусе? (необязательно)"
+                      value={notes}
+                      onChange={e => setNotes(e.target.value)}
+                      rows={2}
+                      className="w-full text-sm outline-none resize-none bg-transparent"
+                      style={{ color: 'var(--app-text)', caretColor: '#22d3ee' }}
+                    />
+                  </GlassCard>
+                </>
+              )}
+
+              {/* ВЕЧЕР: настроение + итог + победы + блокеры */}
+              {activeSlot === 'evening' && (
+                <>
+                  <GlassCard>
+                    <div className="flex items-center justify-between mb-1">
+                      <p className="font-semibold" style={{ color: 'var(--app-text)' }}>
+                        😊 Настроение вечером
+                      </p>
+                      <span
+                        className="text-xs font-medium px-2 py-0.5 rounded-lg"
+                        style={{ background: 'rgba(167,139,250,0.15)', color: '#a78bfa' }}
+                      >
+                        {MOOD_TEXT[mood - 1]}
+                      </span>
+                    </div>
+                    <p className="text-xs mb-3" style={{ color: 'var(--app-hint)' }}>
+                      1 — плохо, 5 — отлично!
+                    </p>
+                    <ScaleSelector
+                      value={mood}
+                      onChange={setMood}
+                      emojis={MOOD_EMOJI}
+                      texts={MOOD_TEXT}
+                      color="#a78bfa"
+                    />
+                  </GlassCard>
+
+                  <GlassCard>
+                    <p className="font-semibold mb-2" style={{ color: 'var(--app-text)' }}>
+                      📊 Как прошёл день?
+                    </p>
+                    <div className="grid grid-cols-2 gap-2">
+                      {DAY_RESULTS.map(r => (
+                        <motion.button
+                          key={r.key}
+                          whileTap={{ scale: 0.94 }}
+                          onClick={() =>
+                            setDayResult(prev => (prev === r.key ? '' : r.key))
+                          }
+                          className="py-2.5 px-3 rounded-xl text-xs font-medium text-left"
+                          style={{
+                            background:
+                              dayResult === r.key
+                                ? 'rgba(167,139,250,0.2)'
+                                : 'rgba(255,255,255,0.05)',
+                            border: `1px solid ${
+                              dayResult === r.key
+                                ? 'rgba(167,139,250,0.4)'
+                                : 'rgba(255,255,255,0.07)'
+                            }`,
+                            color:
+                              dayResult === r.key ? '#c4b5fd' : 'var(--app-hint)',
+                          }}
+                        >
+                          {r.label}
+                        </motion.button>
+                      ))}
+                    </div>
+                    <textarea
+                      placeholder="Что-то важное о дне? (необязательно)"
+                      value={notes}
+                      onChange={e => setNotes(e.target.value)}
+                      rows={2}
+                      className="w-full text-sm outline-none resize-none bg-transparent mt-3 pt-3"
+                      style={{
+                        color: 'var(--app-text)',
+                        caretColor: '#a78bfa',
+                        borderTop: '1px solid rgba(255,255,255,0.06)',
+                      }}
+                    />
+                  </GlassCard>
+
+                  <GlassCard>
+                    <p className="font-semibold mb-2" style={{ color: 'var(--app-text)' }}>
+                      🏆 Победы дня
+                    </p>
+                    <textarea
+                      placeholder="Что удалось, пусть даже маленькое..."
+                      value={wins}
+                      onChange={e => setWins(e.target.value)}
+                      rows={2}
+                      className="w-full text-sm outline-none resize-none bg-transparent"
+                      style={{ color: 'var(--app-text)', caretColor: '#a78bfa' }}
+                    />
+                  </GlassCard>
+
+                  <GlassCard>
+                    <p className="font-semibold mb-2" style={{ color: 'var(--app-text)' }}>
+                      🚧 Что мешало?
+                    </p>
+                    <textarea
+                      placeholder="Блокеры, трудности, отвлечения... (необязательно)"
+                      value={blockers}
+                      onChange={e => setBlockers(e.target.value)}
+                      rows={2}
+                      className="w-full text-sm outline-none resize-none bg-transparent"
+                      style={{ color: 'var(--app-text)', caretColor: '#a78bfa' }}
+                    />
+                  </GlassCard>
+                </>
+              )}
+
             </motion.div>
-          )}
-        </AnimatePresence>
+          </AnimatePresence>
+        )}
       </div>
 
-      {/* ── Sticky кнопка отправки ────────────────────────────────────────── */}
-      <div
-        className="fixed bottom-0 inset-x-0 px-4 py-3"
-        style={{ background: 'var(--app-bg)', borderTop: '1px solid rgba(255,255,255,0.06)' }}
-      >
-        {submitError && (
-          <p className="text-xs text-center mb-2" style={{ color: '#f87171' }}>
-            {submitError}
-          </p>
-        )}
-        <motion.button
-          whileTap={{ scale: 0.97 }}
-          onClick={handleSubmit}
-          disabled={createCheckIn.isPending}
-          className="w-full rounded-2xl py-4 font-bold flex items-center justify-center gap-2 disabled:opacity-40"
-          style={{ background: 'linear-gradient(135deg, #6366f1, #8b5cf6)', color: '#fff' }}
+      {/* Кнопка отправки — только в режиме формы */}
+      {!isFilled && !isLoading && (
+        <div
+          className="fixed bottom-0 inset-x-0 px-4 py-3"
+          style={{
+            background: 'var(--app-bg)',
+            borderTop: '1px solid rgba(255,255,255,0.06)',
+          }}
         >
-          <Send size={18} />
-          {createCheckIn.isPending ? 'Сохраняем...' : 'Сохранить чекин'}
-        </motion.button>
-      </div>
+          {submitError && (
+            <p className="text-xs text-center mb-2" style={{ color: '#f87171' }}>
+              {submitError}
+            </p>
+          )}
+          <motion.button
+            whileTap={{ scale: 0.97 }}
+            onClick={handleSubmit}
+            disabled={createCheckIn.isPending}
+            className="w-full rounded-2xl py-4 font-bold flex items-center justify-center gap-2 disabled:opacity-40"
+            style={{
+              background: `linear-gradient(135deg, ${slotInfo.color}dd, ${slotInfo.color}88)`,
+              color: activeSlot === 'morning' ? '#1c1c1e' : '#fff',
+            }}
+          >
+            {SLOT_ICONS[activeSlot]}
+            {createCheckIn.isPending
+              ? 'Сохраняем...'
+              : `Сохранить — ${slotInfo.label}`}
+          </motion.button>
+        </div>
+      )}
     </div>
   )
 }
