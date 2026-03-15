@@ -460,11 +460,12 @@ export function CheckInPage() {
         {/* Кнопка инструкции */}
         <button
           onClick={() => navigate('/coaching/checkin/help')}
-          className="w-9 h-9 rounded-xl flex items-center justify-center shrink-0"
+          className="flex items-center gap-1.5 px-3 h-9 rounded-xl shrink-0"
           style={{ background: 'rgba(255,255,255,0.06)' }}
           title="Инструкция по чекинам"
         >
-          <HelpCircle size={18} style={{ color: '#64748b' }} />
+          <HelpCircle size={15} style={{ color: '#64748b' }} />
+          <span className="text-xs font-medium" style={{ color: '#64748b' }}>Справка</span>
         </button>
       </div>
 
