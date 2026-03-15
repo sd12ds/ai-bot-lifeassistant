@@ -547,7 +547,7 @@ export function CoachingDashboard() {
                 {/* Кнопка добавления ещё одной цели — всегда видна */}
                 <motion.button
                   whileTap={{ scale: 0.97 }}
-                  onClick={() => navigate('/coaching/goals')}
+                  onClick={() => navigate('/coaching/goals?create=true')}
                   className="w-full rounded-[16px] border border-dashed border-white/[0.10] p-3 flex items-center gap-3 text-left"
                   style={{ background: 'rgba(255,255,255,0.02)' }}
                 >

@@ -2,6 +2,18 @@
 import { motion } from 'framer-motion'
 import type { Goal } from '../../../api/coaching'
 
+// Emoji области для визуального распознавания
+const AREA_EMOJI: Record<string, string> = {
+  health:        '💪',
+  productivity:  '⚡',
+  career:        '🚀',
+  finance:       '💰',
+  relationships: '❤️',
+  mindset:       '🧠',
+  sport:         '🏃',
+  personal:      '🌱',
+}
+
 // Бэйджи статуса с полупрозрачными тёмными цветами
 const STATUS_BADGE: Record<string, { label: string; bg: string; color: string }> = {
   active:   { label: 'Активна',    bg: 'rgba(99,102,241,0.2)',   color: '#818cf8' },
@@ -41,7 +53,10 @@ export function GoalCard({ goal, onClick, compact = false }: Props) {
               <span className="text-xs" style={{ color: '#fbbf24' }}>★ Главная</span>
             )}
           </div>
-          <p className="font-semibold text-sm leading-snug truncate" style={{ color: 'var(--app-text)' }}>
+          <p className="font-semibold text-sm leading-snug truncate flex items-center gap-1.5" style={{ color: 'var(--app-text)' }}>
+            {goal.area && AREA_EMOJI[goal.area] && (
+              <span className="shrink-0">{AREA_EMOJI[goal.area]}</span>
+            )}
             {goal.title}
           </p>
           {!compact && goal.why_statement && (
