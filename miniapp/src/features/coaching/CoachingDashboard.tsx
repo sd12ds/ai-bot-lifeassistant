@@ -26,6 +26,7 @@ import {
   useMissHabit,
   useDismissRecommendation,
   useMarkInsightRead,
+  useCheckInByDate,
   type CoachingState,
 } from '../../api/coaching'
 import { GlassCard } from '../../shared/ui/GlassCard'
@@ -117,6 +118,9 @@ export function CoachingDashboard() {
   const missHabit  = useMissHabit()
   const dismissRec = useDismissRecommendation()
   const markRead   = useMarkInsightRead()
+  // Данные чекинов сегодня — для индикаторов статуса
+  const today      = new Date().toISOString().slice(0, 10)
+  const { data: todayCheckins } = useCheckInByDate(today)
 
   // Локальное состояние: скрыт ли nudge-баннер пользователем
   const [nudgeDismissed, setNudgeDismissed] = useState(false)
@@ -278,6 +282,35 @@ export function CoachingDashboard() {
             )}
 
             {/* Quick Actions (§13.1): Check-in / Привычки / Открыть чат */}
+
+            {/* Строка статуса чекинов: ☀️ Утро · ⚡ День · 🌙 Вечер */}
+            <div className="flex gap-2 mb-3">
+              {([
+                { id: 'morning', icon: '☀️', label: 'Утро',  color: '#fbbf24', slot: 'morning'  },
+                { id: 'midday',  icon: '⚡', label: 'День',  color: '#22d3ee', slot: 'midday'   },
+                { id: 'evening', icon: '🌙', label: 'Вечер', color: '#a78bfa', slot: 'evening'  },
+              ] as const).map(s => {
+                const filled = !!(todayCheckins?.[s.id])
+                return (
+                  <button
+                    key={s.id}
+                    onClick={() => navigate(`/coaching/checkin?slot=${s.slot}`)}
+                    className="flex-1 flex flex-col items-center py-1.5 rounded-xl"
+                    style={{
+                      background: filled ? `${s.color}18` : 'rgba(255,255,255,0.04)',
+                      border: `1px solid ${filled ? s.color + '40' : 'rgba(255,255,255,0.08)'}`,
+                      cursor: 'pointer',
+                    }}
+                  >
+                    <span className="text-sm">{s.icon}</span>
+                    <span className="text-[9px] font-medium mt-0.5" style={{ color: filled ? s.color : 'var(--app-hint)' }}>
+                      {filled ? '✓' : s.label}
+                    </span>
+                  </button>
+                )
+              })}
+            </div>
+
             <div
               className="flex items-center justify-end mb-1"
               style={{ marginBottom: 4 }}

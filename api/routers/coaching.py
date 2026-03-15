@@ -900,16 +900,17 @@ async def get_today_checkin(
 @router.get("/checkins/history", response_model=List[CheckInOut])
 async def get_checkin_history(
     limit: int = Query(default=20, le=100),
+    goal_id: Optional[int] = Query(default=None, description="Фильтр по цели"),
     db: AsyncSession = Depends(get_session),
     current_user: User = Depends(get_current_user),
 ):
-    # Прямой запрос всех check-in пользователя (не фильтруем по goal_id)
+    # Запрос чекинов пользователя с опциональным фильтром по goal_id
     from sqlalchemy import select as _sel2
     from db.models import GoalCheckin as _GC2
-    _r2 = await db.execute(
-        _sel2(_GC2).where(_GC2.user_id == current_user.telegram_id)
-        .order_by(_GC2.created_at.desc()).limit(limit)
-    )
+    q = _sel2(_GC2).where(_GC2.user_id == current_user.telegram_id)
+    if goal_id is not None:
+        q = q.where(_GC2.goal_id == goal_id)  # фильтр по конкретной цели
+    _r2 = await db.execute(q.order_by(_GC2.created_at.desc()).limit(limit))
     return list(_r2.scalars().all())
 
 

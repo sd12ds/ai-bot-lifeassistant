@@ -314,8 +314,11 @@ const fetchTodayCheckIn = async () => {
   return data
 }
 
-const fetchCheckInHistory = async (limit = 20): Promise<CheckIn[]> => {
-  const { data } = await apiClient.get<CheckIn[]>('/coaching/checkins/history', { params: { limit } })
+const fetchCheckInHistory = async (limit = 20, goalId?: number): Promise<CheckIn[]> => {
+  // goalId — опциональный фильтр по конкретной цели
+  const params: Record<string, unknown> = { limit }
+  if (goalId != null) params.goal_id = goalId
+  const { data } = await apiClient.get<CheckIn[]>('/coaching/checkins/history', { params })
   return data
 }
 
@@ -565,10 +568,11 @@ export function useTodayCheckIn() {
   })
 }
 
-export function useCheckInHistory(limit = 20) {
+export function useCheckInHistory(limit = 20, goalId?: number) {
   return useQuery({
-    queryKey: coachingKeys.checkInHistory,
-    queryFn: () => fetchCheckInHistory(limit),
+    // Включаем goalId в queryKey — разные кэши для глобальной и per-goal истории
+    queryKey: [...coachingKeys.checkInHistory, goalId ?? null],
+    queryFn: () => fetchCheckInHistory(limit, goalId),
     staleTime: 60_000,
   })
 }

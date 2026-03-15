@@ -10,7 +10,7 @@
  *  - submit сохраняет time_slot + check_date
  */
 import { useState, useMemo, useEffect, useRef } from 'react'
-import { useNavigate } from 'react-router-dom'
+import { useNavigate, useSearchParams } from 'react-router-dom'
 import { motion, AnimatePresence } from 'framer-motion'
 import { ArrowLeft, Sun, Zap, Moon, ChevronDown, HelpCircle } from 'lucide-react'
 import {
@@ -18,6 +18,7 @@ import {
   useUpdateCheckIn,
   useCheckInByDate,
   useCheckInCalendar,
+  useDashboard,
 } from '../../api/coaching'
 import type { CheckIn, CreateCheckInDto } from '../../api/coaching'
 import { GlassCard } from '../../shared/ui/GlassCard'
@@ -96,6 +97,15 @@ const MOOD_TO_NUM: Record<string, number> = {
 const NUM_TO_MOOD: Record<number, string> = {
   1: 'bad', 2: 'tired', 3: 'ok', 4: 'good', 5: 'great',
 }
+
+// 5 быстрых кнопок настроения для вечернего слота (§9.3)
+const MOOD_QUICK: Array<{ emoji: string; label: string; value: number; color: string }> = [
+  { emoji: '🔥', label: 'Продуктивно', value: 5, color: '#f97316' },
+  { emoji: '👍', label: 'Норм',         value: 4, color: '#22d3ee' },
+  { emoji: '😐', label: 'Так себе',     value: 3, color: '#a78bfa' },
+  { emoji: '😔', label: 'Тяжело',       value: 2, color: '#94a3b8' },
+  { emoji: '💀', label: 'Провал',       value: 1, color: '#f87171' },
+]
 
 // Варианты итога дня для вечернего слота
 const DAY_RESULTS: Array<{ key: string; label: string }> = [
@@ -333,14 +343,91 @@ function SlotReadonly({ checkin, slot, onEdit }: { checkin: CheckIn; slot: SlotT
   )
 }
 
+// ── DaySummaryCard: сводка дня ──────────────────────────────────────────────
+function DaySummaryCard({ dayData }: { dayData: Record<string, CheckIn | undefined> }) {
+  const morning = dayData.morning
+  const midday  = dayData.midday
+  const evening = dayData.evening
+
+  const SLOTS_CFG = [
+    { id: 'morning', label: 'Утро',  icon: '☀️', color: '#fbbf24', checkin: morning },
+    { id: 'midday',  label: 'День',  icon: '⚡', color: '#22d3ee', checkin: midday  },
+    { id: 'evening', label: 'Вечер', icon: '🌙', color: '#a78bfa', checkin: evening },
+  ]
+  const filled  = SLOTS_CFG.filter(s => !!s.checkin).length
+  const missing = SLOTS_CFG.filter(s => !s.checkin).map(s => s.label)
+
+  // Средняя энергия за утро+день
+  const energies = [morning?.energy_level, midday?.energy_level].filter(Boolean) as number[]
+  const avgEnergy = energies.length
+    ? Math.round(energies.reduce((a, b) => a + b, 0) / energies.length)
+    : null
+
+  // Настроение вечером (числовой код → emoji)
+  const eveningMoodNum = evening?.mood ? (MOOD_TO_NUM[evening.mood] ?? null) : null
+
+  return (
+    <GlassCard>
+      <div className="flex items-center justify-between mb-3">
+        <span className="text-sm font-bold" style={{ color: 'var(--app-text)' }}>
+          {filled === 3 ? '✅ День заполнен' : `📊 Сводка · ${filled}/3 слота`}
+        </span>
+        {avgEnergy && (
+          <span className="text-xs font-medium px-2 py-0.5 rounded-lg" style={{ background: 'rgba(251,191,36,0.15)', color: '#fbbf24' }}>
+            ⚡ {ENERGY_TEXT[avgEnergy - 1]}
+          </span>
+        )}
+      </div>
+      {/* Три колонки слотов */}
+      <div className="flex gap-2 mb-2">
+        {SLOTS_CFG.map(s => (
+          <div
+            key={s.id}
+            className="flex-1 flex flex-col items-center gap-1 py-2 rounded-xl"
+            style={{
+              background: s.checkin ? `${s.color}15` : 'rgba(255,255,255,0.04)',
+              border: `1px solid ${s.checkin ? s.color + '35' : 'rgba(255,255,255,0.07)'}`,
+            }}
+          >
+            <span className="text-base">{s.icon}</span>
+            <span className="text-[10px] font-medium" style={{ color: s.color }}>{s.label}</span>
+            {s.checkin?.energy_level && (
+              <span className="text-xs font-bold" style={{ color: s.color }}>{s.checkin.energy_level}/5</span>
+            )}
+            {s.id === 'evening' && eveningMoodNum && (
+              <span className="text-sm">{MOOD_QUICK.find(m => m.value === eveningMoodNum)?.emoji ?? '😐'}</span>
+            )}
+            {!s.checkin && <span className="text-[10px]" style={{ color: 'var(--app-hint)' }}>—</span>}
+          </div>
+        ))}
+      </div>
+      {missing.length > 0 && (
+        <p className="text-[11px]" style={{ color: 'var(--app-hint)' }}>
+          Не заполнено: <span style={{ color: '#a5b4fc' }}>{missing.join(', ')}</span>
+        </p>
+      )}
+      {evening?.notes && (
+        <p className="text-xs mt-2 pt-2" style={{ color: 'var(--app-hint)', borderTop: '1px solid rgba(255,255,255,0.06)' }}>
+          <span style={{ color: '#a78bfa' }}>🌙 </span>{evening.notes.slice(0, 80)}{evening.notes.length > 80 ? '...' : ''}
+        </p>
+      )}
+    </GlassCard>
+  )
+}
+
 // ══ Главный компонент ──────────────────────────────────────────────────────────
 export function CheckInPage() {
   const navigate = useNavigate()
+  const [searchParams] = useSearchParams()
   const today = toIso(new Date())
   const days = useMemo(() => generateDays(15), [])
 
+  // Слот из URL-параметра ?slot=... или авто по времени
+  const urlSlot = searchParams.get('slot') as SlotType | null
   const [selectedDate, setSelectedDate] = useState(today)
-  const [activeSlot, setActiveSlot] = useState<SlotType>(getDefaultSlot())
+  const [activeSlot, setActiveSlot] = useState<SlotType>(
+    urlSlot && ['morning', 'midday', 'evening'].includes(urlSlot) ? urlSlot : getDefaultSlot()
+  )
   const [showHint, setShowHint] = useState(false)
 
   // Состояние форм
@@ -352,8 +439,14 @@ export function CheckInPage() {
   const [wins, setWins] = useState('')
   const [submitError, setSubmitError] = useState<string | null>(null)
   const [isEditMode, setIsEditMode] = useState(false)
+  // Привязка к цели (вечерний слот)
+  const [selectedGoalId, setSelectedGoalId] = useState<number | null>(null)
+  const [progressPct, setProgressPct] = useState(0)
+  const [showGoalSelector, setShowGoalSelector] = useState(false)
 
   const { data: calendarData = {} } = useCheckInCalendar(15)
+  const { data: dash } = useDashboard()
+  const activeGoals = dash?.goals_active ?? []  // цели для GoalSelector
   const { data: dayData, isLoading } = useCheckInByDate(selectedDate)
   const createCheckIn = useCreateCheckIn()
   const updateCheckIn = useUpdateCheckIn()
@@ -373,6 +466,9 @@ export function CheckInPage() {
     setSubmitError(null)
     setShowHint(false)
     setIsEditMode(false)   // сбросить режим редактирования при смене слота/дня
+    setSelectedGoalId(null)  // сбросить привязку к цели
+    setProgressPct(0)
+    setShowGoalSelector(false)
   }, [selectedDate, activeSlot])
 
   // Пре-заполнение формы данными существующего чекина при входе в режим редактирования
@@ -532,6 +628,11 @@ export function CheckInPage() {
       {/* Скролл-область */}
       <div className="flex-1 overflow-y-auto px-4 pb-28 space-y-3">
 
+        {/* DaySummaryCard — показываем, когда ≥2 слота заполнены */}
+        {Object.values(dayData ?? {}).filter(Boolean).length >= 2 && (
+          <DaySummaryCard dayData={(dayData ?? {}) as Record<string, CheckIn | undefined>} />
+        )}
+
         {/* Подсказка — когда и зачем */}
         <button
           onClick={() => setShowHint(v => !v)}
@@ -604,31 +705,47 @@ export function CheckInPage() {
               className="space-y-3"
             >
 
-              {/* УТРО: только энергия */}
+              {/* УТРО: энергия + главный фокус дня */}
               {activeSlot === 'morning' && (
-                <GlassCard>
-                  <div className="flex items-center justify-between mb-1">
-                    <p className="font-semibold" style={{ color: 'var(--app-text)' }}>
-                      ⚡ Уровень энергии
+                <>
+                  <GlassCard>
+                    <div className="flex items-center justify-between mb-1">
+                      <p className="font-semibold" style={{ color: 'var(--app-text)' }}>
+                        ⚡ Уровень энергии
+                      </p>
+                      <span
+                        className="text-xs font-medium px-2 py-0.5 rounded-lg"
+                        style={{ background: 'rgba(251,191,36,0.15)', color: '#fbbf24' }}
+                      >
+                        {ENERGY_TEXT[energy - 1]}
+                      </span>
+                    </div>
+                    <p className="text-xs mb-3" style={{ color: 'var(--app-hint)' }}>
+                      1 — истощён, 5 — горю 🔥
                     </p>
-                    <span
-                      className="text-xs font-medium px-2 py-0.5 rounded-lg"
-                      style={{ background: 'rgba(251,191,36,0.15)', color: '#fbbf24' }}
-                    >
-                      {ENERGY_TEXT[energy - 1]}
-                    </span>
-                  </div>
-                  <p className="text-xs mb-3" style={{ color: 'var(--app-hint)' }}>
-                    1 — истощён, 5 — горю 🔥
-                  </p>
-                  <ScaleSelector
-                    value={energy}
-                    onChange={setEnergy}
-                    emojis={ENERGY_EMOJI}
-                    texts={ENERGY_TEXT}
-                    color="#fbbf24"
-                  />
-                </GlassCard>
+                    <ScaleSelector
+                      value={energy}
+                      onChange={setEnergy}
+                      emojis={ENERGY_EMOJI}
+                      texts={ENERGY_TEXT}
+                      color="#fbbf24"
+                    />
+                  </GlassCard>
+                  {/* Главный фокус дня (§13.1) — сохраняется в notes */}
+                  <GlassCard>
+                    <p className="font-semibold mb-2" style={{ color: 'var(--app-text)' }}>
+                      🎯 Главный фокус сегодня
+                    </p>
+                    <textarea
+                      placeholder="Что самое важное сделать сегодня? (необязательно)"
+                      value={notes}
+                      onChange={e => setNotes(e.target.value)}
+                      rows={2}
+                      className="w-full text-sm outline-none resize-none bg-transparent"
+                      style={{ color: 'var(--app-text)', caretColor: '#fbbf24' }}
+                    />
+                  </GlassCard>
+                </>
               )}
 
               {/* ДЕНЬ: энергия + короткая заметка */}
@@ -676,28 +793,39 @@ export function CheckInPage() {
               {/* ВЕЧЕР: настроение + итог + победы + блокеры */}
               {activeSlot === 'evening' && (
                 <>
+                  {/* 5 быстрых кнопок настроения (§9.3) */}
                   <GlassCard>
-                    <div className="flex items-center justify-between mb-1">
+                    <div className="flex items-center justify-between mb-3">
                       <p className="font-semibold" style={{ color: 'var(--app-text)' }}>
-                        😊 Настроение вечером
+                        😊 Как прошёл вечер?
                       </p>
-                      <span
-                        className="text-xs font-medium px-2 py-0.5 rounded-lg"
-                        style={{ background: 'rgba(167,139,250,0.15)', color: '#a78bfa' }}
-                      >
-                        {MOOD_TEXT[mood - 1]}
-                      </span>
+                      {mood > 0 && (
+                        <span
+                          className="text-xs font-medium px-2 py-0.5 rounded-lg"
+                          style={{ background: `${MOOD_QUICK.find(m => m.value === mood)?.color ?? '#a78bfa'}25`, color: MOOD_QUICK.find(m => m.value === mood)?.color ?? '#a78bfa' }}
+                        >
+                          {MOOD_QUICK.find(m => m.value === mood)?.label}
+                        </span>
+                      )}
                     </div>
-                    <p className="text-xs mb-3" style={{ color: 'var(--app-hint)' }}>
-                      1 — плохо, 5 — отлично!
-                    </p>
-                    <ScaleSelector
-                      value={mood}
-                      onChange={setMood}
-                      emojis={MOOD_EMOJI}
-                      texts={MOOD_TEXT}
-                      color="#a78bfa"
-                    />
+                    <div className="grid grid-cols-5 gap-1.5">
+                      {MOOD_QUICK.map(m => (
+                        <motion.button
+                          key={m.value}
+                          whileTap={{ scale: 0.88 }}
+                          onClick={() => setMood(m.value)}
+                          className="flex flex-col items-center gap-1 py-2.5 rounded-xl"
+                          style={
+                            mood === m.value
+                              ? { background: `${m.color}25`, border: `1.5px solid ${m.color}60` }
+                              : { background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.07)' }
+                          }
+                        >
+                          <span className="text-xl">{m.emoji}</span>
+                          <span className="text-[10px] leading-tight text-center" style={{ color: mood === m.value ? m.color : 'var(--app-hint)' }}>{m.label}</span>
+                        </motion.button>
+                      ))}
+                    </div>
                   </GlassCard>
 
                   <GlassCard>
@@ -772,6 +900,78 @@ export function CheckInPage() {
                       style={{ color: 'var(--app-text)', caretColor: '#a78bfa' }}
                     />
                   </GlassCard>
+
+                  {/* Привязка к цели + прогресс (опционально) */}
+                  {activeGoals.length > 0 && (
+                    <GlassCard>
+                      <button
+                        onClick={() => setShowGoalSelector(v => !v)}
+                        className="w-full flex items-center justify-between"
+                      >
+                        <span className="text-sm font-semibold" style={{ color: selectedGoalId ? '#c4b5fd' : 'var(--app-hint)' }}>
+                          🎯 {selectedGoalId
+                            ? (activeGoals.find(g => g.id === selectedGoalId)?.title ?? 'Цель выбрана')
+                            : 'Привязать к цели'}
+                        </span>
+                        <ChevronDown
+                          size={14}
+                          style={{ color: '#818cf8', transform: showGoalSelector ? 'rotate(180deg)' : 'rotate(0)', transition: 'transform 0.2s', flexShrink: 0 }}
+                        />
+                      </button>
+                      <AnimatePresence>
+                        {showGoalSelector && (
+                          <motion.div
+                            initial={{ opacity: 0, height: 0 }}
+                            animate={{ opacity: 1, height: 'auto' }}
+                            exit={{ opacity: 0, height: 0 }}
+                            className="mt-3 space-y-2 overflow-hidden"
+                          >
+                            {/* Сброс выбора */}
+                            {selectedGoalId && (
+                              <motion.button
+                                whileTap={{ scale: 0.96 }}
+                                onClick={() => { setSelectedGoalId(null); setProgressPct(0) }}
+                                className="w-full text-left px-3 py-2 rounded-xl text-xs"
+                                style={{ background: 'rgba(248,113,113,0.1)', border: '1px solid rgba(248,113,113,0.3)', color: '#f87171' }}
+                              >
+                                ✕ Убрать привязку
+                              </motion.button>
+                            )}
+                            {activeGoals.map(g => (
+                              <motion.button
+                                key={g.id}
+                                whileTap={{ scale: 0.96 }}
+                                onClick={() => setSelectedGoalId(prev => prev === g.id ? null : g.id)}
+                                className="w-full text-left px-3 py-2 rounded-xl text-sm"
+                                style={{
+                                  background: selectedGoalId === g.id ? 'rgba(99,102,241,0.2)' : 'rgba(255,255,255,0.05)',
+                                  border: `1px solid ${selectedGoalId === g.id ? 'rgba(99,102,241,0.4)' : 'rgba(255,255,255,0.07)'}`,
+                                  color: selectedGoalId === g.id ? '#c4b5fd' : 'var(--app-hint)',
+                                }}
+                              >
+                                {g.title} — {g.progress_pct}%
+                              </motion.button>
+                            ))}
+                            {/* Слайдер прогресса */}
+                            {selectedGoalId && (
+                              <div className="mt-2 pt-2" style={{ borderTop: '1px solid rgba(255,255,255,0.06)' }}>
+                                <p className="text-xs mb-2" style={{ color: 'var(--app-hint)' }}>
+                                  Прогресс по цели: <span style={{ color: '#818cf8', fontWeight: 600 }}>{progressPct}%</span>
+                                </p>
+                                <input
+                                  type="range" min={0} max={100} step={5}
+                                  value={progressPct}
+                                  onChange={e => setProgressPct(Number(e.target.value))}
+                                  className="w-full"
+                                  style={{ accentColor: '#818cf8' }}
+                                />
+                              </div>
+                            )}
+                          </motion.div>
+                        )}
+                      </AnimatePresence>
+                    </GlassCard>
+                  )}
                 </>
               )}
 

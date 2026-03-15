@@ -20,7 +20,8 @@ export function GoalDetailPage() {
 
   const { data: goal, isLoading } = useGoal(goalId)
   const { data: milestones = [] } = useMilestones(goalId)
-  const { data: history = [] } = useCheckInHistory(5)
+  // Загружаем только чекины, привязанные к этой цели
+  const { data: history = [] } = useCheckInHistory(5, goalId)
 
   const completeMilestone = useCompleteMilestone()
   const freezeGoal = useFreezeGoal()
