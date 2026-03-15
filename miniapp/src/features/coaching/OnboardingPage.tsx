@@ -79,7 +79,7 @@ export function OnboardingPage() {
   }
 
   return (
-    <div className="min-h-screen bg-white flex flex-col">
+    <div className="min-h-screen bg-gray-50 flex flex-col">
       {/* Прогресс-индикатор */}
       <div className="flex gap-1.5 px-6 pt-12 pb-6">
         {STEPS.map((_, i) => (

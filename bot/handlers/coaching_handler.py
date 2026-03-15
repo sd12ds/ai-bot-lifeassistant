@@ -60,42 +60,46 @@ async def coaching_main(message: Message, state: FSMContext) -> None:
     """Открывает главное меню коуча с текущим статусом."""
     await state.clear()
     user_id = message.from_user.id
+    # Открываем единственный session-контекст для всех DB-запросов
     async with get_async_session() as session:
         goals = await cs.get_goals(session, user_id, status="active")
         habits = await cs.get_habits(session, user_id, is_active=True)
         onboarding = await cs.get_or_create_onboarding(session, user_id)
+
+        # Онбординг Шаг 1 — знакомство + приглашение к профилированию
+        # ВАЖНО: profile-запрос должен быть внутри async with, иначе session закрыта
+        if not onboarding.bot_onboarding_done:
+            profile = await cs.get_or_create_profile(session, user_id)
+            await session.commit()
+            if profile.onboarding_completed:
+                # Профиль уже настроен — сразу к первому действию
+                await message.answer(
+                    "👋 *Привет снова!*\n\nГотов работать над твоими целями. С чего начнём?",
+                    reply_markup=onboarding_first_action_kb(),
+                    parse_mode="Markdown",
+                )
+            else:
+                # Впервые — полный онбординг
+                await message.answer(
+                    "👋 *Привет! Я твой AI-коуч.*\n\n"
+                    "Помогу ставить и достигать цели, формировать привычки и двигаться вперёд системно.\n\n"
+                    "*Как работаю:*\n"
+                    "🎯 *Цели* — конкретные, с этапами и дедлайнами\n"
+                    "🔁 *Привычки* — ежедневный трекинг с серией (стрик)\n"
+                    "✅ *Check-in* — фиксируем прогресс и энергию\n"
+                    "📊 *Обзор недели* — рефлексия и план\n\n"
+                    "Чтобы я давал точные советы — настрою коуча под тебя за 30 секунд.",
+                    reply_markup=onboarding_profile_intro_kb(),
+                    parse_mode="Markdown",
+                )
+            return
+
         await session.commit()
 
     goals_count = len(goals)
     habits_count = len(habits)
 
-    # Онбординг Шаг 1 — знакомство + приглашение к профилированию
-    if not onboarding.bot_onboarding_done:
-        profile = await cs.get_or_create_profile(session, user_id)
-        if profile.onboarding_completed:
-            # Профиль уже настроен — сразу к первому действию
-            await message.answer(
-                "👋 *Привет снова!*\n\nГотов работать над твоими целями. С чего начнём?",
-                reply_markup=onboarding_first_action_kb(),
-                parse_mode="Markdown",
-            )
-        else:
-            # Впервые — полный онбординг
-            await message.answer(
-                "👋 *Привет! Я твой AI-коуч.*\n\n"
-                "Помогу ставить и достигать цели, формировать привычки и двигаться вперёд системно.\n\n"
-                "*Как работаю:*\n"
-                "🎯 *Цели* — конкретные, с этапами и дедлайнами\n"
-                "🔁 *Привычки* — ежедневный трекинг с серией (стрик)\n"
-                "✅ *Check-in* — фиксируем прогресс и энергию\n"
-                "📊 *Обзор недели* — рефлексия и план\n\n"
-                "Чтобы я давал точные советы — настрою коуча под тебя за 30 секунд.",
-                reply_markup=onboarding_profile_intro_kb(),
-                parse_mode="Markdown",
-            )
-        return
-
-    # Обычное меню
+    # Обычное меню коуча с кнопками
     status_text = ""
     if goals_count > 0:
         active_goals = [f"• {g.title} — {g.progress_pct}%" for g in goals[:3]]
@@ -197,7 +201,7 @@ async def ob_profile_skip(callback: CallbackQuery) -> None:
     """Пропуск профилирования — сразу к первому действию."""
     user_id = callback.from_user.id
     async with get_async_session() as session:
-        await cs.update_profile(session, user_id, {"onboarding_completed": True})
+        await cs.update_profile(session, user_id, onboarding_completed=True)
         ob = await cs.get_or_create_onboarding(session, user_id)
         ob.bot_onboarding_done = True
         await session.commit()
@@ -231,7 +235,7 @@ async def ob_focus_done(callback: CallbackQuery, state: FSMContext) -> None:
     user_id = callback.from_user.id
     if selected:
         async with get_async_session() as session:
-            await cs.update_profile(session, user_id, {"focus_areas": selected})
+            await cs.update_profile(session, user_id, focus_areas=selected)
             await session.commit()
     await callback.message.edit_text(
         "✅ *Записал!*\n\n🎙️ *Как тебе удобнее общаться с коучем?*",
@@ -247,7 +251,7 @@ async def ob_set_tone(callback: CallbackQuery) -> None:
     tone = callback.data.replace("cg_ob_tone_", "")
     user_id = callback.from_user.id
     async with get_async_session() as session:
-        await cs.update_profile(session, user_id, {"coach_tone": tone})
+        await cs.update_profile(session, user_id, coach_tone=tone)
         await session.commit()
     tone_labels = {
         "friendly": "😊 Дружелюбный",
@@ -274,7 +278,7 @@ async def ob_set_time(callback: CallbackQuery) -> None:
         updates = {"onboarding_completed": True}
         if time_val != "skip":
             updates["preferred_checkin_time"] = time_val
-        await cs.update_profile(session, user_id, updates)
+        await cs.update_profile(session, user_id, **updates)
         ob = await cs.get_or_create_onboarding(session, user_id)
         ob.bot_onboarding_done = True
         await session.commit()
@@ -295,7 +299,7 @@ async def ob_done_main(callback: CallbackQuery) -> None:
     async with get_async_session() as session:
         ob = await cs.get_or_create_onboarding(session, user_id)
         ob.bot_onboarding_done = True
-        await cs.update_profile(session, user_id, {"onboarding_completed": True})
+        await cs.update_profile(session, user_id, onboarding_completed=True)
         await session.commit()
     await callback.message.edit_text(
         "Используй /coaching для доступа к меню коуча.",
