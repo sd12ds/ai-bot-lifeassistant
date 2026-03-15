@@ -850,9 +850,32 @@ async def create_checkin(
     current_user: User = Depends(get_current_user),
 ):
     """Создать новый check-in."""
-    # Извлекаем goal_id отдельно — cs.create_goal_checkin принимает (session, goal_id, user_id, **kwargs)
+    from sqlalchemy import select as _sel_ci
+    from db.models import Goal as _Goal_ci
+    from fastapi import HTTPException as _HTTPEx
+
     data = body.model_dump(exclude_none=True)
     goal_id_val = data.pop("goal_id", None)
+
+    # Поле mood не существует в GoalCheckin — убираем из kwargs перед вставкой
+    data.pop("mood", None)
+
+    # Если goal_id не указан — берём первую активную цель пользователя
+    if goal_id_val is None:
+        _r = await db.execute(
+            _sel_ci(_Goal_ci)
+            .where(_Goal_ci.user_id == current_user.telegram_id, _Goal_ci.status == "active")
+            .order_by(_Goal_ci.created_at.asc())
+            .limit(1)
+        )
+        _first_goal = _r.scalar_one_or_none()
+        if _first_goal is None:
+            raise _HTTPEx(
+                status_code=422,
+                detail="Нет активных целей. Создай цель чтобы вести чекины."
+            )
+        goal_id_val = _first_goal.id
+
     checkin = await cs.create_goal_checkin(db, goal_id_val, current_user.telegram_id, **data)
     await db.commit()
     return checkin
