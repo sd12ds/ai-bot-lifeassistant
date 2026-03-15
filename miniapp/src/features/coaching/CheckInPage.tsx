@@ -579,7 +579,7 @@ export function CheckInPage() {
             />
           </div>
 
-        ) : isFilled ? (
+        ) : isFilled && !isEditMode ? (
           /* Read-only вид */
           <AnimatePresence mode="wait">
             <motion.div
@@ -592,7 +592,7 @@ export function CheckInPage() {
             </motion.div>
           </AnimatePresence>
 
-        ) : (!isFilled || isEditMode) && (
+        ) : (
           /* Форма (новая или редактирование) */
           <AnimatePresence mode="wait">
             <motion.div
