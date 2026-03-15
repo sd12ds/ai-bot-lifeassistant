@@ -311,18 +311,6 @@ export function CoachingDashboard() {
               })}
             </div>
 
-            <div
-              className="flex items-center justify-end mb-1"
-              style={{ marginBottom: 4 }}
-            >
-              <button
-                onClick={() => navigate('/coaching/checkin/help')}
-                className="text-xs"
-                style={{ color: '#475569', background: 'none', border: 'none', cursor: 'pointer', padding: 0 }}
-              >
-                📋 Инструкция по чекинам
-              </button>
-            </div>
             <div className="grid grid-cols-3 gap-2">
               <button
                 onClick={() => navigate('/coaching/checkin')}
