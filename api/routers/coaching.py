@@ -391,25 +391,15 @@ async def get_dashboard(
     """
     user_id = current_user.telegram_id
 
-    # Параллельные запросы для минимальной latency
-    (
-        goals,
-        habits,
-        insights,
-        recs,
-        state_data,
-        risks,
-        weekly_score,
-    ) = await asyncio.gather(
-        cs.get_goals(db, user_id, status="active"),
-        cs.get_habits(db, user_id, is_active=True),
-        cs.get_active_insights(db, user_id, limit=1),
-        cs.get_active_recommendations(db, user_id, limit=2),
-        compute_user_state(db, user_id),
-        compute_risk_scores(db, user_id),
-        compute_weekly_score(db, user_id),
-        return_exceptions=False,
-    )
+    # asyncpg не поддерживает параллельные запросы на одном AsyncSession —
+    # выполняем последовательно, чтобы избежать InterfaceError
+    goals       = await cs.get_goals(db, user_id, status="active")
+    habits      = await cs.get_habits(db, user_id, is_active=True)
+    insights    = await cs.get_active_insights(db, user_id, limit=1)
+    recs        = await cs.get_active_recommendations(db, user_id, limit=2)
+    state_data  = await compute_user_state(db, user_id)
+    risks       = await compute_risk_scores(db, user_id)
+    weekly_score = await compute_weekly_score(db, user_id)
 
     state = state_data["state"]
     state_score = state_data["score"]
@@ -485,10 +475,9 @@ async def get_state(
 ) -> dict:
     """Текущее whole-user state + risk scores."""
     user_id = current_user.telegram_id
-    state_data, risks = await asyncio.gather(
-        compute_user_state(db, user_id),
-        compute_risk_scores(db, user_id),
-    )
+    # asyncpg: последовательно — один AsyncSession, один conn
+    state_data = await compute_user_state(db, user_id)
+    risks      = await compute_risk_scores(db, user_id)
     return {**state_data, "risks": risks}
 
 
