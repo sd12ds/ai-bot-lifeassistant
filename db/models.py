@@ -743,20 +743,23 @@ class GoalMilestone(Base):
 
 
 class GoalCheckin(Base):
-    """Check-in прогресса по цели."""
+    """Дневной чекин пользователя (утро / день / вечер / manual)."""
     __tablename__ = "goal_checkins"
 
     id: Mapped[int] = mapped_column(Integer, primary_key=True, autoincrement=True)
-    goal_id: Mapped[int] = mapped_column(Integer, ForeignKey("goals.id", ondelete="CASCADE"))
+    goal_id: Mapped[Optional[int]] = mapped_column(Integer, ForeignKey("goals.id", ondelete="SET NULL"), nullable=True)  # опционально — привязка к цели
     user_id: Mapped[int] = mapped_column(BigInteger, ForeignKey("users.telegram_id"))
     progress_pct: Mapped[int] = mapped_column(Integer, default=0)              # 0-100
     energy_level: Mapped[Optional[int]] = mapped_column(Integer, nullable=True) # 1-5
-    notes: Mapped[Optional[str]] = mapped_column(Text, nullable=True)
-    blockers: Mapped[Optional[str]] = mapped_column(Text, nullable=True)        # что мешает
-    wins: Mapped[Optional[str]] = mapped_column(Text, nullable=True)            # что удалось
+    mood: Mapped[Optional[str]] = mapped_column(String(20), nullable=True)      # great|good|ok|tired|bad
+    notes: Mapped[Optional[str]] = mapped_column(Text, nullable=True)           # рефлексия / ответ на «как прошёл день»
+    blockers: Mapped[Optional[str]] = mapped_column(Text, nullable=True)        # что мешало
+    wins: Mapped[Optional[str]] = mapped_column(Text, nullable=True)            # победы дня
+    time_slot: Mapped[str] = mapped_column(String(10), default="manual")        # morning|midday|evening|manual
+    check_date: Mapped[Optional[date]] = mapped_column(Date, nullable=True)     # явная дата чекина
     created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now())
 
-    goal: Mapped["Goal"] = relationship(back_populates="checkins")
+    goal: Mapped[Optional["Goal"]] = relationship(back_populates="checkins")
 
 
 class GoalReview(Base):

@@ -550,46 +550,72 @@ def make_coaching_tools(user_id: int) -> list:
 
     @tool
     async def coaching_checkin_create(
-        goal_id: int,
-        progress_pct: int,
-        energy_level: int = 3,
+        goal_id: int = 0,
+        progress_pct: int = 0,
+        energy_level: int = 0,
+        mood: str = "",
         notes: str = "",
         blockers: str = "",
         wins: str = "",
+        time_slot: str = "manual",
+        check_date: str = "",
     ) -> str:
         """
-        Создать ежедневный check-in по цели.
-        goal_id — ID цели
-        progress_pct — текущий прогресс 0-100
-        energy_level — энергия 1-5 (1=истощён, 5=в потоке)
-        notes — заметки
+        Создать ежедневный check-in.
+        goal_id — ID цели (0 = без привязки к цели)
+        progress_pct — прогресс 0-100 (0 если неизвестен)
+        energy_level — энергия 1-5 (0 = не указана)
+        mood — настроение: great|good|ok|tired|bad (пусто = не указано)
+        notes — заметки / как прошёл день
         blockers — что мешает
-        wins — что удалось
+        wins — что удалось / победы дня
+        time_slot — слот: morning|midday|evening|manual
+        check_date — дата в формате YYYY-MM-DD (пусто = сегодня)
         """
+        from datetime import date as _date
+
+        # Определяем дату чекина
+        if check_date:
+            try:
+                parsed_date = _date.fromisoformat(check_date)
+            except ValueError:
+                parsed_date = _date.today()
+        else:
+            parsed_date = _date.today()
+
+        # Нормализуем goal_id (0 → None)
+        gid = goal_id if goal_id and goal_id > 0 else None
+
         async with get_async_session() as session:
             checkin = await cs.create_goal_checkin(
-                session, goal_id, user_id,
+                session, gid, user_id,
                 progress_pct=progress_pct,
-                energy_level=energy_level,
+                energy_level=energy_level if energy_level > 0 else None,
+                mood=mood or None,
                 notes=notes or None,
                 blockers=blockers or None,
                 wins=wins or None,
+                time_slot=time_slot or "manual",
+                check_date=parsed_date,
             )
-            # Обновляем progress_pct у цели
-            await cs.update_goal(session, goal_id, user_id, progress_pct=progress_pct)
+            # Обновляем прогресс у цели если она привязана и прогресс указан
+            if gid and progress_pct > 0:
+                await cs.update_goal(session, gid, user_id, progress_pct=progress_pct)
             await session.commit()
 
-            energy_emoji = ["", "😴", "😕", "😐", "😊", "🔥"][min(5, max(1, energy_level))]
+            slot_labels = {"morning": "🌅 Утро", "midday": "☀️ День", "evening": "🌙 Вечер", "manual": "📝"}
+            energy_emojis = ["", "😴", "😕", "😐", "😊", "🔥"]
+            mood_emojis = {"great": "😄", "good": "😊", "ok": "😐", "tired": "😴", "bad": "😟"}
+
+            slot_label = slot_labels.get(time_slot, time_slot)
+            e_str = f" Энергия: {energy_emojis[min(5, energy_level)]}{energy_level}/5" if energy_level > 0 else ""
+            m_str = f" Настроение: {mood_emojis.get(mood, mood)}" if mood else ""
             return (
-                f"✅ Check-in сохранён!\n"
-                f"Прогресс: {progress_pct}% | Энергия: {energy_emoji} {energy_level}/5\n"
+                f"✅ Check-in сохранён! {slot_label}\n"
+                f"Дата: {parsed_date}{e_str}{m_str}\n"
                 + (f"Победы: {wins}\n" if wins else "")
                 + (f"Блокеры: {blockers}" if blockers else "")
             )
-
-    # ═══════════════════════════════════════════════════════════════════════
-    # REVIEW — еженедельный обзор
-    # ═══════════════════════════════════════════════════════════════════════
 
     @tool
     async def coaching_review_generate(

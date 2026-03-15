@@ -68,3 +68,12 @@ class DailyEveningReflection(StatesGroup):
     waiting_notes      = State()  # Шаг 2: как прошёл день подробнее (текст или skip)
     waiting_blockers   = State()  # Шаг 3: что мешало (текст или skip)
     waiting_wins       = State()  # Шаг 4: победы дня (текст или skip)
+
+
+class VoiceCheckinFlow(StatesGroup):
+    """
+    FSM для голосового/текстового чекина через бота.
+    Данные (slot, check_date, fields, original_text) хранятся в FSM data.
+    """
+    waiting_confirmation = State()  # Ожидание: сохранить / изменить / отмена
+    waiting_edit         = State()  # Ожидание текстовой/голосовой правки

@@ -12,7 +12,7 @@
 import { useState, useMemo, useEffect, useRef } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { motion, AnimatePresence } from 'framer-motion'
-import { ArrowLeft, Sun, Zap, Moon, ChevronDown } from 'lucide-react'
+import { ArrowLeft, Sun, Zap, Moon, ChevronDown, HelpCircle } from 'lucide-react'
 import {
   useCreateCheckIn,
   useCheckInByDate,
@@ -411,6 +411,15 @@ export function CheckInPage() {
             {dateLabel} · {slotInfo.label}
           </p>
         </div>
+        {/* Кнопка инструкции */}
+        <button
+          onClick={() => navigate('/coaching/checkin/help')}
+          className="w-9 h-9 rounded-xl flex items-center justify-center shrink-0"
+          style={{ background: 'rgba(255,255,255,0.06)' }}
+          title="Инструкция по чекинам"
+        >
+          <HelpCircle size={18} style={{ color: '#64748b' }} />
+        </button>
       </div>
 
       {/* DayStrip: 15 дней с точками */}

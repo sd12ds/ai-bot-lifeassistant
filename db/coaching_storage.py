@@ -144,19 +144,20 @@ async def complete_milestone(
 # ══════════════════════════════════════════════════════════════════════════════
 
 async def create_goal_checkin(
-    session: AsyncSession, goal_id: int, user_id: int, **kwargs
+    session: AsyncSession, goal_id: Optional[int], user_id: int, **kwargs
 ) -> GoalCheckin:
-    """Создать check-in по цели."""
+    """Создать дневной чекин (goal_id опционален — привязка к цели необязательна)."""
     checkin = GoalCheckin(goal_id=goal_id, user_id=user_id, **kwargs)
     session.add(checkin)
     await session.flush()
     await session.refresh(checkin)
-    # Обновляем last_coaching_at у цели
-    await session.execute(
-        update(Goal)
-        .where(Goal.id == goal_id)
-        .values(last_coaching_at=datetime.utcnow())
-    )
+    # Обновляем last_coaching_at у цели если она указана
+    if goal_id is not None:
+        await session.execute(
+            update(Goal)
+            .where(Goal.id == goal_id)
+            .values(last_coaching_at=datetime.utcnow())
+        )
     return checkin
 
 

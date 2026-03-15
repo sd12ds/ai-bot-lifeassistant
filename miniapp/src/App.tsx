@@ -27,6 +27,7 @@ import { GoalsPage }         from './features/coaching/GoalsPage'
 import { GoalDetailPage }    from './features/coaching/GoalDetailPage'
 import { HabitsPage }        from './features/coaching/HabitsPage'
 import { CheckInPage }       from './features/coaching/CheckInPage'
+import { CheckInHelpPage }   from './features/coaching/CheckInHelpPage'
 import { WeeklyReviewPage }  from './features/coaching/WeeklyReviewPage'
 import { InsightsPage }      from './features/coaching/InsightsPage'
 import { OnboardingPage }    from './features/coaching/OnboardingPage'
@@ -72,6 +73,7 @@ function AppContent() {
           <Route path="/coaching/goals/:id"    element={<GoalDetailPage />} />
           <Route path="/coaching/habits"       element={<HabitsPage />} />
           <Route path="/coaching/checkin"      element={<CheckInPage />} />
+          <Route path="/coaching/checkin/help" element={<CheckInHelpPage />} />
           <Route path="/coaching/review"       element={<WeeklyReviewPage />} />
           <Route path="/coaching/insights"     element={<InsightsPage />} />
           <Route path="/coaching/onboarding"   element={<OnboardingPage />} />

@@ -187,25 +187,39 @@ class HabitOut(BaseModel):
 # ── Check-in ──────────────────────────────────────────────────────────────────
 
 class CheckInCreateDto(BaseModel):
-    """Создание check-in."""
-    energy_level: int = Field(..., ge=1, le=5)
-    mood: Optional[str] = None          # great|good|ok|tired|bad
+    """Создание чекина (один временной слот дня)."""
+    energy_level: Optional[int] = Field(None, ge=1, le=5)  # обязателен для morning/midday
+    mood: Optional[str] = None              # great|good|ok|tired|bad
+    notes: Optional[str] = None             # рефлексия / ответ на «как прошёл день»
+    blockers: Optional[str] = None          # что мешало
+    wins: Optional[str] = None              # победы дня
+    goal_id: Optional[int] = None
+    progress_pct: Optional[int] = Field(None, ge=0, le=100)
+    time_slot: str = "manual"               # morning|midday|evening|manual
+    check_date: Optional[str] = None        # YYYY-MM-DD, если не указана — сегодня
+
+
+class CheckInPatchDto(BaseModel):
+    """Обновление существующего чекина."""
+    energy_level: Optional[int] = Field(None, ge=1, le=5)
+    mood: Optional[str] = None
     notes: Optional[str] = None
     blockers: Optional[str] = None
     wins: Optional[str] = None
-    goal_id: Optional[int] = None
     progress_pct: Optional[int] = Field(None, ge=0, le=100)
 
 
 class CheckInOut(BaseModel):
     id: int
-    goal_id: Optional[int]
-    energy_level: Optional[int] = None  # Уровень энергии (nullable в модели)
-    mood: Optional[str] = None  # Настроение (поле отсутствует в GoalCheckin, допускаем None)
-    notes: Optional[str]
-    blockers: Optional[str]
-    wins: Optional[str]
-    progress_pct: Optional[int]
+    goal_id: Optional[int] = None
+    energy_level: Optional[int] = None
+    mood: Optional[str] = None
+    notes: Optional[str] = None
+    blockers: Optional[str] = None
+    wins: Optional[str] = None
+    progress_pct: Optional[int] = None
+    time_slot: str = "manual"
+    check_date: Optional[str] = None        # YYYY-MM-DD
     created_at: datetime
 
     class Config:
@@ -849,33 +863,21 @@ async def create_checkin(
     db: AsyncSession = Depends(get_session),
     current_user: User = Depends(get_current_user),
 ):
-    """Создать новый check-in."""
-    from sqlalchemy import select as _sel_ci
-    from db.models import Goal as _Goal_ci
-    from fastapi import HTTPException as _HTTPEx
-
+    """Создать новый чекин (привязан к дате и временному слоту)."""
+    from datetime import date as _date_t
     data = body.model_dump(exclude_none=True)
+    # Определяем check_date: из запроса или сегодня
+    check_date_str = data.pop("check_date", None)
+    if check_date_str:
+        try:
+            check_date_val = _date_t.fromisoformat(check_date_str)
+        except ValueError:
+            check_date_val = _date_t.today()
+    else:
+        check_date_val = _date_t.today()
+    data["check_date"] = check_date_val
+
     goal_id_val = data.pop("goal_id", None)
-
-    # Поле mood не существует в GoalCheckin — убираем из kwargs перед вставкой
-    data.pop("mood", None)
-
-    # Если goal_id не указан — берём первую активную цель пользователя
-    if goal_id_val is None:
-        _r = await db.execute(
-            _sel_ci(_Goal_ci)
-            .where(_Goal_ci.user_id == current_user.telegram_id, _Goal_ci.status == "active")
-            .order_by(_Goal_ci.created_at.asc())
-            .limit(1)
-        )
-        _first_goal = _r.scalar_one_or_none()
-        if _first_goal is None:
-            raise _HTTPEx(
-                status_code=422,
-                detail="Нет активных целей. Создай цель чтобы вести чекины."
-            )
-        goal_id_val = _first_goal.id
-
     checkin = await cs.create_goal_checkin(db, goal_id_val, current_user.telegram_id, **data)
     await db.commit()
     return checkin
@@ -918,6 +920,95 @@ async def get_checkin_history(
         .order_by(_GC2.created_at.desc()).limit(limit)
     )
     return list(_r2.scalars().all())
+
+
+@router.get("/checkins/by-date")
+async def get_checkin_by_date(
+    date: str = Query(..., description="YYYY-MM-DD"),
+    db: AsyncSession = Depends(get_session),
+    current_user: User = Depends(get_current_user),
+) -> dict:
+    """Вернуть все слоты чекина за указанный день. Ключи: morning, midday, evening, manual."""
+    from datetime import date as _date_t
+    from sqlalchemy import select as _sel_bd
+    from db.models import GoalCheckin as _GC_bd
+    try:
+        check_date = _date_t.fromisoformat(date)
+    except ValueError:
+        from fastapi import HTTPException
+        raise HTTPException(status_code=400, detail="Неверный формат даты. Ожидается YYYY-MM-DD")
+
+    _r = await db.execute(
+        _sel_bd(_GC_bd)
+        .where(_GC_bd.user_id == current_user.telegram_id, _GC_bd.check_date == check_date)
+        .order_by(_GC_bd.created_at.asc())
+    )
+    checkins = list(_r.scalars().all())
+    result: dict = {}
+    for c in checkins:
+        slot = c.time_slot or "manual"
+        result[slot] = CheckInOut.model_validate(c)
+    return result
+
+
+@router.get("/checkins/calendar")
+async def get_checkin_calendar(
+    days: int = Query(default=14, ge=1, le=60),
+    db: AsyncSession = Depends(get_session),
+    current_user: User = Depends(get_current_user),
+) -> dict:
+    """Вернуть даты с чекинами за последние N дней. Формат: {YYYY-MM-DD: [slot,...]}."""
+    from datetime import date as _date_t, timedelta
+    from sqlalchemy import select as _sel_cal
+    from db.models import GoalCheckin as _GC_cal
+    since = _date_t.today() - timedelta(days=days)
+    _r = await db.execute(
+        _sel_cal(_GC_cal)
+        .where(
+            _GC_cal.user_id == current_user.telegram_id,
+            _GC_cal.check_date >= since,
+        )
+        .order_by(_GC_cal.check_date.asc())
+    )
+    checkins = list(_r.scalars().all())
+    calendar: dict = {}
+    for c in checkins:
+        if c.check_date:
+            key = c.check_date.isoformat()
+            slot = c.time_slot or "manual"
+            if key not in calendar:
+                calendar[key] = []
+            if slot not in calendar[key]:
+                calendar[key].append(slot)
+    return calendar
+
+
+@router.patch("/checkins/{checkin_id}", response_model=CheckInOut)
+async def update_checkin(
+    checkin_id: int,
+    body: CheckInPatchDto,
+    db: AsyncSession = Depends(get_session),
+    current_user: User = Depends(get_current_user),
+):
+    """Обновить существующий чекин (energy, mood, notes, blockers, wins)."""
+    from sqlalchemy import select as _sel_p
+    from db.models import GoalCheckin as _GC_p
+    from fastapi import HTTPException
+    _r = await db.execute(
+        _sel_p(_GC_p).where(
+            _GC_p.id == checkin_id,
+            _GC_p.user_id == current_user.telegram_id,
+        )
+    )
+    checkin = _r.scalar_one_or_none()
+    if not checkin:
+        raise HTTPException(status_code=404, detail="Чекин не найден")
+    data = body.model_dump(exclude_none=True)
+    for k, v in data.items():
+        setattr(checkin, k, v)
+    await db.commit()
+    await db.refresh(checkin)
+    return checkin
 
 
 # ══════════════════════════════════════════════════════════════════════════════

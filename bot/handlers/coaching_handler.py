@@ -24,7 +24,7 @@ from aiogram.types import Message, CallbackQuery
 from bot.states import (
     CoachingGoalCreation, CoachingHabitCreation,
     CoachingCheckIn, CoachingWeeklyReview,
-    DailyEveningReflection,
+    DailyEveningReflection, VoiceCheckinFlow,
 )
 from bot.keyboards.coaching_keyboards import (
     coaching_main_kb, goal_card_kb, goal_after_create_kb, goal_list_item_kb,
@@ -1605,3 +1605,139 @@ async def evening_blockers_text_handler(message: Message, state: FSMContext) -> 
 async def evening_wins_text_handler(message: Message, state: FSMContext) -> None:
     """Текстовый ввод побед дня (шаг 4 — финал вечерней рефлексии)."""
     await finish_evening_reflection(message, state, wins=message.text.strip())
+
+
+# ══════════════════════════════════════════════════════════════════════════════
+# VOICE CHECKIN FLOW — подтверждение и правка голосового чекина
+# ══════════════════════════════════════════════════════════════════════════════
+
+import json as _json
+from datetime import date as _date
+
+from services.voice_checkin_parser import (
+    detect_slot, detect_date, parse_checkin_fields,
+    format_checkin_card,
+)
+from bot.keyboards.voice_checkin_kb import voice_checkin_confirm_kb
+
+
+@router.callback_query(F.data.startswith("vci_save:"))
+async def vci_save_handler(callback: CallbackQuery, state: FSMContext) -> None:
+    """Сохраняет голосовой чекин из FSM data в БД."""
+    data = await state.get_data()
+    slot = data.get("slot", "manual")
+    check_date_str = data.get("check_date", "")
+    fields_raw = data.get("fields", "{}")
+
+    try:
+        fields = _json.loads(fields_raw)
+    except Exception:
+        fields = {}
+
+    # Определяем дату
+    if check_date_str:
+        try:
+            check_date = _date.fromisoformat(check_date_str)
+        except ValueError:
+            check_date = _date.today()
+    else:
+        check_date = _date.today()
+
+    user_id = callback.from_user.id
+
+    async with get_async_session() as session:
+        await cs.create_goal_checkin(
+            session,
+            goal_id=None,  # Голосовой чекин не привязан к конкретной цели
+            user_id=user_id,
+            energy_level=fields.get("energy_level") or None,
+            mood=fields.get("mood") or None,
+            notes=fields.get("notes") or None,
+            wins=fields.get("wins") or None,
+            blockers=fields.get("blockers") or None,
+            time_slot=slot,
+            check_date=check_date,
+        )
+        await session.commit()
+
+    # Очищаем FSM state
+    await state.clear()
+
+    slot_labels = {"morning": "🌅 Утро", "midday": "☀️ День", "evening": "🌙 Вечер", "manual": "📝"}
+    slot_label = slot_labels.get(slot, slot)
+
+    await callback.message.edit_text(
+        f"✅ Чекин сохранён! {slot_label}\n"
+        f"Дата: {check_date.strftime('%d.%m.%Y')}\n\n"
+        f"Данные добавлены в твою историю.",
+    )
+    await callback.answer()
+
+
+@router.callback_query(F.data.startswith("vci_edit:"))
+async def vci_edit_handler(callback: CallbackQuery, state: FSMContext) -> None:
+    """Переходит в режим правки: ждёт текстового/голосового уточнения."""
+    await state.set_state(VoiceCheckinFlow.waiting_edit)
+    await callback.message.edit_text(
+        "✏️ Напиши или надиктуй, что хочешь изменить.\n\n"
+        "_Например: «Энергия была 4» или «Победы: доделал проект»_",
+        parse_mode="Markdown",
+    )
+    await callback.answer()
+
+
+@router.callback_query(F.data == "vci_cancel")
+async def vci_cancel_handler(callback: CallbackQuery, state: FSMContext) -> None:
+    """Отменяет голосовой чекин."""
+    await state.clear()
+    await callback.message.edit_text("❌ Чекин отменён.")
+    await callback.answer()
+
+
+@router.message(StateFilter(VoiceCheckinFlow.waiting_edit))
+async def vci_edit_text_handler(message: Message, state: FSMContext) -> None:
+    """
+    Обрабатывает текстовую правку чекина.
+    Повторно парсит поля и показывает обновлённую карточку.
+    """
+    data = await state.get_data()
+    slot = data.get("slot", "manual")
+    check_date_str = data.get("check_date", _date.today().isoformat())
+    old_fields_raw = data.get("fields", "{}")
+
+    try:
+        old_fields = _json.loads(old_fields_raw)
+    except Exception:
+        old_fields = {}
+
+    # Повторный LLM-парсинг правки
+    edit_text = message.text or ""
+    new_fields = await parse_checkin_fields(edit_text, slot)
+
+    # Мержим: новые значения перезаписывают старые (только непустые)
+    merged = {**old_fields}
+    for k, v in new_fields.items():
+        if v is not None:
+            merged[k] = v
+
+    try:
+        check_date = _date.fromisoformat(check_date_str)
+    except ValueError:
+        check_date = _date.today()
+
+    card_text = format_checkin_card(
+        slot=slot,
+        check_date=check_date,
+        fields=merged,
+        transcribed_text=edit_text,
+    )
+
+    # Сохраняем обновлённые данные в FSM
+    await state.update_data(fields=_json.dumps(merged, ensure_ascii=False))
+    await state.set_state(VoiceCheckinFlow.waiting_confirmation)
+
+    await message.answer(
+        card_text,
+        parse_mode="Markdown",
+        reply_markup=voice_checkin_confirm_kb(slot, check_date_str),
+    )
