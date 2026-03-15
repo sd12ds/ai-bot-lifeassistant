@@ -1,6 +1,7 @@
 /**
  * CheckInPage — экран чекина дня.
- * Два режима: quick (энергия + настроение + текст) и extended (+ блокеры, достижения, приоритеты).
+ * Два режима: quick (энергия + настроение + текст) и extended (+ блокеры, достижения).
+ * Шкалы 1-5 соответствуют API: energy_level (1-5), mood (строковый enum).
  */
 import { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
@@ -9,22 +10,34 @@ import { ArrowLeft, ChevronDown, ChevronUp, Send } from 'lucide-react'
 import { useCreateCheckIn } from '../../api/coaching'
 import type { CreateCheckInDto } from '../../api/coaching'
 
-const ENERGY_LABELS = ['😴', '😔', '😐', '🙂', '😊', '⚡', '🚀', '💪', '🔥', '🌟']
-const MOOD_LABELS   = ['😢', '😕', '😐', '🙂', '😄', '😁', '🥳', '💃', '🤩', '😇']
+// 5 эмодзи для шкалы энергии 1-5
+const ENERGY_LABELS = ['😴', '😔', '😐', '🙂', '🔥']
+// 5 эмодзи для шкалы настроения 1-5
+const MOOD_LABELS   = ['😢', '😕', '😐', '🙂', '😄']
 
+// Маппинг числового значения настроения в строковый enum API (bad|tired|ok|good|great)
+const MOOD_MAP: Record<number, string> = {
+  1: 'bad',
+  2: 'tired',
+  3: 'ok',
+  4: 'good',
+  5: 'great',
+}
+
+// Компонент шкалы 1-5 с эмодзи-кнопками
 function ScaleSelector({ value, onChange, labels }: { value: number; onChange: (v: number) => void; labels: string[] }) {
   return (
-    <div className="flex gap-1.5 justify-between">
-      {Array.from({ length: 10 }, (_, i) => i + 1).map(n => (
+    <div className="flex gap-2 justify-between">
+      {Array.from({ length: 5 }, (_, i) => i + 1).map(n => (
         <motion.button
           key={n}
           whileTap={{ scale: 0.85 }}
           onClick={() => onChange(n)}
-          className={`flex-1 aspect-square rounded-xl text-base flex items-center justify-center transition-all ${
-            value === n ? 'bg-indigo-500 text-white shadow-sm scale-110' : 'bg-gray-100 text-gray-600'
+          className={`flex-1 aspect-square rounded-xl text-2xl flex items-center justify-center transition-all ${
+            value === n ? 'bg-indigo-500 shadow-sm scale-110' : 'bg-gray-100'
           }`}
         >
-          {n <= 5 ? labels[n - 1] : n}
+          {labels[n - 1]}
         </motion.button>
       ))}
     </div>
@@ -34,27 +47,31 @@ function ScaleSelector({ value, onChange, labels }: { value: number; onChange: (
 export function CheckInPage() {
   const navigate = useNavigate()
   const [extended, setExtended] = useState(false)
-  const [energy, setEnergy]     = useState(5)
-  const [mood, setMood]         = useState(5)
+  // Начальные значения — середина шкалы 1-5
+  const [energy, setEnergy]     = useState(3)
+  const [mood, setMood]         = useState(3)
   const [reflection, setReflection] = useState('')
   const [blockers, setBlockers]     = useState('')
   const [wins, setWins]             = useState('')
-  const [priorities, setPriorities] = useState('')
+  // Состояние ошибки для показа пользователю
+  const [submitError, setSubmitError] = useState<string | null>(null)
 
   const createCheckIn = useCreateCheckIn()
 
   const handleSubmit = () => {
+    setSubmitError(null)
+    // Формируем DTO строго по контракту API:
+    // energy_level: 1-5, mood: строковый enum, notes (переименовано из reflection)
     const dto: CreateCheckInDto = {
       energy_level: energy,
-      mood_level: mood,
-      reflection: reflection.trim() || undefined,
+      mood: MOOD_MAP[mood],
+      notes: reflection.trim() || undefined,
       blockers: blockers.trim() || undefined,
       wins: wins.trim() || undefined,
-      next_priorities: priorities.trim() || undefined,
-      is_extended: extended,
     }
     createCheckIn.mutate(dto, {
       onSuccess: () => navigate('/coaching'),
+      onError: () => setSubmitError('Не удалось сохранить чекин. Попробуй ещё раз.'),
     })
   }
 
@@ -93,7 +110,7 @@ export function CheckInPage() {
           <ScaleSelector value={mood} onChange={setMood} labels={MOOD_LABELS} />
         </div>
 
-        {/* Рефлексия */}
+        {/* Рефлексия (→ notes в API) */}
         <div className="bg-white rounded-2xl p-4 shadow-sm">
           <p className="font-semibold text-gray-800 mb-2">💬 Как прошёл день?</p>
           <textarea
@@ -132,22 +149,16 @@ export function CheckInPage() {
                 className="w-full text-sm text-gray-700 placeholder-gray-400 outline-none resize-none"
               />
             </div>
-            <div className="bg-white rounded-2xl p-4 shadow-sm">
-              <p className="font-semibold text-gray-800 mb-2">🎯 Приоритеты на завтра</p>
-              <textarea
-                placeholder="Что важно сделать завтра?"
-                value={priorities}
-                onChange={e => setPriorities(e.target.value)}
-                rows={2}
-                className="w-full text-sm text-gray-700 placeholder-gray-400 outline-none resize-none"
-              />
-            </div>
           </motion.div>
         )}
       </div>
 
       {/* Sticky-кнопка отправки */}
       <div className="fixed bottom-0 inset-x-0 bg-white border-t border-gray-100 px-4 py-3">
+        {/* Сообщение об ошибке */}
+        {submitError && (
+          <p className="text-red-500 text-xs text-center mb-2">{submitError}</p>
+        )}
         <motion.button
           whileTap={{ scale: 0.97 }}
           onClick={handleSubmit}
