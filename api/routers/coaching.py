@@ -70,7 +70,7 @@ router = APIRouter(prefix="/coaching", tags=["coaching"])
 
 class GoalCreateDto(BaseModel):
     """Создание новой цели."""
-    title: str = Field(..., min_length=2, max_length=200)
+    title: str = Field(..., min_length=1, max_length=200)
     description: Optional[str] = None
     area: Optional[str] = None          # health|finance|career|personal|relationships
     target_date: Optional[date] = None
@@ -119,7 +119,7 @@ class GoalOut(BaseModel):
 
 class MilestoneCreateDto(BaseModel):
     """Создание этапа цели."""
-    title: str = Field(..., min_length=2, max_length=200)
+    title: str = Field(..., min_length=1, max_length=200)
     goal_id: int
     due_date: Optional[date] = None
     description: Optional[str] = None
@@ -144,7 +144,7 @@ class MilestoneOut(BaseModel):
 
 class HabitCreateDto(BaseModel):
     """Создание привычки."""
-    title: str = Field(..., min_length=2, max_length=200)
+    title: str = Field(..., min_length=1, max_length=200)
     area: Optional[str] = None          # health|sport|mindset|productivity
     frequency: str = "daily"            # daily|weekly|custom
     target_count: int = Field(default=1, ge=1)
