@@ -76,7 +76,7 @@ class GoalCreateDto(BaseModel):
     target_date: Optional[date] = None
     why_statement: Optional[str] = None
     first_step: Optional[str] = None
-    priority: int = Field(default=2, ge=1, le=5)
+    priority: Optional[str] = None   # не передаём — DB использует default=medium
 
 
 class GoalUpdateDto(BaseModel):
