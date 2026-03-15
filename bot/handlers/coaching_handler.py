@@ -46,6 +46,7 @@ from bot.flows.coaching_flows import (
 from db.session import get_async_session
 from db import coaching_storage as cs
 from services.coaching_personalization import reset_personalization
+from services.coaching_cross_module import execute_orchestration_action
 
 logger = logging.getLogger(__name__)
 router = Router()

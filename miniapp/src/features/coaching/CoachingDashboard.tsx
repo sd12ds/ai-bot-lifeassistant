@@ -1,13 +1,12 @@
 /**
  * CoachingDashboard — главный экран модуля коучинга.
- * Показывает: состояние дня, быструю навигацию, привычки, цели, AI-инсайт, рекомендации.
- * Всегда отображает CTA-секции даже при отсутствии данных.
+ * Дизайн соответствует общему стилю приложения: тёмная тема, GlassCard, CSS-переменные.
  */
 import { useNavigate } from 'react-router-dom'
 import { motion } from 'framer-motion'
 import {
   ChevronRight, Loader2, Target, RefreshCw,
-  Lightbulb, BarChart2, Plus, CheckSquare,
+  Lightbulb, BarChart2, Plus, CheckSquare, History, Sparkles,
 } from 'lucide-react'
 import {
   useDashboard,
@@ -15,59 +14,44 @@ import {
   useMissHabit,
   useDismissRecommendation,
 } from '../../api/coaching'
-import { StateIndicator } from './components/StateIndicator'
+import { GlassCard } from '../../shared/ui/GlassCard'
 import { GoalCard } from './components/GoalCard'
 import { HabitCard } from './components/HabitCard'
 import { CoachPromptBubble } from './components/CoachPromptBubble'
 
-// Карточка быстрой навигации
-function QuickNavCard({
-  icon, label, sub, onClick, accent = 'bg-white',
-}: {
-  icon: React.ReactNode
-  label: string
-  sub?: string
-  onClick: () => void
-  accent?: string
-}) {
-  return (
-    <motion.button
-      whileTap={{ scale: 0.95 }}
-      onClick={onClick}
-      className={`${accent} rounded-2xl p-4 shadow-sm flex flex-col items-start gap-1 text-left`}
-    >
-      <div className="mb-1">{icon}</div>
-      <p className="font-bold text-gray-900 text-sm">{label}</p>
-      {sub && <p className="text-xs text-gray-400">{sub}</p>}
-    </motion.button>
-  )
-}
-
 export function CoachingDashboard() {
-  const navigate = useNavigate()
+  const navigate  = useNavigate()
   const { data: dash, isLoading } = useDashboard()
-  const logHabit  = useLogHabit()
-  const missHabit = useMissHabit()
+  const logHabit   = useLogHabit()
+  const missHabit  = useMissHabit()
   const dismissRec = useDismissRecommendation()
 
   if (isLoading) {
     return (
-      <div className="flex items-center justify-center min-h-screen bg-gray-50">
-        <Loader2 className="animate-spin text-indigo-500" size={32} />
+      <div className="h-full flex items-center justify-center">
+        <Loader2 className="animate-spin" size={32} style={{ color: '#818cf8' }} />
       </div>
     )
   }
 
-  // Если дашборд не загрузился — предлагаем онбординг
+  // Нет данных — предлагаем онбординг
   if (!dash) {
     return (
-      <div className="flex flex-col items-center justify-center min-h-screen bg-gray-50 gap-4 px-8 text-center">
-        <span className="text-5xl">🧭</span>
-        <p className="text-gray-800 font-bold text-xl">Начни с коучем</p>
-        <p className="text-gray-500 text-sm">Ставь цели, отслеживай привычки и получай AI-инсайты</p>
+      <div className="h-full flex flex-col items-center justify-center gap-4 px-8 text-center">
+        <div
+          className="w-20 h-20 rounded-full flex items-center justify-center text-3xl"
+          style={{ background: 'rgba(99,102,241,0.1)' }}
+        >
+          🧭
+        </div>
+        <p className="text-base font-bold" style={{ color: 'var(--app-text)' }}>Начни с коучем</p>
+        <p className="text-sm" style={{ color: 'var(--app-hint)' }}>
+          Ставь цели, отслеживай привычки, получай AI-инсайты
+        </p>
         <button
           onClick={() => navigate('/coaching/onboarding')}
-          className="bg-indigo-600 text-white px-8 py-3 rounded-2xl font-bold shadow-lg shadow-indigo-200"
+          className="px-8 py-3 rounded-2xl font-bold text-white"
+          style={{ background: 'linear-gradient(135deg, #6366f1, #8b5cf6)' }}
         >
           Начать
         </button>
@@ -75,70 +59,63 @@ export function CoachingDashboard() {
     )
   }
 
-  const hasGoals   = dash.goals_active && dash.goals_active.length > 0
-  const hasHabits  = dash.habits_today && dash.habits_today.length > 0
+  const hasGoals   = (dash.goals_active?.length ?? 0) > 0
+  const hasHabits  = (dash.habits_today?.length ?? 0) > 0
   const hasInsight = !!dash.top_insight?.body
-  const hasRecs    = dash.recommendations && dash.recommendations.length > 0
+  const hasRecs    = (dash.recommendations?.length ?? 0) > 0
 
   return (
-    <div className="min-h-screen bg-gray-50 pb-28">
+    <div className="h-full flex flex-col overflow-hidden">
 
-      {/* ── Шапка с градиентом ── */}
-      <div className="bg-gradient-to-br from-indigo-600 to-purple-700 px-4 pt-10 pb-6">
-        <h1 className="text-2xl font-black text-white">Коучинг</h1>
-        <p className="text-indigo-200 text-sm mt-0.5">
-          {new Date().toLocaleDateString('ru-RU', { weekday: 'long', day: 'numeric', month: 'long' })}
-        </p>
+      {/* ── Шапка ── */}
+      <div className="flex items-center justify-between px-4 pt-4 pb-2">
+        <div>
+          <h1 className="text-xl font-bold" style={{ color: 'var(--app-text)' }}>
+            Коучинг
+          </h1>
+          <p className="text-xs" style={{ color: 'var(--app-hint)' }}>
+            {new Date().toLocaleDateString('ru-RU', { weekday: 'long', day: 'numeric', month: 'long' })}
+          </p>
+        </div>
+        <button
+          onClick={() => navigate('/coaching/insights')}
+          className="p-2 rounded-xl"
+          style={{ background: 'rgba(255,255,255,0.06)' }}
+        >
+          <History size={20} style={{ color: 'var(--app-hint)' }} />
+        </button>
       </div>
 
-      <div className="px-4 -mt-3 space-y-4">
+      {/* ── Скролл-контент ── */}
+      <div className="flex-1 overflow-y-auto px-4 pb-24 space-y-4">
 
-        {/* ── Карточка состояния ── */}
+        {/* Карточка состояния */}
         {dash.state && (
-          <motion.div initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }}>
-            <StateIndicator state={dash.state} score={dash.weekly_score ?? 0} />
-          </motion.div>
+          <GlassCard className="flex items-center gap-4">
+            <div
+              className="w-14 h-14 rounded-2xl flex items-center justify-center text-2xl"
+              style={{ background: 'linear-gradient(135deg, rgba(99,102,241,0.25), rgba(139,92,246,0.15))' }}
+            >
+              🚀
+            </div>
+            <div className="flex-1">
+              <div className="text-xs font-medium mb-0.5" style={{ color: '#a5b4fc' }}>
+                Твоё состояние
+              </div>
+              <div className="text-sm font-bold" style={{ color: 'var(--app-text)' }}>
+                {dash.state}
+              </div>
+            </div>
+            <div className="text-right">
+              <div className="text-2xl font-bold" style={{ color: 'var(--app-text)' }}>
+                {dash.weekly_score ?? 0}
+              </div>
+              <div className="text-[10px]" style={{ color: 'var(--app-hint)' }}>из 100</div>
+            </div>
+          </GlassCard>
         )}
 
-        {/* ── Кнопка чекина (всегда заметна) ── */}
-        <motion.button
-          whileTap={{ scale: 0.97 }}
-          onClick={() => navigate('/coaching/checkin')}
-          className="w-full bg-indigo-600 text-white rounded-2xl py-4 font-bold text-base shadow-lg shadow-indigo-200 flex items-center justify-center gap-2"
-        >
-          <CheckSquare size={20} />
-          Чекин дня
-        </motion.button>
-
-        {/* ── Быстрая навигация 2×2 ── */}
-        <div className="grid grid-cols-2 gap-3">
-          <QuickNavCard
-            icon={<Target size={20} className="text-blue-500" />}
-            label="Мои цели"
-            sub={hasGoals ? `${dash.goals_active!.length} активных` : 'Нет целей'}
-            onClick={() => navigate('/coaching/goals')}
-          />
-          <QuickNavCard
-            icon={<RefreshCw size={20} className="text-purple-500" />}
-            label="Привычки"
-            sub={hasHabits ? `${dash.habits_today!.length} на сегодня` : 'Нет привычек'}
-            onClick={() => navigate('/coaching/habits')}
-          />
-          <QuickNavCard
-            icon={<Lightbulb size={20} className="text-yellow-500" />}
-            label="Инсайты"
-            sub="AI-анализ"
-            onClick={() => navigate('/coaching/insights')}
-          />
-          <QuickNavCard
-            icon={<BarChart2 size={20} className="text-green-500" />}
-            label="Обзор недели"
-            sub="Рефлексия"
-            onClick={() => navigate('/coaching/review')}
-          />
-        </div>
-
-        {/* ── AI-инсайт ── */}
+        {/* AI-инсайт */}
         {hasInsight && (
           <CoachPromptBubble
             text={dash.top_insight!.body}
@@ -147,13 +124,87 @@ export function CoachingDashboard() {
           />
         )}
 
+        {/* ── Быстрые действия ── */}
+        <div className="grid grid-cols-3 gap-3">
+          {/* Чекин дня — главный CTA */}
+          <button
+            onClick={() => navigate('/coaching/checkin')}
+            className="flex items-center gap-3 p-4 rounded-2xl border border-white/[0.08]"
+            style={{ background: 'linear-gradient(135deg, rgba(99,102,241,0.2), rgba(139,92,246,0.15))' }}
+          >
+            <CheckSquare size={20} style={{ color: '#a5b4fc' }} />
+            <span className="text-sm font-medium" style={{ color: 'var(--app-text)' }}>
+              Чекин
+            </span>
+          </button>
+          {/* Цели */}
+          <button
+            onClick={() => navigate('/coaching/goals')}
+            className="flex items-center gap-3 p-4 rounded-2xl border border-white/[0.08]"
+            style={{ background: 'linear-gradient(135deg, rgba(59,130,246,0.15), rgba(99,102,241,0.1))' }}
+          >
+            <Target size={20} style={{ color: '#60a5fa' }} />
+            <span className="text-sm font-medium" style={{ color: 'var(--app-text)' }}>
+              Цели
+            </span>
+          </button>
+          {/* Привычки */}
+          <button
+            onClick={() => navigate('/coaching/habits')}
+            className="flex items-center gap-3 p-4 rounded-2xl border border-white/[0.08]"
+            style={{ background: 'linear-gradient(135deg, rgba(139,92,246,0.15), rgba(168,85,247,0.1))' }}
+          >
+            <RefreshCw size={20} style={{ color: '#c084fc' }} />
+            <span className="text-sm font-medium" style={{ color: 'var(--app-text)' }}>
+              Привычки
+            </span>
+          </button>
+          {/* Инсайты */}
+          <button
+            onClick={() => navigate('/coaching/insights')}
+            className="flex items-center gap-3 p-4 rounded-2xl border border-white/[0.08]"
+            style={{ background: 'rgba(255,255,255,0.04)' }}
+          >
+            <Lightbulb size={20} style={{ color: '#fbbf24' }} />
+            <span className="text-sm font-medium" style={{ color: 'var(--app-text)' }}>
+              Инсайты
+            </span>
+          </button>
+          {/* Обзор недели */}
+          <button
+            onClick={() => navigate('/coaching/review')}
+            className="flex items-center gap-3 p-4 rounded-2xl border border-white/[0.08]"
+            style={{ background: 'rgba(255,255,255,0.04)' }}
+          >
+            <BarChart2 size={20} style={{ color: '#34d399' }} />
+            <span className="text-sm font-medium" style={{ color: 'var(--app-text)' }}>
+              Обзор
+            </span>
+          </button>
+          {/* AI-анализ */}
+          <button
+            onClick={() => navigate('/coaching/insights')}
+            className="flex items-center gap-3 p-4 rounded-2xl border border-white/[0.08]"
+            style={{ background: 'linear-gradient(135deg, rgba(99,102,241,0.15), rgba(139,92,246,0.1))' }}
+          >
+            <Sparkles size={20} style={{ color: '#a5b4fc' }} />
+            <span className="text-sm font-medium" style={{ color: 'var(--app-text)' }}>
+              AI-анализ
+            </span>
+          </button>
+        </div>
+
         {/* ── Привычки сегодня ── */}
-        <section>
+        <div>
           <div className="flex items-center justify-between mb-2">
-            <h2 className="font-bold text-gray-800 flex items-center gap-1.5">
-              <RefreshCw size={15} className="text-purple-500" /> Привычки сегодня
-            </h2>
-            <button onClick={() => navigate('/coaching/habits')} className="text-xs text-indigo-500 flex items-center gap-0.5">
+            <span className="text-xs font-medium" style={{ color: 'var(--app-hint)' }}>
+              Привычки сегодня
+            </span>
+            <button
+              onClick={() => navigate('/coaching/habits')}
+              className="flex items-center gap-0.5 text-xs"
+              style={{ color: '#818cf8' }}
+            >
               Все <ChevronRight size={14} />
             </button>
           </div>
@@ -170,30 +221,42 @@ export function CoachingDashboard() {
               ))}
             </div>
           ) : (
-            /* Empty state — CTA создать привычку */
+            // Empty state
             <motion.button
               whileTap={{ scale: 0.97 }}
               onClick={() => navigate('/coaching/habits')}
-              className="w-full bg-white rounded-2xl p-4 shadow-sm flex items-center justify-between text-left"
+              className="w-full rounded-[20px] border border-white/[0.08] p-4 flex items-center justify-between text-left"
+              style={{ background: 'var(--glass-bg)' }}
             >
               <div>
-                <p className="font-semibold text-gray-800 text-sm">Нет привычек</p>
-                <p className="text-xs text-gray-400 mt-0.5">Добавь первую привычку и начни стрик</p>
+                <p className="text-sm font-semibold" style={{ color: 'var(--app-text)' }}>
+                  Нет привычек
+                </p>
+                <p className="text-xs mt-0.5" style={{ color: 'var(--app-hint)' }}>
+                  Добавь первую и начни стрик
+                </p>
               </div>
-              <div className="w-8 h-8 bg-purple-100 rounded-xl flex items-center justify-center shrink-0">
-                <Plus size={16} className="text-purple-600" />
+              <div
+                className="w-8 h-8 rounded-xl flex items-center justify-center"
+                style={{ background: 'rgba(168,85,247,0.15)' }}
+              >
+                <Plus size={16} style={{ color: '#c084fc' }} />
               </div>
             </motion.button>
           )}
-        </section>
+        </div>
 
         {/* ── Активные цели ── */}
-        <section>
+        <div>
           <div className="flex items-center justify-between mb-2">
-            <h2 className="font-bold text-gray-800 flex items-center gap-1.5">
-              <Target size={15} className="text-blue-500" /> Мои цели
-            </h2>
-            <button onClick={() => navigate('/coaching/goals')} className="text-xs text-indigo-500 flex items-center gap-0.5">
+            <span className="text-xs font-medium" style={{ color: 'var(--app-hint)' }}>
+              Мои цели
+            </span>
+            <button
+              onClick={() => navigate('/coaching/goals')}
+              className="flex items-center gap-0.5 text-xs"
+              style={{ color: '#818cf8' }}
+            >
               Все <ChevronRight size={14} />
             </button>
           </div>
@@ -209,46 +272,55 @@ export function CoachingDashboard() {
               ))}
             </div>
           ) : (
-            /* Empty state — CTA создать цель */
+            // Empty state
             <motion.button
               whileTap={{ scale: 0.97 }}
               onClick={() => navigate('/coaching/goals')}
-              className="w-full bg-white rounded-2xl p-4 shadow-sm flex items-center justify-between text-left"
+              className="w-full rounded-[20px] border border-white/[0.08] p-4 flex items-center justify-between text-left"
+              style={{ background: 'var(--glass-bg)' }}
             >
               <div>
-                <p className="font-semibold text-gray-800 text-sm">Нет активных целей</p>
-                <p className="text-xs text-gray-400 mt-0.5">Поставь первую цель — дай себе направление</p>
+                <p className="text-sm font-semibold" style={{ color: 'var(--app-text)' }}>
+                  Нет активных целей
+                </p>
+                <p className="text-xs mt-0.5" style={{ color: 'var(--app-hint)' }}>
+                  Поставь первую цель — дай себе направление
+                </p>
               </div>
-              <div className="w-8 h-8 bg-blue-100 rounded-xl flex items-center justify-center shrink-0">
-                <Plus size={16} className="text-blue-600" />
+              <div
+                className="w-8 h-8 rounded-xl flex items-center justify-center"
+                style={{ background: 'rgba(59,130,246,0.15)' }}
+              >
+                <Plus size={16} style={{ color: '#60a5fa' }} />
               </div>
             </motion.button>
           )}
-        </section>
+        </div>
 
         {/* ── Рекомендации ── */}
         {hasRecs && (
-          <section>
-            <h2 className="font-bold text-gray-800 flex items-center gap-1.5 mb-2">
-              <Lightbulb size={15} className="text-yellow-500" /> Рекомендации
-            </h2>
+          <div>
+            <span className="text-xs font-medium block mb-2" style={{ color: 'var(--app-hint)' }}>
+              Рекомендации
+            </span>
             <div className="space-y-2">
               {dash.recommendations!.slice(0, 2).map((r) => (
-                <div key={r.id} className="bg-white rounded-2xl p-4 shadow-sm">
-                  <p className="text-sm text-gray-700">{r.body}</p>
+                <GlassCard key={r.id}>
+                  <p className="text-sm" style={{ color: 'var(--app-text)' }}>{r.body}</p>
                   <div className="flex items-center justify-between mt-2">
-                    <span className="text-xs text-gray-400">{r.rec_type}</span>
+                    <span className="text-[10px]" style={{ color: 'var(--app-hint)' }}>{r.rec_type}</span>
                     <button
                       onClick={() => dismissRec.mutate(r.id)}
-                      className="text-xs text-gray-400 hover:text-gray-600"
+                      className="text-xs"
+                      style={{ color: 'var(--app-hint)' }}
                     >
                       Скрыть
                     </button>
                   </div>
-                </div>
+                </GlassCard>
               ))}
             </div>
-          </section>
+          </div>
         )}
 
       </div>
