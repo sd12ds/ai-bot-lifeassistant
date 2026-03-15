@@ -687,10 +687,11 @@ async def complete_milestone(
 @router.get("/habits", response_model=List[HabitOut])
 async def list_habits(
     is_active: Optional[bool] = Query(None),
+    goal_id: Optional[int] = Query(None),   # фильтр по привязанной цели
     db: AsyncSession = Depends(get_session),
     current_user: User = Depends(get_current_user),
 ):
-    return await cs.get_habits(db, current_user.telegram_id, is_active=is_active)
+    return await cs.get_habits(db, current_user.telegram_id, is_active=is_active, goal_id=goal_id)
 
 
 @router.post("/habits", response_model=HabitOut, status_code=201)

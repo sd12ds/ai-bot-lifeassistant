@@ -711,3 +711,79 @@ export function useMarkInsightRead() {
     onSuccess: () => qc.invalidateQueries({ queryKey: coachingKeys.dashboard }),
   })
 }
+
+// ══════════════════════════════════════════════════════════════════════════════
+// ДОПОЛНИТЕЛЬНЫЕ API ФУНКЦИИ И ХУКИ (GoalDetailPage Phase 1)
+// ══════════════════════════════════════════════════════════════════════════════
+
+// DTO для создания этапа
+export interface CreateMilestoneDto {
+  goal_id: number
+  title: string
+  due_date?: string
+  description?: string
+  order_index?: number
+}
+
+// -- API функции --
+
+/** Создать milestone: POST /coaching/milestones */
+const createMilestone = async (dto: CreateMilestoneDto): Promise<Milestone> => {
+  const { data } = await apiClient.post<Milestone>('/coaching/milestones', dto)
+  return data
+}
+
+/** Перезапустить цель (сброс прогресса): POST /coaching/goals/{id}/restart */
+const restartGoal = async (id: number): Promise<Goal> => {
+  const { data } = await apiClient.post<Goal>(`/coaching/goals/${id}/restart`)
+  return data
+}
+
+/** Список привычек по goal_id: GET /coaching/habits?goal_id={id}&is_active=true */
+const fetchHabitsByGoal = async (goalId: number): Promise<Habit[]> => {
+  const { data } = await apiClient.get<Habit[]>('/coaching/habits', {
+    params: { goal_id: goalId },
+  })
+  return data
+}
+
+// -- Query keys --
+export const habitsByGoalKey = (goalId: number) => ['coaching', 'habits-by-goal', goalId] as const
+
+// -- Хуки --
+
+/** Создание этапа (milestone) */
+export function useCreateMilestone() {
+  const qc = useQueryClient()
+  return useMutation({
+    mutationFn: createMilestone,
+    onSuccess: (_, dto) => {
+      // Инвалидируем кэш этапов и самой цели (milestones_total меняется)
+      qc.invalidateQueries({ queryKey: ['coaching', 'milestones'] })
+      qc.invalidateQueries({ queryKey: coachingKeys.goal(dto.goal_id) })
+    },
+  })
+}
+
+/** Перезапуск цели (progress_pct → 0) */
+export function useRestartGoal() {
+  const qc = useQueryClient()
+  return useMutation({
+    mutationFn: restartGoal,
+    onSuccess: (goal) => {
+      qc.invalidateQueries({ queryKey: coachingKeys.goal(goal.id) })
+      qc.invalidateQueries({ queryKey: ['coaching', 'goals'] })
+      qc.invalidateQueries({ queryKey: coachingKeys.dashboard })
+    },
+  })
+}
+
+/** Привычки, привязанные к конкретной цели */
+export function useHabitsByGoal(goalId: number) {
+  return useQuery({
+    queryKey: habitsByGoalKey(goalId),
+    queryFn: () => fetchHabitsByGoal(goalId),
+    staleTime: 30_000,
+    enabled: goalId > 0,
+  })
+}
