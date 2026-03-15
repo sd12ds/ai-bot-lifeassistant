@@ -8,7 +8,7 @@
  *  §11.3 — примеры-чипы в текстовых полях для подсказки
  *  §13.9 — голосовой ввод (SpeechRecognition API), chat bridge
  */
-import { useState, useRef, useCallback } from 'react'
+import { useState, useRef, useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { motion, AnimatePresence } from 'framer-motion'
 import {
@@ -148,20 +148,26 @@ function ExampleChips({
 }
 
 // ── VoiceMicButton: кнопка голосового ввода (SpeechRecognition) ───────────────
-// Использует Web Speech API. Добавляет распознанный текст к полю.
+// Использует Web Speech API.
+// Паттерн useRef для onAppend — исключает stale closure при повторных рендерах.
 function VoiceMicButton({ onAppend }: { onAppend: (text: string) => void }) {
   const [listening, setListening] = useState(false)
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const recRef = useRef<any>(null)
+  // Всегда актуальная ссылка на коллбэк — обновляется синхронно при каждом рендере
+  const onAppendRef = useRef(onAppend)
+  onAppendRef.current = onAppend
 
   // Проверяем поддержку SpeechRecognition в браузере
   const isSupported =
     typeof window !== 'undefined' &&
     ('SpeechRecognition' in window || 'webkitSpeechRecognition' in window)
 
-  const handleToggle = useCallback(() => {
+  function handleToggle() {
     if (listening) {
-      recRef.current?.stop()
+      // abort не ждёт результата — сразу останавливает
+      recRef.current?.abort?.()
+      recRef.current?.stop?.()
       setListening(false)
       return
     }
@@ -169,19 +175,30 @@ function VoiceMicButton({ onAppend }: { onAppend: (text: string) => void }) {
     const SR = (window as any).SpeechRecognition || (window as any).webkitSpeechRecognition
     const rec = new SR()
     rec.lang = 'ru-RU'
+    rec.continuous = false
     rec.interimResults = false
     rec.maxAlternatives = 1
-    rec.onresult = (e: any) => {         // eslint-disable-line @typescript-eslint/no-explicit-any
-      const transcript: string = e.results[0][0].transcript
-      onAppend(transcript + ' ')
+    // Используем onAppendRef.current — всегда свежий коллбэк без stale closure
+    rec.onresult = (e: any) => {  // eslint-disable-line @typescript-eslint/no-explicit-any
+      let transcript = ''
+      for (let i = e.resultIndex; i < e.results.length; i++) {
+        transcript += e.results[i][0].transcript
+      }
+      if (transcript.trim()) onAppendRef.current(transcript.trim() + ' ')
+    }
+    rec.onend   = () => setListening(false)
+    rec.onerror = (e: any) => {  // eslint-disable-line @typescript-eslint/no-explicit-any
+      console.warn('SpeechRecognition error:', e.error)
       setListening(false)
     }
-    rec.onend  = () => setListening(false)
-    rec.onerror = () => setListening(false)
     recRef.current = rec
-    rec.start()
-    setListening(true)
-  }, [listening, onAppend])
+    try {
+      rec.start()
+      setListening(true)
+    } catch {
+      setListening(false)
+    }
+  }
 
   if (!isSupported) return null
 
@@ -212,20 +229,26 @@ function openTelegramChat() {
   ;(window as any).Telegram?.WebApp?.close()
 }
 
-// ─────────────────────────────────────────────────────────────────────────────
+// Ключ черновика в sessionStorage — форма восстанавливается при возвращении на страницу
+const DRAFT_KEY = 'checkin_draft'
 
 export function CheckInPage() {
   const navigate = useNavigate()
 
-  // ── Состояние формы ─────────────────────────────────────────────────────────
-  const [extended, setExtended]     = useState(false)
-  const [energy, setEnergy]         = useState(3)
-  const [mood, setMood]             = useState(3)
-  const [moodTouched, setMoodTouched] = useState(false)  // показывать ли вопрос коуча
-  const [reflection, setReflection] = useState('')
-  const [blockers, setBlockers]     = useState('')
-  const [wins, setWins]             = useState('')
-  const [goalId, setGoalId]         = useState<number | undefined>(undefined)
+  // ── Загружаем черновик из sessionStorage (если пользователь вернулся назад) ──
+  const savedDraft = (() => {
+    try { return JSON.parse(sessionStorage.getItem(DRAFT_KEY) ?? 'null') } catch { return null }
+  })()
+
+  // ── Состояние формы — восстанавливается из черновика, иначе дефолты ─────────
+  const [extended, setExtended]         = useState<boolean>(savedDraft?.extended   ?? true)
+  const [energy, setEnergy]             = useState<number>(savedDraft?.energy      ?? 3)
+  const [mood, setMood]                 = useState<number>(savedDraft?.mood        ?? 3)
+  const [moodTouched, setMoodTouched]   = useState<boolean>(savedDraft?.moodTouched ?? false)
+  const [reflection, setReflection]     = useState<string>(savedDraft?.reflection  ?? '')
+  const [blockers, setBlockers]         = useState<string>(savedDraft?.blockers    ?? '')
+  const [wins, setWins]                 = useState<string>(savedDraft?.wins        ?? '')
+  const [goalId, setGoalId]             = useState<number | undefined>(savedDraft?.goalId)
   const [submitError, setSubmitError] = useState<string | null>(null)
 
   // Ref для прокрутки к полю блокеров при чипе «Расскажу что мешало»
@@ -235,6 +258,15 @@ export function CheckInPage() {
   const createCheckIn = useCreateCheckIn()
   // Загружаем активные цели для выбора привязки (§13.5)
   const { data: activeGoals = [] } = useGoals('active')
+
+  // ── Сохраняем черновик при каждом изменении полей ─────────────────────────
+  useEffect(() => {
+    try {
+      sessionStorage.setItem(DRAFT_KEY, JSON.stringify({
+        extended, energy, mood, moodTouched, reflection, blockers, wins, goalId,
+      }))
+    } catch { /* sessionStorage недоступен */ }
+  }, [extended, energy, mood, moodTouched, reflection, blockers, wins, goalId])
 
   // ── Прогресс-индикатор ──────────────────────────────────────────────────────
   // Считаем заполненные поля: energy + mood всегда заполнены (есть дефолт),
@@ -281,7 +313,11 @@ export function CheckInPage() {
       goal_id:      goalId,
     }
     createCheckIn.mutate(dto, {
-      onSuccess: () => navigate('/coaching'),
+      onSuccess: () => {
+        // Очищаем черновик при успешной отправке
+        try { sessionStorage.removeItem(DRAFT_KEY) } catch {}
+        navigate('/coaching')
+      },
       onError:   () => setSubmitError('Не удалось сохранить чекин. Попробуй ещё раз.'),
     })
   }
