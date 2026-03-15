@@ -464,6 +464,25 @@ async def update_body_metric_photo(
             await session.commit()
 
 
+async def update_body_metric_photo(
+    user_id: int, metric_id: int, photo_file_id: str | None
+) -> None:
+    """Обновить photo_file_id в записи BodyMetric."""
+    async with AsyncSessionLocal() as session:
+        stmt = (
+            select(BodyMetric)
+            .where(and_(
+                BodyMetric.id == metric_id,
+                BodyMetric.user_id == user_id,
+            ))
+        )
+        result = await session.execute(stmt)
+        bm = result.scalar_one_or_none()
+        if bm:
+            bm.photo_file_id = photo_file_id
+            await session.commit()
+
+
 # ── Лог активности ───────────────────────────────────────────────────────────
 
 async def log_activity(

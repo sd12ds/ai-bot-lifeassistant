@@ -79,15 +79,16 @@ export function OnboardingPage() {
   }
 
   return (
-    <div className="min-h-screen bg-gray-50 flex flex-col">
+    <div className="h-full flex flex-col overflow-hidden">
       {/* Прогресс-индикатор */}
-      <div className="flex gap-1.5 px-6 pt-12 pb-6">
+      <div className="flex gap-1.5 px-6 pt-12 pb-6 shrink-0">
         {STEPS.map((_, i) => (
           <div
             key={i}
-            className={`h-1 flex-1 rounded-full transition-all duration-300 ${
-              i <= step ? 'bg-indigo-500' : 'bg-gray-200'
-            }`}
+            className="h-1 flex-1 rounded-full transition-all duration-300"
+            style={{
+              background: i <= step ? '#6366f1' : 'rgba(255,255,255,0.1)',
+            }}
           />
         ))}
       </div>
@@ -106,8 +107,8 @@ export function OnboardingPage() {
             className="text-center"
           >
             <div className="text-7xl mb-6">{current.emoji}</div>
-            <h2 className="text-2xl font-black text-gray-900 mb-4">{current.title}</h2>
-            <p className="text-gray-500 text-base leading-relaxed max-w-xs mx-auto">
+            <h2 className="text-2xl font-black mb-4" style={{ color: 'var(--app-text)' }}>{current.title}</h2>
+            <p className="text-base leading-relaxed max-w-xs mx-auto" style={{ color: 'var(--app-hint)' }}>
               {current.description}
             </p>
           </motion.div>
@@ -115,12 +116,13 @@ export function OnboardingPage() {
       </div>
 
       {/* Кнопки навигации */}
-      <div className="px-6 pb-12 space-y-3">
+      <div className="px-6 pb-12 space-y-3 shrink-0">
         <motion.button
           whileTap={{ scale: 0.97 }}
           onClick={handleNext}
           disabled={completeOnboarding.isPending}
-          className="w-full bg-indigo-600 text-white rounded-2xl py-4 font-bold text-base flex items-center justify-center gap-2 shadow-lg shadow-indigo-200 disabled:opacity-50"
+          className="w-full rounded-2xl py-4 font-bold text-base flex items-center justify-center gap-2 disabled:opacity-40"
+          style={{ background: 'linear-gradient(135deg, #6366f1, #8b5cf6)', color: '#fff' }}
         >
           {current.cta}
           {!isLast && <ChevronRight size={20} />}
@@ -129,7 +131,8 @@ export function OnboardingPage() {
         {step > 0 && (
           <button
             onClick={handleBack}
-            className="w-full text-gray-400 text-sm py-2"
+            className="w-full text-sm py-2"
+            style={{ color: 'var(--app-hint)' }}
           >
             Назад
           </button>
@@ -138,7 +141,8 @@ export function OnboardingPage() {
         {step === 0 && (
           <button
             onClick={() => completeOnboarding.mutate(undefined, { onSuccess: () => navigate('/coaching') })}
-            className="w-full text-gray-400 text-sm py-2"
+            className="w-full text-sm py-2"
+            style={{ color: 'var(--app-hint)' }}
           >
             Пропустить
           </button>

@@ -9,6 +9,7 @@ import { motion } from 'framer-motion'
 import { ArrowLeft, ChevronDown, ChevronUp, Send } from 'lucide-react'
 import { useCreateCheckIn } from '../../api/coaching'
 import type { CreateCheckInDto } from '../../api/coaching'
+import { GlassCard } from '../../shared/ui/GlassCard'
 
 // 5 эмодзи для шкалы энергии 1-5
 const ENERGY_LABELS = ['😴', '😔', '😐', '🙂', '🔥']
@@ -33,9 +34,12 @@ function ScaleSelector({ value, onChange, labels }: { value: number; onChange: (
           key={n}
           whileTap={{ scale: 0.85 }}
           onClick={() => onChange(n)}
-          className={`flex-1 aspect-square rounded-xl text-2xl flex items-center justify-center transition-all ${
-            value === n ? 'bg-indigo-500 shadow-sm scale-110' : 'bg-gray-100'
-          }`}
+          className="flex-1 aspect-square rounded-xl text-2xl flex items-center justify-center transition-all"
+          style={
+            value === n
+              ? { background: 'rgba(99,102,241,0.35)', border: '1px solid rgba(99,102,241,0.5)', transform: 'scale(1.08)' }
+              : { background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.06)' }
+          }
         >
           {labels[n - 1]}
         </motion.button>
@@ -76,51 +80,57 @@ export function CheckInPage() {
   }
 
   return (
-    <div className="min-h-screen bg-gray-50 pb-32">
+    <div className="h-full flex flex-col overflow-hidden">
       {/* Шапка */}
-      <div className="px-4 pt-6 pb-4 flex items-center gap-3">
-        <button onClick={() => navigate('/coaching')} className="text-gray-500">
-          <ArrowLeft size={22} />
+      <div className="px-4 pt-6 pb-4 flex items-center gap-3 shrink-0">
+        <button
+          onClick={() => navigate('/coaching')}
+          className="w-9 h-9 rounded-xl flex items-center justify-center"
+          style={{ background: 'rgba(255,255,255,0.06)' }}
+        >
+          <ArrowLeft size={20} style={{ color: 'var(--app-text)' }} />
         </button>
-        <h1 className="text-xl font-black text-gray-900 flex-1">Чекин дня</h1>
+        <h1 className="text-xl font-black flex-1" style={{ color: 'var(--app-text)' }}>Чекин дня</h1>
         <button
           onClick={() => setExtended(v => !v)}
-          className="flex items-center gap-1 text-xs text-indigo-500 font-medium"
+          className="flex items-center gap-1 text-xs font-medium px-3 py-1.5 rounded-xl border border-white/[0.08]"
+          style={{ background: 'rgba(255,255,255,0.05)', color: '#818cf8' }}
         >
           {extended ? <><ChevronUp size={14} /> Кратко</> : <><ChevronDown size={14} /> Подробно</>}
         </button>
       </div>
 
-      <div className="px-4 space-y-5">
+      <div className="flex-1 overflow-y-auto px-4 pb-28 space-y-4">
         {/* Энергия */}
-        <div className="bg-white rounded-2xl p-4 shadow-sm">
+        <GlassCard>
           <div className="flex items-center justify-between mb-3">
-            <p className="font-semibold text-gray-800">⚡ Энергия</p>
-            <span className="text-2xl font-black text-indigo-500">{energy}</span>
+            <p className="font-semibold" style={{ color: 'var(--app-text)' }}>⚡ Энергия</p>
+            <span className="text-2xl font-black" style={{ color: '#818cf8' }}>{energy}</span>
           </div>
           <ScaleSelector value={energy} onChange={setEnergy} labels={ENERGY_LABELS} />
-        </div>
+        </GlassCard>
 
         {/* Настроение */}
-        <div className="bg-white rounded-2xl p-4 shadow-sm">
+        <GlassCard>
           <div className="flex items-center justify-between mb-3">
-            <p className="font-semibold text-gray-800">😊 Настроение</p>
-            <span className="text-2xl font-black text-indigo-500">{mood}</span>
+            <p className="font-semibold" style={{ color: 'var(--app-text)' }}>😊 Настроение</p>
+            <span className="text-2xl font-black" style={{ color: '#818cf8' }}>{mood}</span>
           </div>
           <ScaleSelector value={mood} onChange={setMood} labels={MOOD_LABELS} />
-        </div>
+        </GlassCard>
 
         {/* Рефлексия (→ notes в API) */}
-        <div className="bg-white rounded-2xl p-4 shadow-sm">
-          <p className="font-semibold text-gray-800 mb-2">💬 Как прошёл день?</p>
+        <GlassCard>
+          <p className="font-semibold mb-2" style={{ color: 'var(--app-text)' }}>💬 Как прошёл день?</p>
           <textarea
             placeholder="Напиши пару мыслей о сегодняшнем дне..."
             value={reflection}
             onChange={e => setReflection(e.target.value)}
             rows={3}
-            className="w-full text-sm text-gray-700 placeholder-gray-400 outline-none resize-none"
+            className="w-full text-sm outline-none resize-none bg-transparent placeholder-white/30"
+            style={{ color: 'var(--app-text)' }}
           />
-        </div>
+        </GlassCard>
 
         {/* Расширенный режим */}
         {extended && (
@@ -129,41 +139,47 @@ export function CheckInPage() {
             animate={{ opacity: 1, y: 0 }}
             className="space-y-4"
           >
-            <div className="bg-white rounded-2xl p-4 shadow-sm">
-              <p className="font-semibold text-gray-800 mb-2">🚧 Блокеры</p>
+            <GlassCard>
+              <p className="font-semibold mb-2" style={{ color: 'var(--app-text)' }}>🚧 Блокеры</p>
               <textarea
                 placeholder="Что мешало сегодня?"
                 value={blockers}
                 onChange={e => setBlockers(e.target.value)}
                 rows={2}
-                className="w-full text-sm text-gray-700 placeholder-gray-400 outline-none resize-none"
+                className="w-full text-sm outline-none resize-none bg-transparent placeholder-white/30"
+                style={{ color: 'var(--app-text)' }}
               />
-            </div>
-            <div className="bg-white rounded-2xl p-4 shadow-sm">
-              <p className="font-semibold text-gray-800 mb-2">🏆 Победы</p>
+            </GlassCard>
+            <GlassCard>
+              <p className="font-semibold mb-2" style={{ color: 'var(--app-text)' }}>🏆 Победы</p>
               <textarea
                 placeholder="Чем гордишься сегодня?"
                 value={wins}
                 onChange={e => setWins(e.target.value)}
                 rows={2}
-                className="w-full text-sm text-gray-700 placeholder-gray-400 outline-none resize-none"
+                className="w-full text-sm outline-none resize-none bg-transparent placeholder-white/30"
+                style={{ color: 'var(--app-text)' }}
               />
-            </div>
+            </GlassCard>
           </motion.div>
         )}
       </div>
 
       {/* Sticky-кнопка отправки */}
-      <div className="fixed bottom-0 inset-x-0 bg-white border-t border-gray-100 px-4 py-3">
+      <div
+        className="fixed bottom-0 inset-x-0 px-4 py-3"
+        style={{ background: 'var(--app-bg)', borderTop: '1px solid rgba(255,255,255,0.06)' }}
+      >
         {/* Сообщение об ошибке */}
         {submitError && (
-          <p className="text-red-500 text-xs text-center mb-2">{submitError}</p>
+          <p className="text-xs text-center mb-2" style={{ color: '#f87171' }}>{submitError}</p>
         )}
         <motion.button
           whileTap={{ scale: 0.97 }}
           onClick={handleSubmit}
           disabled={createCheckIn.isPending}
-          className="w-full bg-indigo-600 text-white rounded-2xl py-4 font-bold flex items-center justify-center gap-2 disabled:opacity-50 shadow-lg shadow-indigo-200"
+          className="w-full rounded-2xl py-4 font-bold flex items-center justify-center gap-2 disabled:opacity-40"
+          style={{ background: 'linear-gradient(135deg, #6366f1, #8b5cf6)', color: '#fff' }}
         >
           <Send size={18} />
           {createCheckIn.isPending ? 'Сохраняем...' : 'Сохранить чекин'}

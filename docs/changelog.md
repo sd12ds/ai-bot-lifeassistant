@@ -107,3 +107,27 @@
 📦 Добавлен полный план тестирования Coaching модуля (docs/coaching_test_plan.md): 24 раздела, 300+ тест-кейсов, Test Pyramid, 5 персонажей, Factories/Fakes, Init/Unit/Integration/API/Chat/E2E/MiniApp тесты, Auth/Scheduler/CrossModule/Resilience, CI pipeline, Regression Pack, DoD, 6-фазный план
 ## [6cb9ad0] — 2026-03-14 23:57 (МСК)
 📦 Добавлен полный план тестирования Coaching модуля (docs/coaching_test_plan.md): 24 раздела, 300+ тест-кейсов, Test Pyramid, 5 персонажей, Factories/Fakes, Init/Unit/Integration/API/Chat/E2E/MiniApp/Auth/Scheduler/CrossModule/Resilience, CI pipeline, Regression Pack R-001..R-010, DoD, 6-фазный план реализации
+## [] — 
+📦 Полное тест-покрытие Coaching модуля (Phase 1-6): 197 тестов, все зелёные. Исправлены баги в api/routers/coaching.py (priority тип, checkin mood/energy defaults, create_milestone маппинг, get_stuck_goals аргументы и др.)
+
+## [e7fc18d] — 2026-03-15 01:51
+📦 Добавлены полные FSM dialog тесты: goal creation (8+1 unit+E2E) и check-in (6+1 unit+E2E). Итого 205 тестов.
+
+## [4e95102] — 2026-03-15 11:30
+📦 Добавлены тесты proactive-подсказок (26 тестов) и mini-app journey сценариев (17 тестов); исправлены 3 продакшн-бага
+
+## [0552622] — 2026-03-15 11:43 (МСК)
+📦 Исправлены UI-баги mini-app: CoachPromptBubble получил насыщенный стиль, CheckInPage — исправлено несоответствие DTO с API (шкалы 1-5, mood→enum, reflection→notes)
+
+## [34a0b32] — 2026-03-15 11:54 (МСК)
+📦 Критические баги коучинга: session closed bug в coaching_main (бот не показывал кнопки), белый фон онбординга, перезапуск сервисов для сброса stale bytecode (.id ошибка)
+
+## [e97348a] — 2026-03-15 12:02 (МСК)
+📦 Редизайн CoachingDashboard: градиентный заголовок, сетка 2x2, empty state CTA-карточки для целей и привычек
+
+## [9a3fced] — 2026-03-15 12:08 (МСК)
+📦 vite.config: outDir=/var/www/jarvis — сборка теперь идёт прямо в nginx webroot, не нужно копировать вручную
+
+## [9ac988f] — 2026-03-15 12:15 (МСК)
+📦 Редизайн CoachingDashboard под тёмную тему приложения (GlassCard, CSS-vars); фикс NameError в coaching_handler (execute_orchestration_action)
+
