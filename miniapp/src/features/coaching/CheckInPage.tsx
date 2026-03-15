@@ -422,9 +422,9 @@ export function CheckInPage() {
         },
       )
     } else {
-      // POST — создание нового чекина
+      // POST — создание нового чекина (остаёмся на странице, запросы инвалидируются в хуке)
       createCheckIn.mutate(dto, {
-        onSuccess: () => navigate('/coaching'),
+        onSuccess: () => {},
         onError: () => setSubmitError('Не удалось сохранить. Попробуй ещё раз.'),
       })
     }
