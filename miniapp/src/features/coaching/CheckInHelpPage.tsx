@@ -332,14 +332,14 @@ export function CheckInHelpPage() {
   return (
     <div style={{
       height: '100%',
-      overflowY: 'auto',
+      display: 'flex',
+      flexDirection: 'column',
       background: 'linear-gradient(135deg, #0f172a 0%, #1e1b4b 50%, #0f172a 100%)',
-      paddingBottom: 40,
+      overflow: 'hidden',
     }}>
       {/* Хедер */}
       <div style={{
-        position: 'sticky',
-        top: 0,
+        flexShrink: 0,
         zIndex: 10,
         background: 'rgba(15,23,42,0.92)',
         backdropFilter: 'blur(12px)',
@@ -372,6 +372,8 @@ export function CheckInHelpPage() {
         </div>
       </div>
 
+      {/* Скроллируемый контент */}
+      <div style={{ flex: 1, overflowY: 'auto', WebkitOverflowScrolling: 'touch', paddingBottom: 40 }}>
       <div style={{ padding: '20px 16px', display: 'flex', flexDirection: 'column', gap: 24 }}>
 
         {/* Вводный текст */}
@@ -404,6 +406,7 @@ export function CheckInHelpPage() {
         </div>
 
       </div>
+      </div>  {/* end scrollable */}
     </div>
   )
 }

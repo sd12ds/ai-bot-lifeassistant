@@ -745,6 +745,8 @@ export function CheckInPage() {
           style={{
             background: 'var(--app-bg)',
             borderTop: '1px solid rgba(255,255,255,0.06)',
+            zIndex: 55,  // выше BottomNav (z-index: 50) чтобы кнопка была кликабельна
+            paddingBottom: 'calc(0.75rem + env(safe-area-inset-bottom, 0px))',
           }}
         >
           {submitError && (
