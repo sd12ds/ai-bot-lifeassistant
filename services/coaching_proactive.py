@@ -94,8 +94,8 @@ async def evaluate_triggers(
     goals = await cs.get_goals(session, user_id, status="active")
     habits = await cs.get_habits(session, user_id, is_active=True)
     at_risk_habits = await cs.get_habits_at_risk(session, user_id, days_no_log=3)
-    stuck_goals = await cs.get_stuck_goals(session, user_id, days_no_progress=7)
-    recent_checkins = await cs.get_recent_goal_checkins(session, user_id, limit=1)
+    stuck_goals = await cs.get_stuck_goals(session, user_id, days_without_progress=7)
+    recent_checkins = await cs.get_recent_user_checkins(session, user_id, limit=1)
 
     # Вычисляем дни без check-in
     days_no_checkin = 999
@@ -478,7 +478,7 @@ async def evaluate_multi_signal_triggers(
     now_utc = datetime.utcnow()
     for g in goals:
         if not g.is_frozen:
-            checkins = await cs.get_recent_goal_checkins(session, user_id, limit=1)
+            checkins = await cs.get_recent_user_checkins(session, user_id, limit=1)
             goal_checkins = [c for c in checkins if getattr(c, 'goal_id', None) == g.id]
             days_since_ci = 999
             if goal_checkins:

@@ -173,6 +173,19 @@ async def get_recent_goal_checkins(
     return list(result.scalars().all())
 
 
+async def get_recent_user_checkins(
+    session: AsyncSession, user_id: int, limit: int = 5
+) -> List[GoalCheckin]:
+    """Получить последние N check-ins пользователя по всем целям."""
+    result = await session.execute(
+        select(GoalCheckin)
+        .where(GoalCheckin.user_id == user_id)
+        .order_by(GoalCheckin.created_at.desc())
+        .limit(limit)
+    )
+    return list(result.scalars().all())
+
+
 # ══════════════════════════════════════════════════════════════════════════════
 # GoalReview
 # ══════════════════════════════════════════════════════════════════════════════
@@ -417,13 +430,16 @@ async def get_or_create_profile(
 async def update_profile(
     session: AsyncSession, user_id: int, **kwargs
 ) -> UserCoachingProfile:
-    """Обновить настройки профиля коуча."""
-    await session.execute(
-        update(UserCoachingProfile)
-        .where(UserCoachingProfile.user_id == user_id)
-        .values(**kwargs)
-    )
-    return await get_or_create_profile(session, user_id)
+    """Обновить (upsert) настройки профиля коуча.
+    
+    Если профиль не существует — создаёт с переданными kwargs.
+    Исправление бага: слепой UPDATE не создавал профиль при первом вызове.
+    """
+    profile = await get_or_create_profile(session, user_id)
+    for key, value in kwargs.items():
+        setattr(profile, key, value)
+    await session.flush()
+    return profile
 
 
 # ══════════════════════════════════════════════════════════════════════════════
