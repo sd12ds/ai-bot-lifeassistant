@@ -91,6 +91,10 @@ const MOOD_TO_NUM: Record<string, number> = {
   bad: 1, tired: 2, ok: 3, good: 4, great: 5,
   '1': 1, '2': 2, '3': 3, '4': 4, '5': 5,
 }
+// Обратный маппинг: число → строковый ключ mood для отправки на бэкенд
+const NUM_TO_MOOD: Record<number, string> = {
+  1: 'bad', 2: 'tired', 3: 'ok', 4: 'good', 5: 'great',
+}
 
 // Варианты итога дня для вечернего слота
 const DAY_RESULTS: Array<{ key: string; label: string }> = [
@@ -363,12 +367,13 @@ export function CheckInPage() {
 
     if (activeSlot === 'morning') {
       dto.energy_level = energy
+      if (notes.trim()) dto.notes = notes.trim()  // заметки утром тоже сохраняем
     } else if (activeSlot === 'midday') {
       dto.energy_level = energy
       if (notes.trim()) dto.notes = notes.trim()
     } else {
       // evening: настроение + итог дня + победы + блокеры
-      dto.mood = String(mood)
+      dto.mood = NUM_TO_MOOD[mood] ?? 'ok'  // конвертируем 1-5 → 'bad'|'tired'|'ok'|'good'|'great'
       const noteParts = [
         dayResult ? DAY_RESULTS.find(r => r.key === dayResult)?.label ?? '' : '',
         notes.trim(),

@@ -331,9 +331,10 @@ export function CheckInHelpPage() {
 
   return (
     <div style={{
-      minHeight: '100vh',
+      height: '100%',
+      overflowY: 'auto',
       background: 'linear-gradient(135deg, #0f172a 0%, #1e1b4b 50%, #0f172a 100%)',
-      padding: '0 0 40px',
+      paddingBottom: 40,
     }}>
       {/* Хедер */}
       <div style={{
