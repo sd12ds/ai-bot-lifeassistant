@@ -218,3 +218,9 @@
 ## [0b3a350] — 2026-03-16 15:47 (МСК)
 📦 Routing v3: L0a/L0b draft+confirmation guards в supervisor, Layer 1 авто-force в process_message, TTL sticky 3→8 мин, после clear_draft 5→10 мин; text.py — routing централизован в supervisor (исправлен баг: voice «Да.» при черновике еды → coaching)
 
+
+## [] —  (С)
+📦 икс фитнес-модуля: таймаут program_import 30→120с, coaching datetime, tool удаления шаблонов, UX кнопок программ
+
+## [f1eb725] — 2026-03-16 17:06 (МСК)
+📦 Фикс фитнес-модуля: таймаут program_import 30→120с, coaching datetime, tool удаления шаблонов, UX кнопок программ

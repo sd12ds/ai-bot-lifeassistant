@@ -12,6 +12,8 @@ declare global {
         ready: () => void
         expand: () => void
         close: () => void
+        showConfirm: (message: string, callback: (confirmed: boolean) => void) => void
+        showAlert: (message: string, callback?: () => void) => void
         initData: string
         initDataUnsafe: {
           user?: {

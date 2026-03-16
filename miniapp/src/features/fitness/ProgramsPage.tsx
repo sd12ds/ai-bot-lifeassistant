@@ -448,7 +448,15 @@ export function ProgramsPage() {
 
                         {/* Удалить */}
                         <button
-                          onClick={() => { if (window.confirm("Удалить программу? Это действие нельзя отменить.")) deleteMut.mutate(prog.id) }}
+                          onClick={() => {
+                          const doDelete = () => deleteMut.mutate(prog.id)
+                          const tg = window.Telegram?.WebApp
+                          if (tg?.showConfirm) {
+                            tg.showConfirm('Удалить программу? Это действие нельзя отменить.', (ok: boolean) => { if (ok) doDelete() })
+                          } else if (window.confirm('Удалить программу? Это действие нельзя отменить.')) {
+                            doDelete()
+                          }
+                        }}
                           disabled={deleteMut.isPending}
                           className="px-3 py-2 rounded-xl"
                           style={{ background: 'rgba(239,68,68,0.1)' }}
