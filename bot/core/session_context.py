@@ -98,14 +98,14 @@ def set_draft(user_id: int, draft: BaseDraft) -> SessionContext:
 
 
 def clear_draft(user_id: int) -> None:
-    """Очистить только draft, оставив last_saved_entity. Активирует sticky на 5 мин."""
+    """Очистить только draft, оставив last_saved_entity. Активирует sticky на 10 мин."""
     ctx = _contexts.get(user_id)
     if ctx:
         ctx.draft = None
         ctx.pending_confirmation = False
         ctx.last_activity = datetime.now(DEFAULT_TZ)
         # После очистки draft — домен остаётся "липким" 5 минут
-        ctx.activate_sticky(minutes=5)
+        ctx.activate_sticky(minutes=10)
 
 
 def set_last_saved(user_id: int, entity: dict) -> None:
