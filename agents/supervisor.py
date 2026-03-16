@@ -154,13 +154,24 @@ async def classify_intent(state: SupervisorState) -> SupervisorState:
         logger.info("user=%s → %s (rule-based)", user_id, rule_result)
         return {**state, "agent_type": rule_result}
 
-    # ── Уровень 2: Sticky domain ─────────────────────────────────────────
+    # ── Уровень 2: Sticky domain (с защитой от ложного роутинга) ─────────
     ctx = _get_ctx(user_id)
     if ctx and ctx.is_domain_sticky():
         sticky = ctx.active_domain
-        _last_agent_per_user[user_id] = sticky
-        logger.info("user=%s → %s (sticky domain)", user_id, sticky)
-        return {**state, "agent_type": sticky}
+        # Проверяем: есть ли маркеры другого домена при отсутствии маркеров sticky?
+        # Если да — сообщение скорее всего НЕ для sticky домена, отдаём LLM.
+        from bot.core.intent_classifier import has_any_signal
+        other = has_any_signal(user_text, exclude_domain=sticky)
+        if other:
+            logger.info(
+                "user=%s → LLM (sticky=%s перекрыт сигналом %s)",
+                user_id, sticky, other,
+            )
+            # Не используем sticky — проваливаемся к LLM-классификатору
+        else:
+            _last_agent_per_user[user_id] = sticky
+            logger.info("user=%s → %s (sticky domain)", user_id, sticky)
+            return {**state, "agent_type": sticky}
 
     # ── Уровень 3: LLM-классификатор ─────────────────────────────────────
     last_agent = _last_agent_per_user.get(user_id, "нет (первое сообщение)")

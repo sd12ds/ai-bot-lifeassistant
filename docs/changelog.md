@@ -2,6 +2,11 @@
 
 Лог всех изменений с хэшами коммитов для отката.
 
+## [31aab4f] — 2026-03-16 17:53 (МСК)
+📦 Фикс удаления шаблонов (FK constraint) и ложного грамм в классификаторе
+- delete_all_templates: обнуление template_id в program_days перед удалением
+- intent_classifier: " грамм " (пробелы с обеих сторон) в NUTRITION_STRONG
+
 ## [d38fad2] — 2026-03-16 17:38 (МСК)
 📦 Фикс роутинга шаблонов в классификаторе + showConfirm в miniapp
 - intent_classifier: шаблон тренир → FITNESS_STRONG, шаблон → FITNESS_NORMAL

@@ -77,6 +77,9 @@ _FITNESS_STRONG = {
     "разгибание бедр", "сгибание голен", "румынская тяга",
     "болгарск", "ягодичный мост",
     "шаблон тренир",  # явная ссылка на шаблоны тренировок
+    # Снаряды и оборудование — однозначно фитнес
+    "штанг", "гантел", "тренажёр", "тренажер",
+    "гриф", "блин на", "становая",
 }
 
 _FITNESS_NORMAL = {
@@ -210,3 +213,52 @@ def _count_matches(text: str, keywords: set[str]) -> int:
         if kw in text:
             count += 1
     return count
+
+
+def has_any_signal(text: str, exclude_domain: str) -> str | None:
+    """Проверяет есть ли хоть один маркер (strong/normal) для домена КРОМЕ exclude_domain.
+
+    Используется для защиты sticky domain: если сообщение имеет сигнал
+    другого домена — sticky нужно пропустить и отдать решение LLM.
+    Возвращает имя домена с сигналом или None.
+    """
+    low = text.lower().strip()
+
+    # Проверяем strong маркеры всех доменов кроме исключённого
+    if exclude_domain != "fitness":
+        if _count_matches(low, _FITNESS_STRONG) > 0:
+            return "fitness"
+    if exclude_domain != "nutrition":
+        if _count_matches(low, _NUTRITION_STRONG) > 0:
+            return "nutrition"
+    if exclude_domain != "reminder":
+        if _count_matches(low, _REMINDER_STRONG) > 0:
+            return "reminder"
+    if exclude_domain != "coaching":
+        if _count_matches(low, _COACHING_STRONG) > 0:
+            return "coaching"
+
+    # Проверяем normal маркеры (>= 1) при условии что у sticky домена 0 маркеров
+    sticky_signal = 0
+    if exclude_domain == "nutrition":
+        sticky_signal = _count_matches(low, _NUTRITION_STRONG) + _count_matches(low, _NUTRITION_NORMAL)
+    elif exclude_domain == "fitness":
+        sticky_signal = _count_matches(low, _FITNESS_STRONG) + _count_matches(low, _FITNESS_NORMAL)
+    elif exclude_domain == "reminder":
+        sticky_signal = _count_matches(low, _REMINDER_STRONG)
+    elif exclude_domain == "coaching":
+        sticky_signal = _count_matches(low, _COACHING_STRONG) + _count_matches(low, _COACHING_NORMAL)
+
+    # Если у sticky домена есть хоть один маркер — не переопределяем
+    if sticky_signal > 0:
+        return None
+
+    # У sticky 0 маркеров — проверяем normal других доменов
+    if exclude_domain != "fitness" and _count_matches(low, _FITNESS_NORMAL) > 0:
+        return "fitness"
+    if exclude_domain != "nutrition" and _count_matches(low, _NUTRITION_NORMAL) > 0:
+        return "nutrition"
+    if exclude_domain != "coaching" and _count_matches(low, _COACHING_NORMAL) > 0:
+        return "coaching"
+
+    return None
