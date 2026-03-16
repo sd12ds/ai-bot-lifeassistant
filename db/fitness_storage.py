@@ -1783,10 +1783,31 @@ async def get_program_with_exercises(user_id: int, program_id: int | None = None
 
 
 async def delete_all_templates(user_id: int) -> int:
-    """Удалить все шаблоны тренировок пользователя. Возвращает количество удалённых."""
-    from db.models import WorkoutTemplate
+    """Удалить все шаблоны тренировок пользователя. Возвращает количество удалённых.
+
+    Перед удалением обнуляет template_id в workout_program_days,
+    чтобы не нарушать FK constraint.
+    """
+    from db.models import WorkoutTemplate, WorkoutProgramDay, WorkoutProgram
 
     async with AsyncSessionLocal() as session:
+        # Получаем ID шаблонов пользователя
+        tpl_ids_result = await session.execute(
+            select(WorkoutTemplate.id).where(WorkoutTemplate.user_id == user_id)
+        )
+        tpl_ids = [row[0] for row in tpl_ids_result.all()]
+
+        if not tpl_ids:
+            return 0
+
+        # Обнуляем ссылки на шаблоны в днях программ (FK без CASCADE)
+        await session.execute(
+            update(WorkoutProgramDay)
+            .where(WorkoutProgramDay.template_id.in_(tpl_ids))
+            .values(template_id=None)
+        )
+
+        # Удаляем сами шаблоны
         result = await session.execute(
             delete(WorkoutTemplate).where(WorkoutTemplate.user_id == user_id)
         )

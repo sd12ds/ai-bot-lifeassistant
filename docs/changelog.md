@@ -2,6 +2,13 @@
 
 Лог всех изменений с хэшами коммитов для отката.
 
+## [d38fad2] — 2026-03-16 17:38 (МСК)
+📦 Фикс роутинга шаблонов в классификаторе + showConfirm в miniapp
+- intent_classifier: шаблон тренир → FITNESS_STRONG, шаблон → FITNESS_NORMAL
+- intent_classifier: фикс ложного грамм→программ (пробел перед грамм)
+- ProgramsPage: window.confirm → Telegram.WebApp.showConfirm
+- useTelegram: типы showConfirm/showAlert
+
 ---
 
 ## [a437f79b3731ea430776af0886deed0a7f2730c5] — 2026-03-13
