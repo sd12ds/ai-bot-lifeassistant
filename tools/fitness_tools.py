@@ -793,6 +793,18 @@ def make_fitness_tools(user_id: int) -> list:
         cal_note = f"\n📅 Обновлено {count} событий в календаре." if count else ""
         return f"✅ День {day_number} ({day_name}): {' '.join(changes)}{cal_note}\n\n💡 Так же можно настроить остальные дни. Или открой мини-приложение для визуального редактора."
 
+
+    @tool
+    async def templates_delete_all() -> str:
+        """Удалить все шаблоны тренировок пользователя.
+        Вызывай когда пользователь просит удалить все шаблоны, очистить шаблоны."""
+        from db import fitness_storage as fs_mod
+        # Удаляем все шаблоны пользователя
+        count = await fs_mod.delete_all_templates(user_id)
+        if count == 0:
+            return "📋 У тебя нет шаблонов тренировок."
+        return f"🗑 Удалено {count} шаблонов тренировок."
+
     # Возвращаем все инструменты
     return [
         exercise_search,
@@ -813,4 +825,5 @@ def make_fitness_tools(user_id: int) -> list:
         program_swap_days,
         program_delete,
         program_set_schedule,
+        templates_delete_all,
     ]

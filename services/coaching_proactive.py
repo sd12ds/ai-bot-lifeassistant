@@ -15,7 +15,7 @@ from __future__ import annotations
 
 import logging
 from dataclasses import dataclass, field
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, timezone
 from typing import Any, Optional
 from zoneinfo import ZoneInfo
 
@@ -90,7 +90,7 @@ async def evaluate_triggers(
     Возвращает список NudgeCandidate, отсортированный по priority asc.
     """
     candidates: list[NudgeCandidate] = []
-    now = datetime.utcnow()
+    now = datetime.now(timezone.utc)
 
     goals = await cs.get_goals(session, user_id, status="active")
     habits = await cs.get_habits(session, user_id, is_active=True)
@@ -403,7 +403,7 @@ async def evaluate_multi_signal_triggers(
     нескольких условий одновременно.
     """
     candidates: list[NudgeCandidate] = []
-    now = datetime.utcnow()
+    now = datetime.now(timezone.utc)
 
     goals = await cs.get_goals(session, user_id, status="active")
     habits = await cs.get_habits(session, user_id, is_active=True)
@@ -476,7 +476,7 @@ async def evaluate_multi_signal_triggers(
         ))
 
     # MS4: silent_goal — цель без задач и check-ins >7 дней
-    now_utc = datetime.utcnow()
+    now_utc = datetime.now(timezone.utc)
     for g in goals:
         if not g.is_frozen:
             checkins = await cs.get_recent_user_checkins(session, user_id, limit=1)
@@ -484,7 +484,7 @@ async def evaluate_multi_signal_triggers(
             days_since_ci = 999
             if goal_checkins:
                 days_since_ci = (now_utc - goal_checkins[0].created_at).days
-            if days_since_ci >= 7 and not snapshot.stick_at_risk if snapshot else True:
+            if days_since_ci >= 7 and not snapshot.streak_at_risk if snapshot else True:
                 candidates.append(NudgeCandidate(
                     nudge_type="silent_goal",
                     priority=PRIORITY_HIGH,
@@ -591,7 +591,7 @@ async def evaluate_rituals(
     # ── SUNDAY WEEKLY REVIEW (18:00, воскресенье) ────────────────────────────
     if weekday == 6 and 18 <= hour <= 20:
         latest_review = await cs.get_latest_review(session, user_id)
-        now_utc = datetime.utcnow()
+        now_utc = datetime.now(timezone.utc)
         if not latest_review or (now_utc - latest_review.created_at).days >= 5:
             candidates.append(NudgeCandidate(
                 nudge_type="sunday_weekly_review",
@@ -639,7 +639,7 @@ async def evaluate_rituals(
 
     # ── ANTI-DROPOUT (3/5/10 дней без активности) ────────────────────────────
     recent_sessions = await cs.get_recent_sessions(session, user_id, limit=1)
-    now_utc = datetime.utcnow()
+    now_utc = datetime.now(timezone.utc)
     days_inactive = 999
     if recent_sessions:
         days_inactive = (now_utc - recent_sessions[0].created_at).days
@@ -761,7 +761,7 @@ async def run_proactive_for_user(
         snapshot = await cs.get_latest_snapshot(session, user_id)
 
         # 3. Обновляем snapshot и риски (не чаще раза в час)
-        now = datetime.utcnow()
+        now = datetime.now(timezone.utc)
         snapshot_stale = (
             not snapshot
             or (now - snapshot.created_at).total_seconds() > 3600

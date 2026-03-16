@@ -39,7 +39,7 @@ async def analyze_behavioral_patterns(
     - evening_checkin_avoidance: редко делает чекин после 20:00
     """
     from db import coaching_storage as cs
-    from db.models import GoalCheckIn, Goal
+    from db.models import GoalCheckin, Goal
 
     patterns = {}
     now = datetime.now(timezone.utc)

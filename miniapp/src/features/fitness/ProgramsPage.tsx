@@ -448,7 +448,7 @@ export function ProgramsPage() {
 
                         {/* Удалить */}
                         <button
-                          onClick={() => { if (window.confirm("Деактивировать программу? Её можно будет активировать снова.")) deleteMut.mutate(prog.id) }}
+                          onClick={() => { if (window.confirm("Удалить программу? Это действие нельзя отменить.")) deleteMut.mutate(prog.id) }}
                           disabled={deleteMut.isPending}
                           className="px-3 py-2 rounded-xl"
                           style={{ background: 'rgba(239,68,68,0.1)' }}
@@ -564,7 +564,7 @@ export function ProgramsPage() {
                           }}
                         >
                           <Play size={14} />
-                          {applyTemplateMut.isPending ? 'Создание...' : 'Применить'}
+                          {applyTemplateMut.isPending ? 'Создание...' : 'Начать тренировку'}
                         </button>
                         <button
                           onClick={() => deleteTemplateMut.mutate(tpl.id)}

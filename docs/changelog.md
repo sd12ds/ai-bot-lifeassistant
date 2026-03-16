@@ -212,3 +212,9 @@
 
 ## [01be858] — 2026-03-15 23:59 (МСК)
 🐛 fix: sticky domain больше не блокирует смену раздела; coaching-агент добавлен в роутинг supervisor
+
+## [a2609e5] — 2026-03-16 00:14 (МСК)
+🐛 fix: meal_type по текущему времени (инжект МСК); sticky domain сбрасывается при смене раздела (follow-up напоминаний)
+## [0b3a350] — 2026-03-16 15:47 (МСК)
+📦 Routing v3: L0a/L0b draft+confirmation guards в supervisor, Layer 1 авто-force в process_message, TTL sticky 3→8 мин, после clear_draft 5→10 мин; text.py — routing централизован в supervisor (исправлен баг: voice «Да.» при черновике еды → coaching)
+

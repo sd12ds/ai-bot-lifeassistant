@@ -1780,3 +1780,15 @@ async def get_program_with_exercises(user_id: int, program_id: int | None = None
             day["exercises"] = templates_map.get(day.get("template_id"), [])
 
         return prog_dict
+
+
+async def delete_all_templates(user_id: int) -> int:
+    """Удалить все шаблоны тренировок пользователя. Возвращает количество удалённых."""
+    from db.models import WorkoutTemplate
+
+    async with AsyncSessionLocal() as session:
+        result = await session.execute(
+            delete(WorkoutTemplate).where(WorkoutTemplate.user_id == user_id)
+        )
+        await session.commit()
+        return result.rowcount

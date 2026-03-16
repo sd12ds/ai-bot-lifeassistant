@@ -15,7 +15,7 @@ router = Router()
 logger = logging.getLogger(__name__)
 
 # Максимальное время ожидания ответа от LLM (секунды)
-LLM_TIMEOUT_SECONDS = 30
+LLM_TIMEOUT_SECONDS = 120
 
 
 @router.message(F.text)

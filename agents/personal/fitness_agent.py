@@ -125,6 +125,7 @@ _SYSTEM_PROMPT = """Ты — персональный фитнес-тренер 
 - «поменяй местами день 1 и день 3» → program_swap_days(day_a=1, day_b=3)
 - «покажи программу» / «моя программа» → program_show()
 - «удали программу» / «отмени программу» / «убери программу» → program_delete()
+- «удали все шаблоны» / «очисти шаблоны» → templates_delete_all()
 - «день 1 по пятницам с 21 до 22» → program_set_schedule(day_number=1, weekday=4, start_time="21:00", end_time="22:00")
 - «день 2 в среду» → program_set_schedule(day_number=2, weekday=2)
 - «день 3 с 18 до 19:30» → program_set_schedule(day_number=3, start_time="18:00", end_time="19:30")
