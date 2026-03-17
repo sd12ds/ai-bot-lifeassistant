@@ -21,7 +21,8 @@ async def _build_message(rem: dict) -> tuple[str, "InlineKeyboardMarkup | None"]
     if rem["entity_type"] == "task":
         task = await rdb.get_task(rem["entity_id"], rem["user_id"])
         if not task:
-            return "⏰ Напоминание (задача не найдена)", None
+            # Задача удалена — пропускаем напоминание (вернём None)
+            return None, None
         title = task.get("title", "Задача")
         due = task.get("due_datetime", "")
         # Форматируем дедлайн с учётом TZ пользователя
@@ -58,6 +59,11 @@ async def check_and_send_reminders(bot: Bot, batch_limit: int = 200) -> None:
     for rem in items:
         try:
             text, kb = await _build_message(rem)
+            if text is None:
+                # Сущность удалена — тихо помечаем напоминание как отправленное
+                await rdb.mark_reminder_sent(rem["id"], telegram_message_id=None)
+                logger.info("Reminder id=%s пропущено (сущность удалена) user=%s", rem["id"], rem["user_id"])
+                continue
             msg = await bot.send_message(rem["user_id"], text, reply_markup=kb)
             await rdb.mark_reminder_sent(rem["id"], telegram_message_id=msg.message_id)
             logger.info("Reminder id=%s отправлено user=%s", rem["id"], rem["user_id"])

@@ -347,7 +347,7 @@ async def complete_task(task_id: int, user_id: int) -> bool:
 
 
 async def delete_task(task_id: int, user_id: int) -> bool:
-    """Удаляет задачу."""
+    """Удаляет задачу и отменяет связанные pending-напоминания."""
     async with AsyncSessionLocal() as db:
         result = await db.execute(
             select(Task).where(Task.id == task_id, Task.user_id == user_id)
@@ -357,7 +357,13 @@ async def delete_task(task_id: int, user_id: int) -> bool:
             return False
         await db.delete(task)
         await db.commit()
-        return True
+    # Отменяем pending-напоминания для удалённой задачи
+    try:
+        from db.reminders import cancel_pending_reminders_for_task
+        await cancel_pending_reminders_for_task(user_id, task_id)
+    except Exception:
+        pass  # Не блокируем удаление если reminders недоступны
+    return True
 
 
 async def update_task_due(task_id: int, user_id: int, due_datetime: Optional[str]) -> bool:
