@@ -362,16 +362,10 @@ export function ActiveWorkout() {
 
       if (workoutSource === 'program' && nextWorkout) {
         sessionName = nextWorkout.day_name || `День ${nextWorkout.day_number}`
-      } else if (workoutSource === 'template' && exercises.length > 0) {
-        // Генерируем название из упражнений шаблона до старта сессии
-        const names = exercises.map((ex) => ex.exercise.name)
-        if (names.length === 1) {
-          sessionName = names[0]
-        } else if (names.length === 2) {
-          sessionName = `${names[0]} + ${names[1]}`
-        } else {
-          sessionName = `${names[0]} + ${names[1]} (+${names.length - 2})`
-        }
+      } else if (workoutSource === 'template') {
+        // Берём имя прямо из выбранного шаблона (оно уже осмысленное)
+        const selectedTpl = templates?.find((t: Template) => t.id === selectedTemplateId)
+        sessionName = selectedTpl?.name
       }
 
       const session = await startSession.mutateAsync({
