@@ -192,13 +192,22 @@ export function ActiveWorkout() {
     setExercises(loaded)
   }, [workoutSource, nextWorkout, templates])
 
-  // ── Автовыбор source='program' при навигации из ProgramsPage ──────────────
+  // ── Автовыбор source при навигации из ProgramsPage или Templates ─────────
   useEffect(() => {
-    const state = location.state as { fromProgram?: boolean } | null
+    const state = location.state as { fromProgram?: boolean; templateId?: number } | null
+    // Из программы — источник переключается на 'program', упражнения загрузит следующий эффект
     if (state?.fromProgram && nextWorkout) {
       setWorkoutSource('program')
     }
-  }, [location.state, nextWorkout])
+    // Из страницы шаблонов — сразу загружаем упражнения выбранного шаблона
+    if (state?.templateId && templates?.length) {
+      const tpl = templates.find((t: Template) => t.id === state.templateId)
+      if (tpl) {
+        setWorkoutSource('template')
+        loadTemplateExercises(tpl)
+      }
+    }
+  }, [location.state, nextWorkout, templates, loadTemplateExercises])
 
   // ── Таймер тренировки ──────────────────────────────────────────────────────
   useEffect(() => {

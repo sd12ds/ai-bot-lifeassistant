@@ -13,7 +13,7 @@ import {
 import {
   usePrograms, useActiveProgram, useNextWorkout,
   useGenerateProgram, useActivateProgram, useDeleteProgram,
-  useTemplates, useApplyTemplate, useDeleteTemplate,
+  useTemplates, useDeleteTemplate,
   type ProgramGenerateDto,
 } from '../../api/fitness'
 import { GlassCard } from '../../shared/ui/GlassCard'
@@ -57,7 +57,6 @@ export function ProgramsPage() {
 
   // Шаблоны
   const { data: templates } = useTemplates()
-  const applyTemplateMut = useApplyTemplate()
   const deleteTemplateMut = useDeleteTemplate()
 
   // Форма генерации
@@ -89,14 +88,9 @@ export function ProgramsPage() {
     }
   }
 
-  // Применить шаблон — создаёт тренировку из шаблона и переходит на экран тренировки
-  const handleApplyTemplate = async (templateId: number) => {
-    try {
-      await applyTemplateMut.mutateAsync(templateId)
-      navigate('/fitness/workout')
-    } catch (e) {
-      console.error('Ошибка применения шаблона:', e)
-    }
+  // Открыть шаблон в экране активной тренировки — упражнения загружаются там, session создаётся при старте
+  const handleApplyTemplate = (templateId: number) => {
+    navigate('/fitness/workout', { state: { templateId } })
   }
 
   return (
@@ -564,15 +558,11 @@ export function ProgramsPage() {
                       <div className="flex gap-2 pt-1">
                         <button
                           onClick={() => handleApplyTemplate(tpl.id)}
-                          disabled={applyTemplateMut.isPending}
                           className="flex-1 flex items-center justify-center gap-1.5 py-2.5 rounded-xl text-xs font-bold text-white"
-                          style={{
-                            background: 'linear-gradient(135deg, #22c55e, #16a34a)',
-                            opacity: applyTemplateMut.isPending ? 0.6 : 1,
-                          }}
+                          style={{ background: 'linear-gradient(135deg, #22c55e, #16a34a)' }}
                         >
                           <Play size={14} />
-                          {applyTemplateMut.isPending ? 'Создание...' : 'Начать тренировку'}
+                          Начать тренировку
                         </button>
                         <button
                           onClick={() => deleteTemplateMut.mutate(tpl.id)}
