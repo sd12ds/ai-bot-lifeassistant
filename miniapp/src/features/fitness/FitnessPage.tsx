@@ -4,7 +4,7 @@
  */
 import { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
-import { TrendingUp, ChevronRight, Plus, History, Play, BarChart3, Ruler, Target, Sparkles } from 'lucide-react'
+import { TrendingUp, ChevronRight, History, Play, BarChart3, Ruler, Target, Sparkles } from 'lucide-react'
 import { useFitnessStats, useSessions, useBodyMetrics, useNextWorkout, useFitnessGoals, type WorkoutSession } from '../../api/fitness'
 import { GlassCard } from '../../shared/ui/GlassCard'
 import { FAB } from '../../shared/components/FAB'
@@ -185,17 +185,6 @@ export function FitnessPage() {
             <Play size={20} style={{ color: '#22c55e' }} />
             <span className="text-sm font-medium" style={{ color: 'var(--app-text)' }}>
               Начать
-            </span>
-          </button>
-          {/* Записать тренировку — быстрый лог */}
-          <button
-            onClick={() => setCreateOpen(true)}
-            className="flex items-center gap-3 p-4 rounded-2xl border border-white/[0.08]"
-            style={{ background: 'linear-gradient(135deg, rgba(99,102,241,0.15), rgba(139,92,246,0.1))' }}
-          >
-            <Plus size={20} style={{ color: '#818cf8' }} />
-            <span className="text-sm font-medium" style={{ color: 'var(--app-text)' }}>
-              Записать
             </span>
           </button>
           {/* Прогресс */}
