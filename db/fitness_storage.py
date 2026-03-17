@@ -418,9 +418,29 @@ async def repeat_workout(user_id: int, source_session_id: int) -> dict | None:
             return None
 
         now = datetime.now(DEFAULT_TZ)
+
+        # Используем имя оригинала, но если оно дефолтное — генерируем из упражнений
+        repeat_name = original.name
+        if not repeat_name or repeat_name.startswith("Тренировка "):
+            seen_ex: dict[int, str] = {}
+            for s in (original.sets or []):
+                if s.exercise_id not in seen_ex and s.exercise:
+                    seen_ex[s.exercise_id] = s.exercise.name
+            ex_names = list(seen_ex.values())
+            if ex_names:
+                total_ex = len(ex_names)
+                if total_ex == 1:
+                    repeat_name = ex_names[0]
+                elif total_ex == 2:
+                    repeat_name = f"{ex_names[0]} + {ex_names[1]}"
+                else:
+                    repeat_name = f"{ex_names[0]} + {ex_names[1]} (+{total_ex - 2})"
+            else:
+                repeat_name = f"Тренировка {now.strftime('%d.%m')}"
+
         new_ws = WorkoutSession(
             user_id=user_id,
-            name=original.name or f"Тренировка {now.strftime('%d.%m')}",
+            name=repeat_name,
             workout_type=original.workout_type,
             started_at=now,
             ended_at=now,

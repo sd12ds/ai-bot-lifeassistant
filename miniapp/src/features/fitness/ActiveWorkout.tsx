@@ -354,11 +354,24 @@ export function ActiveWorkout() {
   // ── Старт тренировки (переход из setup → active) ──────────────────────────
   const handleStart = async () => {
     try {
-      // Название сессии: для программы — название дня, для свободной —
-      // не передаём (finish_workout авто-генерирует из упражнений)
+      // Название сессии по источнику:
+      // - программа → название дня программы
+      // - шаблон → генерируем из первых 2 упражнений
+      // - свободная → finish_workout авто-генерирует из сохранённых подходов
       let sessionName: string | undefined
+
       if (workoutSource === 'program' && nextWorkout) {
         sessionName = nextWorkout.day_name || `День ${nextWorkout.day_number}`
+      } else if (workoutSource === 'template' && exercises.length > 0) {
+        // Генерируем название из упражнений шаблона до старта сессии
+        const names = exercises.map((ex) => ex.exercise.name)
+        if (names.length === 1) {
+          sessionName = names[0]
+        } else if (names.length === 2) {
+          sessionName = `${names[0]} + ${names[1]}`
+        } else {
+          sessionName = `${names[0]} + ${names[1]} (+${names.length - 2})`
+        }
       }
 
       const session = await startSession.mutateAsync({
