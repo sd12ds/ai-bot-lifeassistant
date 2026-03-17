@@ -1106,6 +1106,39 @@ async def sync_program_calendar(program_id: int, user_id: int, duration_weeks: i
                 created += 1
 
         await session.commit()
+
+        # Создаём Reminder-записи для всех фитнес-задач с remind_at.
+        # fitness_storage работает напрямую с Task ORM, минуя reminder_tools,
+        # поэтому reminders таблица не заполнялась — scheduler их не видел.
+        if created > 0:
+            try:
+                from db.models import Reminder as _Rem
+                from datetime import datetime as _dt, timezone as _tz
+                _now_utc = _dt.now(_tz.utc)
+                # Перечитываем только что созданные задачи для получения их ID
+                from sqlalchemy import select as _sel
+                _res = await session.execute(
+                    _sel(Task).where(
+                        Task.user_id == user_id,
+                        Task.tags.contains([f"program:{program_id}"]),
+                        Task.remind_at.isnot(None),
+                        Task.is_done == False,
+                    )
+                )
+                for _t in _res.scalars().all():
+                    _rdt = _t.remind_at
+                    if _rdt.tzinfo is None:
+                        _rdt = _rdt.replace(tzinfo=_tz.utc)
+                    if _rdt > _now_utc:
+                        session.add(_Rem(
+                            user_id=user_id,
+                            entity_type="task",
+                            entity_id=_t.id,
+                            remind_at=_rdt,
+                        ))
+                await session.commit()
+            except Exception:
+                pass  # Не ломаем основной флоу
         return created
 
 
