@@ -1,6 +1,6 @@
-# Docker Compose — инфраструктура проекта
-# Сервисы: postgres, api (FastAPI), nginx
-# Бот запускается отдельно (nohup python main.py) пока не переедет на PostgreSQL
+# Docker Compose — полный стек ai-assistant
+# Сервисы: postgres, migrator, api, bot, scheduler
+# Host nginx (SSL/certbot) проксирует /api/ → localhost:8000 → ai_api
 
 services:
 
@@ -25,6 +25,23 @@ services:
       timeout: 5s
       retries: 5
 
+  # ── Alembic migrator — выполняется один раз перед поднятием сервисов ───────
+  migrator:
+    build:
+      context: .
+      dockerfile: api/Dockerfile
+    command: alembic upgrade head
+    restart: "no"            # однократный запуск, после успеха не перезапускать
+    env_file:
+      - .env
+    environment:
+      DATABASE_URL: postgresql+asyncpg://${POSTGRES_USER:-aiuser}:${POSTGRES_PASSWORD:-changeme}@postgres:5432/${POSTGRES_DB:-aiassistant}
+    depends_on:
+      postgres:
+        condition: service_healthy
+    networks:
+      - ai_net
+
   # ── FastAPI backend ────────────────────────────────────────────────────────
   api:
     build:
@@ -39,24 +56,54 @@ services:
     depends_on:
       postgres:
         condition: service_healthy
+      migrator:
+        condition: service_completed_successfully
     networks:
       - ai_net
     ports:
-      - "8000:8000"
-
-  # ── nginx — reverse proxy + статика Mini App ───────────────────────────────
-  nginx:
-    image: nginx:alpine
-    container_name: ai_nginx
-    restart: unless-stopped
+      - "8000:8000"          # host nginx проксирует сюда /api/
     volumes:
-      - ./nginx.conf:/etc/nginx/nginx.conf:ro
-      - ./miniapp/dist:/usr/share/nginx/html:ro   # статика фронтенда (появится на этапе 2)
-    ports:
-      - "80:80"
-      - "443:443"
+      - /var/www/jarvis/uploads:/var/www/jarvis/uploads  # загрузки пользователей
+
+  # ── Telegram-бот (polling + handlers + supervisor) ─────────────────────────
+  bot:
+    build:
+      context: .
+      dockerfile: bot/Dockerfile
+    container_name: ai_bot
+    restart: unless-stopped
+    env_file:
+      - .env
+    environment:
+      DATABASE_URL: postgresql+asyncpg://${POSTGRES_USER:-aiuser}:${POSTGRES_PASSWORD:-changeme}@postgres:5432/${POSTGRES_DB:-aiassistant}
     depends_on:
-      - api
+      postgres:
+        condition: service_healthy
+      migrator:
+        condition: service_completed_successfully
+    networks:
+      - ai_net
+    volumes:
+      # Полный доступ к /var/www/jarvis: cache-busting для меню + uploads для фото
+      - /var/www/jarvis:/var/www/jarvis
+
+  # ── Scheduler — фоновые уведомления, независимы от бота ───────────────────
+  scheduler:
+    build:
+      context: .
+      dockerfile: bot/Dockerfile   # те же зависимости, другая точка входа
+    container_name: ai_scheduler
+    command: ["python", "scheduler_main.py"]
+    restart: unless-stopped
+    env_file:
+      - .env
+    environment:
+      DATABASE_URL: postgresql+asyncpg://${POSTGRES_USER:-aiuser}:${POSTGRES_PASSWORD:-changeme}@postgres:5432/${POSTGRES_DB:-aiassistant}
+    depends_on:
+      postgres:
+        condition: service_healthy
+      migrator:
+        condition: service_completed_successfully
     networks:
       - ai_net
 

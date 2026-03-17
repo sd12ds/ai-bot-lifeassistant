@@ -11,10 +11,10 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
 COPY requirements.txt .
 RUN pip install --no-cache-dir -r requirements.txt
 
-# Копируем весь код проекта (bot/api/db/agents и пр. общие модули)
+# Копируем весь код проекта
 COPY . .
 
 ENV PYTHONPATH=/app
 
-# API запускается с двумя воркерами через uvicorn
-CMD ["uvicorn", "api.main:app", "--host", "0.0.0.0", "--port", "8000", "--workers", "2"]
+# Точка входа бота (polling + handlers + supervisor)
+CMD ["python", "main.py"]

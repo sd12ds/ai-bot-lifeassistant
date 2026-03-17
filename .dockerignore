@@ -1,0 +1,34 @@
+# Виртуальное окружение — зависимости ставятся через pip install в Dockerfile
+venv/
+
+# Секреты — передаются через env_file в compose, не должны попасть в образ
+.env
+
+# Python кеш
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+.pytest_cache/
+
+# Git история
+.git/
+.gitignore
+
+# Node.js
+node_modules/
+miniapp/node_modules/
+miniapp/dist/
+
+# Локальные данные и логи
+data/
+*.log
+
+# Документация и тесты
+docs/
+tests/
+
+# Временные файлы
+*.db
+*.db-shm
+*.db-wal

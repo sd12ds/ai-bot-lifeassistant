@@ -21,9 +21,6 @@ import config
 from db.storage import init_db
 from bot.middleware.user_context import UserContextMiddleware
 from bot.handlers import common, text, voice, photo
-from infrastructure.scheduler.notification_scheduler import start_notification_scheduler
-from infrastructure.scheduler.nutrition_tips_scheduler import start_nutrition_tips_scheduler
-from infrastructure.scheduler.coaching_scheduler import start_coaching_scheduler
 from db.checkpointer import init_checkpointer
 
 logging.basicConfig(
@@ -104,11 +101,7 @@ async def main() -> None:
     dp.include_router(coaching_handler.router)  # 🤖 Coaching — до text.router
     dp.include_router(text.router)
 
-    logger.info("Бот запущен")
-    # Запускаем фоновый планировщик уведомлений
-    start_notification_scheduler(bot, interval_seconds=60)
-    start_nutrition_tips_scheduler(bot, check_interval=60)
-    start_coaching_scheduler(bot, interval_seconds=60)  # 🤖 Coaching proactive
+    logger.info("Бот запущен (scheduler'ы вынесены в отдельный сервис)")
     await dp.start_polling(bot)
 
 
