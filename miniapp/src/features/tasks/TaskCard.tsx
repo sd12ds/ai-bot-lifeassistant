@@ -264,9 +264,12 @@ export function TaskCard({
                 <span className="text-xs font-medium" style={{ color: dueLabel.overdue ? '#ef4444' : 'var(--app-text)' }}>
                   {dueLabel.dateStr}
                 </span>
-                <span className="text-xs" style={{ color: dueLabel.overdue ? '#ef4444' : 'var(--app-hint)' }}>
-                  · {dueLabel.relStr}
-                </span>
+                {/* Скрываем относительное время если intervalLabel уже показывает его */}
+                {!intervalLabel && (
+                  <span className="text-xs" style={{ color: dueLabel.overdue ? '#ef4444' : 'var(--app-hint)' }}>
+                    · {dueLabel.relStr}
+                  </span>
+                )}
               </div>
             )}
 

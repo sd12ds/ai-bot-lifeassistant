@@ -248,3 +248,18 @@
 
 ## [f549e68] — 2026-03-17 16:32 (МСК)
 📦 fix(fitness): apply_template завершает сессию, фильтр зомби в get_next_workout, удалён дубль функции, проверка владельца в finish_session
+
+## [] —  (МСК)
+📦 Миграция бота и API в docker-compose: новые Dockerfile для bot/api, scheduler вынесен в отдельный контейнер (scheduler_main.py), добавлен сервис migrator для Alembic, Makefile обновлён на docker compose команды
+
+## [3c944d2] — 2026-03-17 17:26 (МСК)
+📦 Миграция бота и API в docker-compose: новые Dockerfile для bot/api, scheduler вынесен в отдельный контейнер (scheduler_main.py), добавлен сервис migrator для Alembic, Makefile обновлён на docker compose команды
+
+## [5efb4d2] — 2026-03-17 17:44 (МСК)
+🐛 fix(fitness): авто-сохранение подходов при завершении тренировки — история больше не сохраняется пустой
+## [8588082] — 2026-03-17 17:51 (МСК)
+📦 Исправлен баг: кнопка «Начать тренировку» в шаблонах теперь не создаёт сессию сразу — открывает ActiveWorkout с pre-loaded упражнениями, сессия создаётся при нажатии «Старт»
+
+## [cf912ed] — 2026-03-17 17:56 (МСК)
+📦 Security: CORS allow_origins=["*"] заменён на config.ALLOWED_ORIGINS — берётся из MINIAPP_URL в .env, wildcard убран
+
