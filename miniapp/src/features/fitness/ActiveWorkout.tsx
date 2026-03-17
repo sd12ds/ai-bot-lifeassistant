@@ -354,7 +354,17 @@ export function ActiveWorkout() {
   // ── Старт тренировки (переход из setup → active) ──────────────────────────
   const handleStart = async () => {
     try {
-      const session = await startSession.mutateAsync({ workout_type: workoutType })
+      // Название сессии: для программы — название дня, для свободной —
+      // не передаём (finish_workout авто-генерирует из упражнений)
+      let sessionName: string | undefined
+      if (workoutSource === 'program' && nextWorkout) {
+        sessionName = nextWorkout.day_name || `День ${nextWorkout.day_number}`
+      }
+
+      const session = await startSession.mutateAsync({
+        workout_type: workoutType,
+        ...(sessionName ? { name: sessionName } : {}),
+      })
       setSessionId(session.id)
       setPhase('active')
       setTimerRunning(true)

@@ -209,6 +209,24 @@ async def finish_workout(
         if ws.started_at:
             ws.total_duration_sec = int((now - ws.started_at).total_seconds())
 
+        # Авто-генерируем название из упражнений если оставалось дефолтным "Тренировка XX.XX"
+        if ws.name and ws.name.startswith("Тренировка ") and ws.sets:
+            # Уникальные упражнения в порядке первого появления
+            seen_ex: dict[int, str] = {}
+            for s in ws.sets:
+                if s.exercise_id not in seen_ex and s.exercise:
+                    seen_ex[s.exercise_id] = s.exercise.name
+            ex_names = list(seen_ex.values())
+            if ex_names:
+                total_ex = len(ex_names)
+                if total_ex == 1:
+                    ws.name = ex_names[0]
+                elif total_ex == 2:
+                    ws.name = f"{ex_names[0]} + {ex_names[1]}"
+                else:
+                    extra = total_ex - 2
+                    ws.name = f"{ex_names[0]} + {ex_names[1]} (+{extra})"
+
         await session.commit()
         await session.refresh(ws)
         return _session_to_dict(ws)
@@ -266,9 +284,41 @@ async def quick_log_workout(
     """
     async with AsyncSessionLocal() as session:
         now = datetime.now(DEFAULT_TZ)
+
+        # Генерируем информативное название из первых 2 упражнений если не задано
+        auto_name = name
+        if not auto_name and exercises:
+            # Дедупликация exercise_id с сохранением порядка
+            seen_ids: set[int] = set()
+            ordered_ids: list[int] = []
+            for ex in exercises:
+                eid = ex.get("exercise_id")
+                if eid and eid not in seen_ids:
+                    seen_ids.add(eid)
+                    ordered_ids.append(eid)
+            if ordered_ids:
+                from db.models import ExerciseLibrary
+                ex_rows = await session.execute(
+                    select(ExerciseLibrary.id, ExerciseLibrary.name)
+                    .where(ExerciseLibrary.id.in_(ordered_ids))
+                )
+                id_to_name = {row[0]: row[1] for row in ex_rows.fetchall()}
+                # Имена в порядке как в запросе
+                ex_names = [id_to_name[eid] for eid in ordered_ids if eid in id_to_name]
+                if ex_names:
+                    total_ex = len(ordered_ids)
+                    if total_ex == 1:
+                        auto_name = ex_names[0]
+                    elif total_ex == 2:
+                        auto_name = f"{ex_names[0]} + {ex_names[1]}"
+                    else:
+                        # Первые два + количество оставшихся
+                        extra = total_ex - 2
+                        auto_name = f"{ex_names[0]} + {ex_names[1]} (+{extra})"
+
         ws = WorkoutSession(
             user_id=user_id,
-            name=name or f"Тренировка {now.strftime('%d.%m')}",
+            name=auto_name or f"Тренировка {now.strftime('%d.%m')}",
             workout_type=workout_type,
             started_at=now,
             ended_at=now,
