@@ -362,21 +362,48 @@ export function ActiveWorkout() {
     setRestRunning(false)
 
     try {
+      // Автосохраняем все несохранённые подходы перед завершением.
+      // Пользователь мог не нажать ✓ вручную — сохраняем все параллельно.
+      const unsavedTasks = exercises.flatMap((ex) =>
+        ex.sets
+          .filter((set) => !set.saved)
+          .map((set) =>
+            addSetMut.mutateAsync({
+              sessionId,
+              dto: {
+                exercise_id: set.exercise_id,
+                reps: set.reps || undefined,
+                weight_kg: set.weight_kg || undefined,
+                duration_sec: set.duration_sec || undefined,
+                set_type: set.set_type,
+              },
+            }).catch((e) => {
+              // Не прерываем завершение при ошибке отдельного подхода
+              console.warn('Не удалось сохранить подход:', e)
+            })
+          )
+      )
+      if (unsavedTasks.length > 0) {
+        await Promise.all(unsavedTasks)
+      }
+
       const result = await finishSession.mutateAsync({
         sessionId,
-        dto: { notes }, // Передаём заметки
+        dto: { notes },
       })
+
+      // Считаем итоговые данные (включая только что сохранённые подходы)
+      const allSets = exercises.flatMap((ex) => ex.sets)
+      const totalSetsCount = allSets.length
+      const totalVolumeCalc = allSets.reduce((s, st) => s + (st.reps || 0) * (st.weight_kg || 0), 0)
+
       navigate('/fitness/complete', {
         state: {
           session: result,
           elapsed,
           exerciseCount: exercises.length,
-          totalSets: exercises.reduce((s, ex) => s + ex.sets.filter((st) => st.saved).length, 0),
-          totalVolume: exercises.reduce(
-            (sum, ex) => sum + ex.sets.filter((st) => st.saved).reduce(
-              (s, st) => s + (st.reps || 0) * (st.weight_kg || 0), 0
-            ), 0
-          ),
+          totalSets: totalSetsCount,
+          totalVolume: totalVolumeCalc,
           // Данные упражнений для сохранения как шаблон
           exercises: exercises.map((ex) => ({
             exercise_id: ex.exercise.id,
