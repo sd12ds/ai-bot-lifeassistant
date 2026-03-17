@@ -69,3 +69,12 @@ def validate() -> None:
         missing.append("OPENAI_API_KEY")
     if missing:
         raise RuntimeError(f"Не заданы обязательные переменные окружения: {', '.join(missing)}")
+
+# ── CORS ──────────────────────────────────────────────────────────────────────
+# Разрешённые origin'ы для браузерных запросов.
+# Приоритет: ALLOWED_ORIGINS (через запятую) → MINIAPP_URL → fallback на '*' (dev-only).
+# В продакшене MINIAPP_URL или ALLOWED_ORIGINS должны быть заданы явно.
+MINIAPP_URL: str = os.getenv("MINIAPP_URL", "")
+
+_raw_origins: str = os.getenv("ALLOWED_ORIGINS", MINIAPP_URL)
+ALLOWED_ORIGINS: list[str] = [o.strip() for o in _raw_origins.split(",") if o.strip()] or ["*"]

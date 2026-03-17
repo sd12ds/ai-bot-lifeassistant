@@ -7,6 +7,7 @@ import time as _time
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
+import config
 from api.routers import auth, tasks, calendars, nutrition, fitness, voice, ai_coach, coaching
 
 # Время старта приложения — используется в /api/health для расчёта uptime
@@ -25,10 +26,10 @@ app = FastAPI(
     redirect_slashes=False,
 )
 
-# CORS — разрешаем запросы из Telegram Mini App (любой origin в dev, ограничить в prod)
+# CORS — origin'ы берутся из config.ALLOWED_ORIGINS (ALLOWED_ORIGINS или MINIAPP_URL в .env)
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"],
+    allow_origins=config.ALLOWED_ORIGINS,  # задаётся через ALLOWED_ORIGINS или MINIAPP_URL в .env
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
