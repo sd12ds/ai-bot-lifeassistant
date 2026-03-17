@@ -1255,6 +1255,10 @@ async def update_program_day(
 
         # Если переданы exercises — пересоздаём шаблон
         if exercises_data is not None and len(exercises_data) > 0:
+            # Запоминаем старый template_id для последующего удаления
+            old_template_id = day.template_id
+
+            # Создаём новый шаблон с обновлёнными упражнениями
             tpl = await create_template(
                 user_id=user_id,
                 name=day.day_name or f"День {day.day_number}",
@@ -1262,6 +1266,22 @@ async def update_program_day(
                 exercises_data=exercises_data,
             )
             day.template_id = tpl["id"]
+
+            # Безопасно удаляем старый шаблон: только если ни одна
+            # workout_session не ссылается на него (FK без CASCADE)
+            if old_template_id is not None:
+                from db.models import WorkoutTemplate, WorkoutSession
+                sessions_count_result = await session.execute(
+                    select(func.count(WorkoutSession.id)).where(
+                        WorkoutSession.template_id == old_template_id
+                    )
+                )
+                sessions_count = sessions_count_result.scalar()
+                if sessions_count == 0:
+                    # Нет ссылок — безопасно удаляем устаревший шаблон
+                    await session.execute(
+                        delete(WorkoutTemplate).where(WorkoutTemplate.id == old_template_id)
+                    )
 
         await session.commit()
 

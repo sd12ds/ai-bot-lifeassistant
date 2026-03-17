@@ -516,6 +516,11 @@ def make_coaching_tools(user_id: int) -> list:
         Создать привычку из шаблона.
         template_id — ID шаблона
         goal_id — привязать к цели (0 = нет)
+
+        ВАЖНО: вызывать ТОЛЬКО после явного подтверждения пользователем
+        («да», «применить», «создай», «хочу эту привычку» и т.п.).
+        Сначала покажи шаблоны через habit_template_list, предложи один
+        конкретный, и жди явного «да» перед вызовом этой функции.
         """
         async with get_async_session() as session:
             from db.models import HabitTemplate, Habit
