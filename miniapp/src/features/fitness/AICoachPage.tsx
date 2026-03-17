@@ -26,6 +26,18 @@ const MUSCLE_GROUPS = [
   { value: 'core', label: 'Кор', icon: '🎯' },
 ]
 
+
+/** Перевод английских названий групп мышц из API в русские */
+const MUSCLE_GROUP_RU: Record<string, string> = {
+  chest: 'грудь',
+  back: 'спина',
+  legs: 'ноги',
+  shoulders: 'плечи',
+  arms: 'руки',
+  core: 'кор',
+  cardio: 'кардио',
+  full_body: 'всё тело',
+}
 /** Уровни сложности */
 const DIFFICULTY_OPTIONS = [
   { value: 'beginner', label: 'Начинающий' },
@@ -430,8 +442,8 @@ export function AICoachPage() {
                 {/* Выпадающий поиск */}
                 {showReplacePicker && (
                   <div
-                    className="absolute top-full left-0 right-0 z-10 mt-1 rounded-xl border border-white/[0.08] overflow-hidden"
-                    style={{ background: 'var(--glass-bg)', maxHeight: 280 }}
+                    className="absolute top-full left-0 right-0 z-50 mt-1 rounded-xl border border-white/[0.08] overflow-hidden shadow-xl"
+                    style={{ background: '#1a1a2e', maxHeight: 280 }}
                   >
                     <input
                       type="text"
@@ -452,7 +464,7 @@ export function AICoachPage() {
                         >
                           {ex.name}
                           <span className="text-xs ml-2" style={{ color: 'var(--app-hint)' }}>
-                            {ex.muscle_group}
+                            {(ex.muscle_group && MUSCLE_GROUP_RU[ex.muscle_group]) || ex.muscle_group || ''}
                           </span>
                         </button>
                       ))}
