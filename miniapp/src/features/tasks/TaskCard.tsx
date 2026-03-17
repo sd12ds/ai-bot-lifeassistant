@@ -257,8 +257,8 @@ export function TaskCard({
               </div>
             )}
 
-            {/* Дедлайн: дата + оставшееся время */}
-            {dueLabel && (
+            {/* Дедлайн: скрываем целиком если intervalLabel уже показывает время */}
+            {dueLabel && !intervalLabel && (
               <div className="flex items-center gap-1 mt-1 flex-wrap">
                 <Clock size={11} style={{ color: dueLabel.overdue ? '#ef4444' : 'var(--app-hint)' }} />
                 <span className="text-xs font-medium" style={{ color: dueLabel.overdue ? '#ef4444' : 'var(--app-text)' }}>
