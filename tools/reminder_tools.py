@@ -562,6 +562,15 @@ def make_reminder_tools(user_id: int) -> list:
                     entity_id=task_id,
                     remind_at=safe_remind_at.isoformat(),
                 )
+                # Синхронизируем task.remind_at — чтобы мини-апп видел напоминание
+                # и не удалял его при редактировании задачи (иначе editTask.remind_at=null
+                # → форма выставляет preset=-1 (отключено) → PATCH отправляет remind_at:null
+                # → _sync_reminder удаляет reminder из БД)
+                await storage.update_task_fields(
+                    task_id=task_id,
+                    user_id=user_id,
+                    remind_at=safe_remind_at.isoformat(),
+                )
             except Exception:
                 pass  # Не ломаем основной флоу если reminder не создался
         # Формируем ответ
@@ -729,6 +738,12 @@ def make_reminder_tools(user_id: int) -> list:
                 user_id=user_id,
                 entity_type="task",
                 entity_id=task_id,
+                remind_at=safe_remind_at.isoformat(),
+            )
+            # Синхронизируем task.remind_at чтобы мини-апп видел актуальное время
+            await storage.update_task_fields(
+                task_id=task_id,
+                user_id=user_id,
                 remind_at=safe_remind_at.isoformat(),
             )
         except Exception:
