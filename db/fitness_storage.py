@@ -464,25 +464,6 @@ async def update_body_metric_photo(
             await session.commit()
 
 
-async def update_body_metric_photo(
-    user_id: int, metric_id: int, photo_file_id: str | None
-) -> None:
-    """Обновить photo_file_id в записи BodyMetric."""
-    async with AsyncSessionLocal() as session:
-        stmt = (
-            select(BodyMetric)
-            .where(and_(
-                BodyMetric.id == metric_id,
-                BodyMetric.user_id == user_id,
-            ))
-        )
-        result = await session.execute(stmt)
-        bm = result.scalar_one_or_none()
-        if bm:
-            bm.photo_file_id = photo_file_id
-            await session.commit()
-
-
 # ── Лог активности ───────────────────────────────────────────────────────────
 
 async def log_activity(
@@ -1445,13 +1426,14 @@ async def get_next_workout(user_id: int) -> dict | None:
         days_sorted = sorted(program.days, key=lambda d: d.day_number)
         weekday_names = {0: "Пн", 1: "Вт", 2: "Ср", 3: "Чт", 4: "Пт", 5: "Сб", 6: "Вс"}
 
-        # Считаем завершённые тренировки
+        # Считаем завершённые тренировки (только с ended_at — исключаем зомби-сессии)
         since = program.started_at or program.created_at
         count_result = await session.execute(
             select(func.count(WorkoutSession.id)).where(
                 and_(
                     WorkoutSession.user_id == user_id,
                     WorkoutSession.started_at >= since,
+                    WorkoutSession.ended_at.isnot(None),  # только реально завершённые
                 )
             )
         )
@@ -1619,7 +1601,13 @@ async def list_templates(user_id: int) -> list[dict]:
 
 
 async def apply_template(template_id: int, user_id: int) -> dict | None:
-    """Применить шаблон — создать активную тренировку из шаблона."""
+    """Применить шаблон — создать и сразу завершить тренировку из шаблона.
+
+    Создаёт WorkoutSession с подходами по данным шаблона (вес, повторения).
+    Сессия сразу завершается (ended_at, total_volume_kg) — это быстрый лог
+    тренировки «как запланировано». Для трекинга в реальном времени
+    использовать start_workout + add_set + finish_workout.
+    """
     from db.models import WorkoutTemplate
 
     async with AsyncSessionLocal() as session:
@@ -1634,18 +1622,19 @@ async def apply_template(template_id: int, user_id: int) -> dict | None:
         if not template:
             return None
 
-    # Создаём сессию с упражнениями из шаблона
+    # Создаём активную сессию
     new_session = await start_workout(
         user_id=user_id,
         name=template.name,
         workout_type="strength",
     )
+    session_id = new_session["id"]
 
-    # Добавляем подходы из шаблона
+    # Добавляем подходы из шаблона (плановые веса и повторения)
     for tex in sorted(template.exercises, key=lambda x: x.sort_order):
-        for set_num in range(tex.sets):
+        for _set_num in range(tex.sets):
             await add_set(
-                session_id=new_session["id"],
+                session_id=session_id,
                 exercise_id=tex.exercise_id,
                 reps=tex.reps,
                 weight_kg=tex.weight_kg,
@@ -1653,8 +1642,9 @@ async def apply_template(template_id: int, user_id: int) -> dict | None:
                 set_type="working",
             )
 
-    # Возвращаем обновлённую сессию
-    return await get_sessions(user_id=user_id, days=1, limit=1).__anext__() if False else new_session
+    # Завершаем сессию: устанавливает ended_at и считает total_volume_kg
+    finished = await finish_workout(session_id=session_id)
+    return finished
 
 
 async def delete_template(template_id: int, user_id: int) -> bool:

@@ -488,6 +488,14 @@ async def add_set_to_session(session_id: int, dto: AddSetDto, user: User = Depen
 @router.put("/sessions/{session_id}/finish", response_model=WorkoutSessionOut)
 async def finish_session(session_id: int, dto: FinishDto, user: User = Depends(get_current_user)):
     """Завершить активную тренировку и пометить задачу в календаре выполненной."""
+    # Проверяем, что сессия принадлежит текущему пользователю (защита от IDOR)
+    active = await fs.get_active_workout(user_id=user.telegram_id)
+    if not active or active["id"] != session_id:
+        # Дополнительно проверяем по истории (сессия может быть уже завершена повторным запросом)
+        sessions = await fs.get_sessions(user_id=user.telegram_id, days=1, limit=50)
+        if not any(s["id"] == session_id for s in sessions):
+            raise HTTPException(status_code=403, detail="Нет доступа к этой тренировке")
+
     result = await fs.finish_workout(
         session_id=session_id,
         mood_after=dto.mood_after,
