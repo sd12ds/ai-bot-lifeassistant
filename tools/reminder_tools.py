@@ -571,6 +571,19 @@ def make_reminder_tools(user_id: int) -> list:
                     user_id=user_id,
                     remind_at=safe_remind_at.isoformat(),
                 )
+                # Для повторяющихся задач — создаём reminders для всех экземпляров.
+                # Экземпляры уже созданы в storage.add_task() без remind_at/reminders,
+                # поэтому проставляем их здесь, зная offset.
+                if rrule_str:
+                    offset_sec = int(
+                        (anchor_dt - safe_remind_at).total_seconds()
+                    )
+                    if offset_sec > 0:
+                        await storage.create_occurrence_reminders(
+                            template_id=task_id,
+                            user_id=user_id,
+                            offset_seconds=offset_sec,
+                        )
             except Exception:
                 pass  # Не ломаем основной флоу если reminder не создался
         # Формируем ответ

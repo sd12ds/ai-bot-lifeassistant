@@ -5,7 +5,7 @@
 """
 from __future__ import annotations
 
-from datetime import datetime, timezone
+from datetime import datetime, timedelta, timezone
 from typing import Optional
 
 from sqlalchemy import select, and_, or_, update, delete, func
@@ -502,6 +502,66 @@ async def delete_reminders_for_task(task_id: int) -> None:
 
 # ── Повторяющиеся задачи: регенерация ─────────────────────────────────────────
 
+
+async def create_occurrence_reminders(
+    template_id: int, user_id: int, offset_seconds: int
+) -> int:
+    """Создаёт/обновляет напоминания для экземпляров повторяющейся задачи.
+
+    offset_seconds — сколько секунд ДО дедлайна/начала нужно отправить напоминание.
+    Вызывается после создания шаблонного напоминания в reminder_tools.
+    """
+    async with AsyncSessionLocal() as db:
+        # Выбираем все экземпляры шаблона
+        children = await db.execute(
+            select(Task).where(
+                Task.parent_task_id == template_id,
+                Task.user_id == user_id,
+            )
+        )
+        now_utc = datetime.now(timezone.utc)
+        count = 0
+        for child in children.scalars().all():
+            # Якорное время экземпляра: start_at (событие) или due_datetime (задача)
+            anchor = child.start_at or child.due_datetime
+            if not anchor:
+                continue
+            # Вычисляем время напоминания
+            occ_remind_dt = anchor - timedelta(seconds=offset_seconds)
+            if occ_remind_dt.tzinfo is None:
+                occ_remind_dt = occ_remind_dt.replace(tzinfo=timezone.utc)
+            else:
+                occ_remind_dt = occ_remind_dt.astimezone(timezone.utc)
+            # Пропускаем прошедшие напоминания
+            if occ_remind_dt <= now_utc:
+                continue
+            # Синхронизируем task.remind_at
+            child.remind_at = occ_remind_dt
+            # Upsert записи в reminders (не трогаем уже отправленные)
+            existing = await db.execute(
+                select(Reminder).where(
+                    Reminder.user_id == user_id,
+                    Reminder.entity_type == "task",
+                    Reminder.entity_id == child.id,
+                    Reminder.is_sent == False,
+                )
+            )
+            rem = existing.scalar_one_or_none()
+            if rem:
+                rem.remind_at = occ_remind_dt  # обновляем если уже есть
+            else:
+                db.add(Reminder(
+                    user_id=user_id,
+                    entity_type="task",
+                    entity_id=child.id,
+                    remind_at=occ_remind_dt,
+                ))
+            count += 1
+        if count:
+            await db.commit()
+        return count
+
+
 async def regenerate_occurrences(
     template_id: int, user_id: int, horizon_days: int = 30
 ) -> int:
@@ -549,6 +609,19 @@ async def regenerate_occurrences(
             count += 1
         if count:
             await db.commit()
+            # Создаём напоминания для новых экземпляров на основе offset шаблона
+            if template.remind_at:
+                anchor_tmpl = template.start_at or template.due_datetime
+                if anchor_tmpl:
+                    offset_sec = int(
+                        (anchor_tmpl - template.remind_at).total_seconds()
+                    )
+                    if offset_sec > 0:
+                        await create_occurrence_reminders(
+                            template_id=template_id,
+                            user_id=user_id,
+                            offset_seconds=offset_sec,
+                        )
         return count
 
 
