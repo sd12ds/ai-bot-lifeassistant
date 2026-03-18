@@ -403,6 +403,17 @@ async def create_activity(dto: ActivityCreateDto, user: User = Depends(get_curre
     )
 
 
+
+@router.get("/activities", response_model=list[ActivityOut])
+async def list_activities(
+    days: int = Query(7, ge=1, le=365),
+    limit: int = Query(20, ge=1, le=100),
+    user: User = Depends(get_current_user),
+):
+    """Получить список активностей (бег, шаги, вело и т.д.) за последние N дней."""
+    return await fs.get_activities(user_id=user.telegram_id, days=days, limit=limit)
+
+
 # ── Статистика ────────────────────────────────────────────────────────────────
 
 @router.get("/stats", response_model=StatsOut)

@@ -570,6 +570,37 @@ async def log_activity(
         }
 
 
+async def get_activities(
+    user_id: int,
+    days: int = 7,
+    limit: int = 20,
+) -> list[dict]:
+    """Получить список активностей пользователя за последние N дней."""
+    from datetime import datetime, timedelta, timezone
+    async with AsyncSessionLocal() as session:
+        cutoff = datetime.now(timezone.utc) - timedelta(days=days)
+        result = await session.execute(
+            select(ActivityLog)
+            .where(ActivityLog.user_id == user_id, ActivityLog.logged_at >= cutoff)
+            .order_by(ActivityLog.logged_at.desc())
+            .limit(limit)
+        )
+        rows = result.scalars().all()
+        return [
+            {
+                "id": r.id,
+                "activity_type": r.activity_type,
+                "value": r.value,
+                "unit": r.unit,
+                "duration_min": r.duration_min,
+                "calories_burned": r.calories_burned,
+                "notes": r.notes,
+                "logged_at": r.logged_at.isoformat() if r.logged_at else None,
+            }
+            for r in rows
+        ]
+
+
 # ── Статистика ────────────────────────────────────────────────────────────────
 
 async def get_workout_stats(user_id: int, days: int = 30) -> dict:

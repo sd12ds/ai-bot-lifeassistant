@@ -863,3 +863,44 @@ export function useAiRecommendations() {
     mutationFn: aiRecommendationsApi,
   })
 }
+
+
+// ── Активности (кардио, шаги, вело и т.д.) ───────────────────────────────────
+
+/** Тип активности из activity_logs */
+export interface Activity {
+  id: number
+  activity_type: string
+  value: number
+  unit: string
+  duration_min?: number | null
+  calories_burned?: number | null
+  notes?: string
+  logged_at?: string | null
+}
+
+/** Emoji для типов активности */
+export const ACTIVITY_EMOJI: Record<string, string> = {
+  run: '🏃', walk: '🚶', cycling: '🚴', swimming: '🏊', steps: '👣',
+  yoga: '🧘', hiit: '🔥', stretching: '🤸', elliptical: '⭕',
+  rowing: '🚣', jump_rope: '⏫', other: '💪',
+}
+
+/** Названия типов активности на русском */
+export const ACTIVITY_LABELS: Record<string, string> = {
+  run: 'Бег', walk: 'Ходьба', cycling: 'Вело', swimming: 'Плавание',
+  steps: 'Шаги', yoga: 'Йога', hiit: 'HIIT', stretching: 'Растяжка',
+  elliptical: 'Эллипс', rowing: 'Гребля', jump_rope: 'Скакалка', other: 'Другое',
+}
+
+/** Получить активности за N дней */
+const fetchActivities = async (days: number = 7, limit: number = 20): Promise<Activity[]> =>
+  (await apiClient.get('/fitness/activities', { params: { days, limit } })).data
+
+/** React Query хук для активностей */
+export function useActivities(days: number = 7) {
+  return useQuery({
+    queryKey: ['fitness', 'activities', days],
+    queryFn: () => fetchActivities(days),
+  })
+}

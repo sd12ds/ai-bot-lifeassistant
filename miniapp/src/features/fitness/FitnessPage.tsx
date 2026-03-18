@@ -5,7 +5,7 @@
 import { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { TrendingUp, ChevronRight, History, Play, BarChart3, Ruler, Target, Sparkles } from 'lucide-react'
-import { useFitnessStats, useSessions, useBodyMetrics, useNextWorkout, useFitnessGoals, type WorkoutSession } from '../../api/fitness'
+import { useFitnessStats, useSessions, useBodyMetrics, useNextWorkout, useFitnessGoals, useActivities, ACTIVITY_EMOJI, ACTIVITY_LABELS, type WorkoutSession, type Activity } from '../../api/fitness'
 import { GlassCard } from '../../shared/ui/GlassCard'
 import { FAB } from '../../shared/components/FAB'
 import { QuickWorkoutSheet } from './QuickWorkoutSheet'
@@ -34,6 +34,8 @@ export function FitnessPage() {
   const { data: nextWorkout } = useNextWorkout()
   // Цель тренировок в неделю
   const { data: fitnessGoal } = useFitnessGoals()
+  // Активности (кардио, шаги и т.д.) — записанные через бота
+  const { data: activities } = useActivities(7)
 
   // Определяем дни тренировок за текущую неделю
   const weekWorkoutDays = getWeekWorkoutDays(recentSessions || [])
@@ -299,6 +301,42 @@ export function FitnessPage() {
               </div>
             )}
           </GlassCard>
+        )}
+
+        {/* ── Активности (кардио, шаги, вело — из бота) ── */}
+        {activities && activities.length > 0 && (
+          <div>
+            <span className="text-xs font-medium" style={{ color: 'var(--app-hint)' }}>
+              Активности
+            </span>
+            <div className="flex flex-col gap-2 mt-2">
+              {activities.map((a: Activity) => (
+                <GlassCard key={a.id} className="p-3">
+                  <div className="flex items-center gap-3">
+                    {/* Emoji типа */}
+                    <span className="text-2xl">{ACTIVITY_EMOJI[a.activity_type] || '💪'}</span>
+                    {/* Название + значение */}
+                    <div className="flex-1 min-w-0">
+                      <div className="text-sm font-medium" style={{ color: 'var(--app-text)' }}>
+                        {ACTIVITY_LABELS[a.activity_type] || a.activity_type}
+                      </div>
+                      <div className="text-xs" style={{ color: 'var(--app-hint)' }}>
+                        {a.value} {a.unit}
+                        {a.duration_min ? ` · ${a.duration_min} мин` : ''}
+                        {a.calories_burned ? ` · ${Math.round(a.calories_burned)} ккал` : ''}
+                      </div>
+                    </div>
+                    {/* Дата */}
+                    <div className="text-xs text-right" style={{ color: 'var(--app-hint)' }}>
+                      {a.logged_at ? new Date(a.logged_at).toLocaleDateString('ru-RU', { day: 'numeric', month: 'short' }) : ''}
+                      <br />
+                      {a.logged_at ? new Date(a.logged_at).toLocaleTimeString('ru-RU', { hour: '2-digit', minute: '2-digit' }) : ''}
+                    </div>
+                  </div>
+                </GlassCard>
+              ))}
+            </div>
+          </div>
         )}
 
         {/* ── Последние тренировки (детальные карточки) ── */}
