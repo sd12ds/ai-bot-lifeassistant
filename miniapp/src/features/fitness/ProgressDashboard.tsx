@@ -1,11 +1,11 @@
 /**
  * Дашборд прогресса с графиками (recharts).
  * Вес тела (линейный), объём по неделям (столбцы + overlay линия sessions/week),
- * прогресс по упражнению (линейный), рекорды, streak.
+ * активности по неделям, прогресс по упражнению (dropdown), рекорды, streak.
  */
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useRef } from 'react'
 import { useNavigate } from 'react-router-dom'
-import { ArrowLeft, Trophy, Sparkles, Loader2 } from 'lucide-react'
+import { ArrowLeft, Trophy, Sparkles, Loader2, ChevronDown } from 'lucide-react'
 import {
   ResponsiveContainer, LineChart, Line, Bar, ComposedChart,
   XAxis, YAxis, CartesianGrid, Tooltip, Area, AreaChart,
@@ -13,6 +13,7 @@ import {
 import {
   useBodyMetrics, useWeeklyVolume, useExerciseProgress,
   useFitnessStats, useRecords, useAiAnalyzeProgress,
+  useWeeklyActivities,
   type AiAnalyzeProgressOut,
 } from '../../api/fitness'
 import { GlassCard } from '../../shared/ui/GlassCard'
@@ -29,7 +30,7 @@ function ChartTooltip({ active, payload, label }: any) {
       {payload.map((p: any, i: number) => (
         <div key={i} className="font-bold" style={{ color: p.color }}>
           {typeof p.value === 'number' ? Math.round(p.value * 10) / 10 : p.value}{' '}
-          {p.dataKey === 'volume' ? 'кг' : p.dataKey === 'sessions' ? 'тр.' : p.dataKey === 'weight' ? 'кг' : ''}
+          {p.dataKey === 'volume' ? 'кг' : p.dataKey === 'sessions' ? 'тр.' : p.dataKey === 'weight' ? 'кг' : p.dataKey === 'time_min' ? 'мин' : p.dataKey === 'count' ? 'акт.' : ''}
         </div>
       ))}
     </div>
@@ -42,12 +43,16 @@ export function ProgressDashboard() {
   // Данные для графиков
   const { data: bodyMetrics } = useBodyMetrics(90)
   const { data: weeklyVolume } = useWeeklyVolume(12)
+  const { data: weeklyActivities } = useWeeklyActivities(12) // Активности по неделям
   const { data: stats } = useFitnessStats(90)
   const { data: records } = useRecords()
 
   // Прогресс по конкретному упражнению
   const [selectedExId, setSelectedExId] = useState<number>(0)
   const [selectedExName, setSelectedExName] = useState('')
+  // Кастомный dropdown — состояние открытия
+  const [dropdownOpen, setDropdownOpen] = useState(false)
+  const dropdownRef = useRef<HTMLDivElement>(null)
 
   // Автоматически выбираем первое упражнение из топа при загрузке данных
   useEffect(() => {
@@ -57,6 +62,17 @@ export function ProgressDashboard() {
       setSelectedExName(first.name)
     }
   }, [stats])
+
+  // Закрытие dropdown при клике вне
+  useEffect(() => {
+    const handleClickOutside = (e: MouseEvent) => {
+      if (dropdownRef.current && !dropdownRef.current.contains(e.target as Node)) {
+        setDropdownOpen(false)
+      }
+    }
+    if (dropdownOpen) document.addEventListener('mousedown', handleClickOutside)
+    return () => document.removeEventListener('mousedown', handleClickOutside)
+  }, [dropdownOpen])
 
   // AI анализ прогресса
   const [aiAnalysis, setAiAnalysis] = useState<AiAnalyzeProgressOut | null>(null)
@@ -90,6 +106,14 @@ export function ProgressDashboard() {
     duration: Math.round(w.duration_min),
   }))
 
+  // Подготовка данных — активности по неделям
+  const activityData = (weeklyActivities || []).map((w) => ({
+    week: w.week.slice(5, 10), // ММ-ДД
+    time_min: Math.round(w.time_min),
+    count: w.count,
+    calories: Math.round(w.calories),
+  }))
+
   // Подготовка данных — прогресс по упражнению
   const exProgressData = (exerciseProgress || []).map((p) => ({
     date: new Date(p.date).toLocaleDateString('ru-RU', { day: 'numeric', month: 'short' }),
@@ -98,10 +122,11 @@ export function ProgressDashboard() {
     reps: p.max_reps,
   }))
 
-  // Выбор упражнения для графика
+  // Выбор упражнения через dropdown
   const handleExSelect = (id: number, name: string) => {
     setSelectedExId(id)
     setSelectedExName(name)
+    setDropdownOpen(false)
   }
 
   return (
@@ -139,15 +164,23 @@ export function ProgressDashboard() {
                 дней подряд
               </div>
             </div>
+            {/* Мини-статы: тренировки + активности */}
             <div className="text-right text-xs" style={{ color: 'var(--app-hint)' }}>
               <div>
                 <span className="text-sm font-bold" style={{ color: 'var(--app-text)' }}>
                   {stats.total_sessions}
                 </span>{' '}тренировок
               </div>
+              {stats.total_activities > 0 && (
+                <div>
+                  <span className="text-sm font-bold" style={{ color: 'var(--app-text)' }}>
+                    {stats.total_activities}
+                  </span>{' '}активностей
+                </div>
+              )}
               <div>
                 <span className="text-sm font-bold" style={{ color: 'var(--app-text)' }}>
-                  {Math.round(stats.total_time_min)}
+                  {Math.round(stats.total_time_min + (stats.total_activity_time_min || 0))}
                 </span>{' '}мин
               </div>
             </div>
@@ -279,42 +312,138 @@ export function ProgressDashboard() {
           </GlassCard>
         )}
 
-        {/* ── Прогресс по упражнению ── */}
+        {/* ── Активности по неделям (кардио, растяжка и пр.) ── */}
+        {activityData.length > 0 && (
+          <GlassCard>
+            <div className="flex items-center justify-between mb-3">
+              <span className="text-sm font-medium" style={{ color: 'var(--app-text)' }}>
+                🏃 Активности по неделям
+              </span>
+              <span className="text-xs" style={{ color: 'var(--app-hint)' }}>
+                последние {activityData.length} нед
+              </span>
+            </div>
+            {/* Легенда */}
+            <div className="flex gap-4 mb-2 text-[10px]" style={{ color: 'var(--app-hint)' }}>
+              <div className="flex items-center gap-1">
+                <div className="w-3 h-2 rounded-sm" style={{ background: '#f59e0b' }} />
+                Время (мин)
+              </div>
+              <div className="flex items-center gap-1">
+                <div className="w-3 h-0.5 rounded-sm" style={{ background: '#06b6d4' }} />
+                Активностей
+              </div>
+            </div>
+            <div className="h-[200px]">
+              <ResponsiveContainer width="100%" height="100%">
+                <ComposedChart data={activityData}>
+                  <CartesianGrid strokeDasharray="3 3" stroke="rgba(255,255,255,0.06)" />
+                  <XAxis
+                    dataKey="week"
+                    tick={{ fill: 'rgba(255,255,255,0.4)', fontSize: 10 }}
+                    axisLine={false}
+                    tickLine={false}
+                  />
+                  {/* Левая ось — время в минутах */}
+                  <YAxis
+                    yAxisId="time"
+                    tick={{ fill: 'rgba(255,255,255,0.4)', fontSize: 10 }}
+                    axisLine={false}
+                    tickLine={false}
+                    width={35}
+                    tickFormatter={(v) => `${v}`}
+                  />
+                  {/* Правая ось — количество активностей */}
+                  <YAxis
+                    yAxisId="count"
+                    orientation="right"
+                    tick={{ fill: 'rgba(255,255,255,0.4)', fontSize: 10 }}
+                    axisLine={false}
+                    tickLine={false}
+                    width={25}
+                    domain={[0, 'auto']}
+                  />
+                  <Tooltip content={<ChartTooltip />} />
+                  {/* Столбцы — время */}
+                  <Bar
+                    yAxisId="time"
+                    dataKey="time_min"
+                    fill="#f59e0b"
+                    radius={[6, 6, 0, 0]}
+                    maxBarSize={32}
+                    name="Время (мин)"
+                  />
+                  {/* Overlay линия — количество */}
+                  <Line
+                    yAxisId="count"
+                    type="monotone"
+                    dataKey="count"
+                    stroke="#06b6d4"
+                    strokeWidth={2}
+                    dot={{ r: 3, fill: '#06b6d4' }}
+                    name="Активностей"
+                  />
+                </ComposedChart>
+              </ResponsiveContainer>
+            </div>
+          </GlassCard>
+        )}
+
+        {/* ── Прогресс по упражнению (кастомный dropdown) ── */}
         {stats?.top_exercises && stats.top_exercises.length > 0 && (
           <GlassCard>
             <div className="flex items-center justify-between mb-3">
               <span className="text-sm font-medium" style={{ color: 'var(--app-text)' }}>
                 📈 Прогресс
               </span>
-              {selectedExName && (
-                <span className="text-xs font-medium px-2 py-0.5 rounded-full"
-                  style={{ background: 'rgba(34,197,94,0.15)', color: '#22c55e' }}>
-                  {selectedExName}
-                </span>
-              )}
-            </div>
 
-            {/* Горизонтальный скролл чипов — топ упражнений пользователя */}
-            <div className="flex gap-2 overflow-x-auto pb-2 mb-3 -mx-1 px-1"
-              style={{ scrollbarWidth: 'none' }}>
-              {stats.top_exercises.map((ex) => (
+              {/* Кастомный dropdown выбора упражнения */}
+              <div className="relative" ref={dropdownRef}>
                 <button
-                  key={ex.exercise_id}
-                  onClick={() => handleExSelect(ex.exercise_id, ex.name)}
-                  className="flex-shrink-0 px-3 py-1.5 rounded-xl text-xs font-medium whitespace-nowrap transition-all"
+                  onClick={() => setDropdownOpen(!dropdownOpen)}
+                  className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-medium transition-all"
                   style={{
-                    background: selectedExId === ex.exercise_id
-                      ? 'rgba(34,197,94,0.2)'
-                      : 'rgba(255,255,255,0.06)',
-                    color: selectedExId === ex.exercise_id ? '#22c55e' : 'var(--app-hint)',
-                    border: selectedExId === ex.exercise_id
-                      ? '1px solid rgba(34,197,94,0.35)'
-                      : '1px solid transparent',
+                    background: 'rgba(34,197,94,0.15)',
+                    color: '#22c55e',
+                    border: '1px solid rgba(34,197,94,0.25)',
                   }}
                 >
-                  {ex.name}
+                  {selectedExName || 'Упражнение'}
+                  <ChevronDown
+                    size={14}
+                    className={`transition-transform ${dropdownOpen ? 'rotate-180' : ''}`}
+                  />
                 </button>
-              ))}
+
+                {/* Выпадающее меню */}
+                {dropdownOpen && (
+                  <div
+                    className="absolute right-0 top-full mt-1 rounded-xl py-1 z-50 min-w-[200px] max-h-[240px] overflow-y-auto"
+                    style={{
+                      background: 'rgba(20,20,30,0.95)',
+                      border: '1px solid rgba(255,255,255,0.1)',
+                      backdropFilter: 'blur(20px)',
+                    }}
+                  >
+                    {stats.top_exercises.map((ex) => (
+                      <button
+                        key={ex.exercise_id}
+                        onClick={() => handleExSelect(ex.exercise_id, ex.name)}
+                        className="w-full text-left px-4 py-2.5 text-xs transition-colors flex items-center justify-between"
+                        style={{
+                          color: selectedExId === ex.exercise_id ? '#22c55e' : 'var(--app-text)',
+                          background: selectedExId === ex.exercise_id ? 'rgba(34,197,94,0.1)' : 'transparent',
+                        }}
+                      >
+                        <span>{ex.name}</span>
+                        <span className="text-[10px]" style={{ color: 'var(--app-hint)' }}>
+                          {ex.sets_count} подх
+                        </span>
+                      </button>
+                    ))}
+                  </div>
+                )}
+              </div>
             </div>
 
             {/* График прогресса выбранного упражнения */}
@@ -473,8 +602,8 @@ export function ProgressDashboard() {
           </GlassCard>
         )}
 
-        {/* Пустое состояние */}
-        {!stats?.total_sessions && weightData.length === 0 && (
+        {/* Пустое состояние — учитываем и тренировки, и активности */}
+        {!stats?.total_sessions && !stats?.total_activities && weightData.length === 0 && (
           <div className="flex flex-col items-center justify-center py-8">
             <div
               className="w-20 h-20 rounded-full flex items-center justify-center mb-4 text-3xl"

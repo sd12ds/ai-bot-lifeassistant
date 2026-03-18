@@ -908,3 +908,23 @@ export function useActivities(days: number = 7) {
     queryFn: () => fetchActivities(days),
   })
 }
+
+/** Активности за неделю — для графика прогресса */
+export interface WeeklyActivityPoint {
+  week: string
+  count: number
+  time_min: number
+  calories: number
+}
+
+/** Получить активности по неделям */
+const fetchWeeklyActivities = async (weeks: number = 8): Promise<WeeklyActivityPoint[]> =>
+  (await apiClient.get('/fitness/activities/weekly', { params: { weeks } })).data
+
+/** React Query хук — активности по неделям */
+export function useWeeklyActivities(weeks: number = 8) {
+  return useQuery({
+    queryKey: ['fitness', 'activities', 'weekly', weeks],
+    queryFn: () => fetchWeeklyActivities(weeks),
+  })
+}

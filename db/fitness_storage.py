@@ -1005,6 +1005,44 @@ async def get_weekly_volume(user_id: int, weeks: int = 8) -> list[dict]:
         ]
 
 
+async def get_weekly_activities(user_id: int, weeks: int = 8) -> list[dict]:
+    """Активности по неделям за последние N недель.
+    Возвращает [{week, count, time_min, calories}].
+    """
+    async with AsyncSessionLocal() as session:
+        since = datetime.now(DEFAULT_TZ) - timedelta(weeks=weeks)
+        week_col = func.date_trunc('week', ActivityLog.logged_at).label("week")
+        # Время: если unit='min' берём value, иначе duration_min
+        time_expr = case(
+            (ActivityLog.unit == "min", ActivityLog.value),
+            else_=func.coalesce(ActivityLog.duration_min, 0),
+        )
+        stmt = (
+            select(
+                week_col,
+                func.count(ActivityLog.id).label("count"),
+                func.sum(time_expr).label("time_min"),
+                func.sum(func.coalesce(ActivityLog.calories_burned, 0)).label("calories"),
+            )
+            .where(and_(
+                ActivityLog.user_id == user_id,
+                ActivityLog.logged_at >= since,
+            ))
+            .group_by(week_col)
+            .order_by(week_col)
+        )
+        result = await session.execute(stmt)
+        return [
+            {
+                "week": str(r.week.date()) if r.week else "",
+                "count": r.count or 0,
+                "time_min": round(float(r.time_min or 0), 0),
+                "calories": round(float(r.calories or 0), 0),
+            }
+            for r in result.all()
+        ]
+
+
 # ══════════════════════════════════════════════════════════════════════════════
 # Программы тренировок
 # ══════════════════════════════════════════════════════════════════════════════

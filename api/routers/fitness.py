@@ -439,6 +439,23 @@ async def list_activities(
     return await fs.get_activities(user_id=user.telegram_id, days=days, limit=limit)
 
 
+class WeeklyActivityOut(BaseModel):
+    """Активности за неделю."""
+    week: str
+    count: int
+    time_min: float
+    calories: float
+
+
+@router.get("/activities/weekly", response_model=list[WeeklyActivityOut])
+async def get_weekly_activities(
+    weeks: int = Query(8, ge=1, le=52),
+    user: User = Depends(get_current_user),
+):
+    """Активности по неделям — для графика прогресса."""
+    return await fs.get_weekly_activities(user_id=user.telegram_id, weeks=weeks)
+
+
 @router.patch("/activities/{activity_id}", response_model=ActivityOut)
 async def update_activity_endpoint(
     activity_id: int,
