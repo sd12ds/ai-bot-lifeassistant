@@ -413,7 +413,7 @@ class ActivityLog(Base):
 
     id: Mapped[int] = mapped_column(Integer, primary_key=True, autoincrement=True)
     user_id: Mapped[int] = mapped_column(BigInteger, ForeignKey("users.telegram_id"))
-    activity_type: Mapped[str] = mapped_column(String(30))                     # steps | run | walk | cycling | swimming | other
+    activity_type: Mapped[str] = mapped_column(String(30))                     # steps | run | walk | cycling | swimming | yoga | hiit | stretching | elliptical | rowing | jump_rope | other
     value: Mapped[float] = mapped_column(Float)                                # количество (шаги, км, минуты)
     unit: Mapped[str] = mapped_column(String(10))                              # steps | km | min | m
     duration_min: Mapped[Optional[int]] = mapped_column(Integer)

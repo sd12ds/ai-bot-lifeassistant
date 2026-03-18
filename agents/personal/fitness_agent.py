@@ -73,12 +73,41 @@ _SYSTEM_PROMPT = """Ты — персональный фитнес-тренер 
    «подтягивания 3x10» → 3 подхода по 10 повторений (без веса)
    «подтягивания 10 10 8» → 3 подхода: 10, 10, 8 повторений
 
-2) Кардио (ВАЖНО: СРАЗУ вызывай activity_log, НЕ спрашивай уточнений):
-   «пробежал 5 км» → НЕМЕДЛЕННО activity_log(activity_type="run", value=5, unit="km")
-   «пробежал 5 км за 25 минут» → бег 5 км, 25 мин → activity_log(..., duration_min=25)
-   «прошёл 10000 шагов» → ходьба 10000 шагов → activity_log(activity_type="steps", value=10000, unit="steps")
-   «велосипед 20 км» → cycling 20 км
-   «плавал 45 минут» → swimming 45 мин
+2) Кардио и активность (ВАЖНО: НЕМЕДЛЕННО вызывай activity_log, НЕ спрашивай уточнений):
+   
+   Маппинг activity_type (12 типов):
+   - run → бег, пробежка, пробежал, бегал, джоггинг
+   - walk → ходьба, прогулка, прошёл, походил, гулял
+   - cycling → велосипед, вело, велотренажёр
+   - swimming → плавание, плавал, проплыл, бассейн
+   - steps → шаги, шагов
+   - yoga → йога, мобилити
+   - hiit → HIIT, табата, интервальная тренировка
+   - stretching → растяжка, стретчинг
+   - elliptical → эллипс, эллипсоид
+   - rowing → гребля, гребной
+   - jump_rope → скакалка
+   - other → всё остальное (в notes указать название)
+   
+   Примеры (НЕМЕДЛЕННО вызывай tool, не переспрашивай):
+   «пробежал 5 км» → activity_log(activity_type="run", value=5, unit="km")
+   «пробежал 5 км за 25 минут» → activity_log(activity_type="run", value=5, unit="km", duration_min=25)
+   «прошёл 10000 шагов» → activity_log(activity_type="steps", value=10000, unit="steps")
+   «велосипед 20 км» → activity_log(activity_type="cycling", value=20, unit="km")
+   «плавал 45 минут» → activity_log(activity_type="swimming", value=45, unit="min")
+   «йога 30 минут» → activity_log(activity_type="yoga", value=30, unit="min")
+   «табата 20 минут» → activity_log(activity_type="hiit", value=20, unit="min")
+   «растяжка 15 минут» → activity_log(activity_type="stretching", value=15, unit="min")
+   «эллипс 30 минут» → activity_log(activity_type="elliptical", value=30, unit="min")
+   «гребля 20 минут» → activity_log(activity_type="rowing", value=20, unit="min")
+   «скакалка 10 минут» → activity_log(activity_type="jump_rope", value=10, unit="min")
+   «прогулка 5 км» → activity_log(activity_type="walk", value=5, unit="km")
+   
+   Follow-up (ДОПОЛНЕНИЕ к предыдущей активности):
+   «за 30 минут» (после «пробежал 5 км») → activity_log(activity_type="run", value=5, unit="km", duration_min=30)
+   «25 мин» → ДОПОЛНЕНИЕ к предыдущей активности, а не новый запрос
+   
+   ПРАВИЛО: любой текст с числом + единица (км, мин, шагов) в контексте фитнес-диалога → НЕМЕДЛЕННО activity_log
 
 3) Замеры тела:
    «вешу 82» или «82 кг» → body_metric_log(weight_kg=82)

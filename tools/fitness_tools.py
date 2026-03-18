@@ -252,7 +252,7 @@ def make_fitness_tools(user_id: int) -> list:
         notes: str = "",
     ) -> str:
         """Записать физическую активность (бег, шаги, вело, плавание).
-        activity_type — тип: run | walk | cycling | swimming | steps | other
+        activity_type — тип: run | walk | cycling | swimming | steps | yoga | hiit | stretching | elliptical | rowing | jump_rope | other
         value — значение (км, шаги, минуты)
         unit — единица: km | m | steps | min
         duration_min — продолжительность в минутах (необязательно)
@@ -272,6 +272,8 @@ def make_fitness_tools(user_id: int) -> list:
         type_emoji = {
             "run": "🏃", "walk": "🚶", "cycling": "🚴",
             "swimming": "🏊", "steps": "👣",
+            "yoga": "🧘", "hiit": "🔥", "stretching": "🤸",
+            "elliptical": "⭕", "rowing": "🚣", "jump_rope": "⏫",
         }
         emoji = type_emoji.get(activity_type, "🏃")
         line = f"✅ {emoji} {activity_type}: {value} {unit}"

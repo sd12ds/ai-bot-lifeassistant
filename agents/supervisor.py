@@ -158,9 +158,17 @@ async def classify_intent(state: SupervisorState) -> SupervisorState:
     ctx = _get_ctx(user_id)
     if ctx and ctx.is_domain_sticky():
         sticky = ctx.active_domain
-        # Проверяем: есть ли маркеры другого домена при отсутствии маркеров sticky?
-        # Если да — сообщение скорее всего НЕ для sticky домена, отдаём LLM.
-        from bot.core.intent_classifier import has_any_signal
+        # L3a: короткие follow-up (≤5 слов) без strong-маркеров другого домена → sticky
+        # Не вызываем LLM для «за 30 минут», «5 км», «ок», «ещё подход» и т.д.
+        from bot.core.intent_classifier import has_any_signal, has_strong_signal
+        _word_count = len(user_text.split())
+        if _word_count <= 5:
+            other_strong = has_strong_signal(user_text, exclude_domain=sticky)
+            if not other_strong:
+                _last_agent_per_user[user_id] = sticky
+                logger.info("user=%s → %s (sticky short follow-up, %d words)", user_id, sticky, _word_count)
+                return {**state, "agent_type": sticky}
+        # L3b: полная проверка для длинных сообщений — есть ли маркеры другого домена
         other = has_any_signal(user_text, exclude_domain=sticky)
         if other:
             logger.info(

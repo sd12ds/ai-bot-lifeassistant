@@ -127,7 +127,7 @@ class BodyMetricOut(BaseModel):
 
 class ActivityCreateDto(BaseModel):
     """DTO записи активности."""
-    activity_type: str  # run | walk | cycling | swimming | steps | other
+    activity_type: str  # run | walk | cycling | swimming | steps | yoga | hiit | stretching | elliptical | rowing | jump_rope | other
     value: float
     unit: str  # km | m | steps | min
     duration_min: Optional[int] = None
