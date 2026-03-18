@@ -701,7 +701,7 @@ function EditActivitySheet({ activity, onSave, onClose }: {
     <div className="fixed inset-0 z-50 flex items-end justify-center"
       style={{ background: 'rgba(0,0,0,0.5)' }}
       onClick={(e) => { if (e.target === e.currentTarget) onClose() }}>
-      <div className="w-full max-w-lg rounded-t-2xl p-4 pb-8"
+      <div className="w-full max-w-lg rounded-t-2xl p-4 pb-28 max-h-[85vh] overflow-y-auto"
         style={{ background: 'var(--app-bg, #1a1a2e)' }}>
         {/* Заголовок */}
         <div className="flex items-center justify-between mb-4">
@@ -769,12 +769,15 @@ function EditActivitySheet({ activity, onSave, onClose }: {
             style={inputStyle} placeholder="Необязательно" />
         </div>
 
-        {/* Кнопка сохранения */}
-        <button onClick={handleSubmit}
-          className="w-full py-3 rounded-xl text-sm font-bold"
-          style={{ background: 'rgba(99,102,241,0.3)', color: '#a5b4fc' }}>
-          Сохранить
-        </button>
+        {/* Кнопка сохранения — sticky внизу */}
+        <div className="sticky bottom-0 pt-3 pb-2 -mx-4 px-4"
+          style={{ background: 'linear-gradient(to top, var(--app-bg, #1a1a2e) 70%, transparent)' }}>
+          <button onClick={handleSubmit}
+            className="w-full py-3 rounded-xl text-sm font-bold"
+            style={{ background: 'linear-gradient(135deg, #6366f1, #8b5cf6)', color: '#fff' }}>
+            Сохранить
+          </button>
+        </div>
       </div>
     </div>
   )
