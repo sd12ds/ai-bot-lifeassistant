@@ -31,7 +31,7 @@ function ChartTooltip({ active, payload, label }: any) {
       {payload.map((p: any, i: number) => (
         <div key={i} className="font-bold" style={{ color: p.color }}>
           {typeof p.value === 'number' ? Math.round(p.value * 10) / 10 : p.value}{' '}
-          {p.dataKey === 'volume' ? 'кг' : p.dataKey === 'sessions' ? 'тр.' : p.dataKey === 'weight' ? 'кг' : p.dataKey === 'time_min' ? 'мин' : p.dataKey === 'count' ? 'акт.' : ''}
+          {p.dataKey === 'volume' ? 'кг' : p.dataKey === 'sessions' ? 'тр.' : p.dataKey === 'weight' ? 'кг' : p.dataKey === 'time_min' ? 'мин' : p.dataKey === 'metric' ? '' : p.dataKey === 'count' ? 'акт.' : ''}
         </div>
       ))}
     </div>
@@ -126,10 +126,20 @@ export function ProgressDashboard() {
     duration: Math.round(w.duration_min),
   }))
 
+  // Определяем единицу измерения для отфильтрованного типа
+  const filteredUnit = activityFilter
+    ? (rawActivities || []).find(a => a.activity_type === activityFilter)?.unit || 'min'
+    : 'min'
+  // Подбираем label и ключ данных в зависимости от единицы
+  const UNIT_LABELS: Record<string, string> = { km: 'км', min: 'мин', steps: 'шагов', m: 'м' }
+  const metricLabel = activityFilter ? (UNIT_LABELS[filteredUnit] || filteredUnit) : 'мин'
+  // Если фильтр активен — показываем value_sum (оригинальная метрика), иначе time_min
+  const useValueSum = activityFilter && filteredUnit !== 'min'
+
   // Подготовка данных — активности по неделям
   const activityData = (weeklyActivities || []).map((w) => ({
     week: w.week.slice(5, 10), // ММ-ДД
-    time_min: Math.round(w.time_min),
+    metric: useValueSum ? Math.round(w.value_sum * 10) / 10 : Math.round(w.time_min),
     count: w.count,
     calories: Math.round(w.calories),
   }))
@@ -402,7 +412,9 @@ export function ProgressDashboard() {
             <div className="flex gap-4 mb-2 text-[10px]" style={{ color: 'var(--app-hint)' }}>
               <div className="flex items-center gap-1">
                 <div className="w-3 h-2 rounded-sm" style={{ background: '#f59e0b' }} />
-                Время (мин)
+                {activityFilter && filteredUnit !== 'min'
+                  ? `Значение (${metricLabel})`
+                  : 'Время (мин)'}
               </div>
               <div className="flex items-center gap-1">
                 <div className="w-3 h-0.5 rounded-sm" style={{ background: '#06b6d4' }} />
@@ -442,11 +454,11 @@ export function ProgressDashboard() {
                   {/* Столбцы — время */}
                   <Bar
                     yAxisId="time"
-                    dataKey="time_min"
+                    dataKey="metric"
                     fill="#f59e0b"
                     radius={[6, 6, 0, 0]}
                     maxBarSize={32}
-                    name="Время (мин)"
+                    name={activityFilter && filteredUnit !== 'min' ? metricLabel : 'Время (мин)'}
                   />
                   {/* Overlay линия — количество */}
                   <Line

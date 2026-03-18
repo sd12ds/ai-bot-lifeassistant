@@ -915,6 +915,7 @@ export interface WeeklyActivityPoint {
   count: number
   time_min: number
   calories: number
+  value_sum: number  // сумма значений (км/мин/шаги — зависит от типа)
 }
 
 /** Получить активности по неделям (с опциональным фильтром по типу) */

@@ -1033,6 +1033,7 @@ async def get_weekly_activities(
                 func.count(ActivityLog.id).label("count"),
                 func.sum(time_expr).label("time_min"),
                 func.sum(func.coalesce(ActivityLog.calories_burned, 0)).label("calories"),
+                func.sum(ActivityLog.value).label("value_sum"),  # сумма значений (км/мин/шаги)
             )
             .where(and_(*conditions))
             .group_by(week_col)
@@ -1045,6 +1046,7 @@ async def get_weekly_activities(
                 "count": r.count or 0,
                 "time_min": round(float(r.time_min or 0), 0),
                 "calories": round(float(r.calories or 0), 0),
+                "value_sum": round(float(r.value_sum or 0), 1),
             }
             for r in result.all()
         ]

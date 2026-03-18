@@ -445,6 +445,7 @@ class WeeklyActivityOut(BaseModel):
     count: int
     time_min: float
     calories: float
+    value_sum: float = 0  # сумма значений в оригинальных единицах (км/мин/шаги)
 
 
 @router.get("/activities/weekly", response_model=list[WeeklyActivityOut])
