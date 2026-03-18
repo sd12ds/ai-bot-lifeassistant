@@ -955,11 +955,15 @@ function EditSessionSheet({ session, onSave, onClose }: {
           ))}
         </div>
 
-        <button onClick={handleSave} disabled={saving}
-          className="w-full py-3 rounded-xl text-sm font-bold"
-          style={{ background: 'linear-gradient(135deg, #6366f1, #8b5cf6)', color: '#fff', opacity: saving ? 0.6 : 1 }}>
-          {saving ? 'Сохранение...' : 'Сохранить'}
-        </button>
+        {/* Кнопка сохранить — sticky внизу */}
+        <div className="sticky bottom-0 pt-3 pb-2 -mx-4 px-4"
+          style={{ background: 'linear-gradient(to top, var(--app-bg, #1a1a2e) 70%, transparent)' }}>
+          <button onClick={handleSave} disabled={saving}
+            className="w-full py-3 rounded-xl text-sm font-bold"
+            style={{ background: 'linear-gradient(135deg, #6366f1, #8b5cf6)', color: '#fff', opacity: saving ? 0.6 : 1 }}>
+            {saving ? 'Сохранение...' : 'Сохранить'}
+          </button>
+        </div>
       </div>
     </div>
   )
