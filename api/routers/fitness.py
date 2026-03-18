@@ -450,10 +450,13 @@ class WeeklyActivityOut(BaseModel):
 @router.get("/activities/weekly", response_model=list[WeeklyActivityOut])
 async def get_weekly_activities(
     weeks: int = Query(8, ge=1, le=52),
+    activity_type: Optional[str] = Query(None, description="Фильтр по типу: run, walk, stretching..."),
     user: User = Depends(get_current_user),
 ):
     """Активности по неделям — для графика прогресса."""
-    return await fs.get_weekly_activities(user_id=user.telegram_id, weeks=weeks)
+    return await fs.get_weekly_activities(
+        user_id=user.telegram_id, weeks=weeks, activity_type=activity_type,
+    )
 
 
 @router.patch("/activities/{activity_id}", response_model=ActivityOut)

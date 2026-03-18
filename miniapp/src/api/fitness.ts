@@ -917,14 +917,18 @@ export interface WeeklyActivityPoint {
   calories: number
 }
 
-/** Получить активности по неделям */
-const fetchWeeklyActivities = async (weeks: number = 8): Promise<WeeklyActivityPoint[]> =>
-  (await apiClient.get('/fitness/activities/weekly', { params: { weeks } })).data
+/** Получить активности по неделям (с опциональным фильтром по типу) */
+const fetchWeeklyActivities = async (
+  weeks: number = 8, activityType?: string,
+): Promise<WeeklyActivityPoint[]> =>
+  (await apiClient.get('/fitness/activities/weekly', {
+    params: { weeks, activity_type: activityType || undefined },
+  })).data
 
 /** React Query хук — активности по неделям */
-export function useWeeklyActivities(weeks: number = 8) {
+export function useWeeklyActivities(weeks: number = 8, activityType?: string) {
   return useQuery({
-    queryKey: ['fitness', 'activities', 'weekly', weeks],
-    queryFn: () => fetchWeeklyActivities(weeks),
+    queryKey: ['fitness', 'activities', 'weekly', weeks, activityType],
+    queryFn: () => fetchWeeklyActivities(weeks, activityType),
   })
 }

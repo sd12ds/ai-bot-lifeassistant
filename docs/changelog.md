@@ -1,3 +1,6 @@
+## [76dcf60] — 2026-03-18 21:41 (МСК)
+📦 ProgressDashboard: график активностей по неделям, кастомный dropdown, streak с активностями
+
 ## [9c4274a] — 2026-03-18 21:19 (МСК)
 📦 AI Coach: данные активностей в промптах analyze_progress и get_recommendations
 

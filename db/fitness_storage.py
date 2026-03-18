@@ -1005,8 +1005,11 @@ async def get_weekly_volume(user_id: int, weeks: int = 8) -> list[dict]:
         ]
 
 
-async def get_weekly_activities(user_id: int, weeks: int = 8) -> list[dict]:
+async def get_weekly_activities(
+    user_id: int, weeks: int = 8, activity_type: str | None = None,
+) -> list[dict]:
     """Активности по неделям за последние N недель.
+    activity_type — фильтр по типу (run, walk, stretching и т.д.), None = все.
     Возвращает [{week, count, time_min, calories}].
     """
     async with AsyncSessionLocal() as session:
@@ -1017,6 +1020,13 @@ async def get_weekly_activities(user_id: int, weeks: int = 8) -> list[dict]:
             (ActivityLog.unit == "min", ActivityLog.value),
             else_=func.coalesce(ActivityLog.duration_min, 0),
         )
+        # Условия фильтрации
+        conditions = [
+            ActivityLog.user_id == user_id,
+            ActivityLog.logged_at >= since,
+        ]
+        if activity_type:
+            conditions.append(ActivityLog.activity_type == activity_type)
         stmt = (
             select(
                 week_col,
@@ -1024,10 +1034,7 @@ async def get_weekly_activities(user_id: int, weeks: int = 8) -> list[dict]:
                 func.sum(time_expr).label("time_min"),
                 func.sum(func.coalesce(ActivityLog.calories_burned, 0)).label("calories"),
             )
-            .where(and_(
-                ActivityLog.user_id == user_id,
-                ActivityLog.logged_at >= since,
-            ))
+            .where(and_(*conditions))
             .group_by(week_col)
             .order_by(week_col)
         )

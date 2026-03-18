@@ -13,7 +13,8 @@ import {
 import {
   useBodyMetrics, useWeeklyVolume, useExerciseProgress,
   useFitnessStats, useRecords, useAiAnalyzeProgress,
-  useWeeklyActivities,
+  useWeeklyActivities, useActivities,
+  ACTIVITY_LABELS, ACTIVITY_EMOJI,
   type AiAnalyzeProgressOut,
 } from '../../api/fitness'
 import { GlassCard } from '../../shared/ui/GlassCard'
@@ -43,7 +44,12 @@ export function ProgressDashboard() {
   // Данные для графиков
   const { data: bodyMetrics } = useBodyMetrics(90)
   const { data: weeklyVolume } = useWeeklyVolume(12)
-  const { data: weeklyActivities } = useWeeklyActivities(12) // Активности по неделям
+  // Фильтр активностей по типу
+  const [activityFilter, setActivityFilter] = useState<string>('')
+  const [actDropdownOpen, setActDropdownOpen] = useState(false)
+  const actDropdownRef = useRef<HTMLDivElement>(null)
+  const { data: weeklyActivities } = useWeeklyActivities(12, activityFilter || undefined)
+  const { data: rawActivities } = useActivities(90) // для получения уникальных типов
   const { data: stats } = useFitnessStats(90)
   const { data: records } = useRecords()
 
@@ -73,6 +79,20 @@ export function ProgressDashboard() {
     if (dropdownOpen) document.addEventListener('mousedown', handleClickOutside)
     return () => document.removeEventListener('mousedown', handleClickOutside)
   }, [dropdownOpen])
+
+  // Закрытие dropdown активностей при клике вне
+  useEffect(() => {
+    const handleClickOutside = (e: MouseEvent) => {
+      if (actDropdownRef.current && !actDropdownRef.current.contains(e.target as Node)) {
+        setActDropdownOpen(false)
+      }
+    }
+    if (actDropdownOpen) document.addEventListener('mousedown', handleClickOutside)
+    return () => document.removeEventListener('mousedown', handleClickOutside)
+  }, [actDropdownOpen])
+
+  // Уникальные типы активностей пользователя
+  const activityTypes = Array.from(new Set((rawActivities || []).map(a => a.activity_type)))
 
   // AI анализ прогресса
   const [aiAnalysis, setAiAnalysis] = useState<AiAnalyzeProgressOut | null>(null)
@@ -313,15 +333,70 @@ export function ProgressDashboard() {
         )}
 
         {/* ── Активности по неделям (кардио, растяжка и пр.) ── */}
-        {activityData.length > 0 && (
+        {(activityData.length > 0 || activityFilter) && (
           <GlassCard>
             <div className="flex items-center justify-between mb-3">
               <span className="text-sm font-medium" style={{ color: 'var(--app-text)' }}>
                 🏃 Активности по неделям
               </span>
-              <span className="text-xs" style={{ color: 'var(--app-hint)' }}>
-                последние {activityData.length} нед
-              </span>
+
+              {/* Dropdown фильтр по типу активности */}
+              {activityTypes.length > 0 && (
+                <div className="relative" ref={actDropdownRef}>
+                  <button
+                    onClick={() => setActDropdownOpen(!actDropdownOpen)}
+                    className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-medium transition-all"
+                    style={{
+                      background: 'rgba(245,158,11,0.15)',
+                      color: '#f59e0b',
+                      border: '1px solid rgba(245,158,11,0.25)',
+                    }}
+                  >
+                    {activityFilter
+                      ? `${ACTIVITY_EMOJI[activityFilter] || '🏃'} ${ACTIVITY_LABELS[activityFilter] || activityFilter}`
+                      : 'Все'}
+                    <ChevronDown
+                      size={14}
+                      className={`transition-transform ${actDropdownOpen ? 'rotate-180' : ''}`}
+                    />
+                  </button>
+                  {actDropdownOpen && (
+                    <div
+                      className="absolute right-0 top-full mt-1 rounded-xl py-1 z-50 min-w-[180px] max-h-[240px] overflow-y-auto"
+                      style={{
+                        background: 'rgba(20,20,30,0.95)',
+                        border: '1px solid rgba(255,255,255,0.1)',
+                        backdropFilter: 'blur(20px)',
+                      }}
+                    >
+                      {/* Опция «Все» */}
+                      <button
+                        onClick={() => { setActivityFilter(''); setActDropdownOpen(false) }}
+                        className="w-full text-left px-4 py-2.5 text-xs transition-colors"
+                        style={{
+                          color: !activityFilter ? '#f59e0b' : 'var(--app-text)',
+                          background: !activityFilter ? 'rgba(245,158,11,0.1)' : 'transparent',
+                        }}
+                      >
+                        🏃 Все активности
+                      </button>
+                      {activityTypes.map((t) => (
+                        <button
+                          key={t}
+                          onClick={() => { setActivityFilter(t); setActDropdownOpen(false) }}
+                          className="w-full text-left px-4 py-2.5 text-xs transition-colors"
+                          style={{
+                            color: activityFilter === t ? '#f59e0b' : 'var(--app-text)',
+                            background: activityFilter === t ? 'rgba(245,158,11,0.1)' : 'transparent',
+                          }}
+                        >
+                          {ACTIVITY_EMOJI[t] || '🏃'} {ACTIVITY_LABELS[t] || t}
+                        </button>
+                      ))}
+                    </div>
+                  )}
+                </div>
+              )}
             </div>
             {/* Легенда */}
             <div className="flex gap-4 mb-2 text-[10px]" style={{ color: 'var(--app-hint)' }}>
@@ -394,7 +469,7 @@ export function ProgressDashboard() {
           <GlassCard>
             <div className="flex items-center justify-between mb-3">
               <span className="text-sm font-medium" style={{ color: 'var(--app-text)' }}>
-                📈 Прогресс
+                🏋️ Рабочий вес
               </span>
 
               {/* Кастомный dropdown выбора упражнения */}
