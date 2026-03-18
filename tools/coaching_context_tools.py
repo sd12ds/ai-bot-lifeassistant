@@ -98,15 +98,17 @@ def make_coaching_context_tools(user_id: int) -> list:
     @tool
     async def coaching_progress_analytics(days: int = 30) -> str:
         """
-        Аналитика прогресса по целям за последние N дней.
+        Аналитика прогресса по целям и фитнесу за последние N дней.
         days — период в днях (по умолчанию 30).
-        Показывает: активные цели, прогресс, check-in история.
+        Показывает: активные цели, прогресс, check-in история, фитнес-статистику.
         """
+        from db.fitness_storage import get_workout_stats  # ленивый импорт, без циклов
+
         async with get_async_session() as session:
             goals = await cs.get_goals(session, user_id, status="active")
             since = datetime.utcnow() - timedelta(days=days)
 
-            result = []
+            goals_data = []
             for g in goals:
                 # Последние check-ins
                 checkins = await cs.get_recent_goal_checkins(session, g.id, user_id, limit=5)
@@ -114,7 +116,7 @@ def make_coaching_context_tools(user_id: int) -> list:
                     sum(c.energy_level for c in checkins if c.energy_level) / len(checkins)
                     if checkins else None
                 )
-                result.append({
+                goals_data.append({
                     "id": g.id,
                     "title": g.title,
                     "progress_pct": g.progress_pct,
@@ -124,6 +126,22 @@ def make_coaching_context_tools(user_id: int) -> list:
                     "avg_energy": round(avg_energy, 1) if avg_energy else None,
                     "why_statement": g.why_statement,
                 })
+
+            # Фитнес-статистика (тренировки + активности)
+            fitness_stats = await get_workout_stats(user_id, days=days)
+
+            result = {
+                "goals": goals_data,
+                "fitness": {
+                    "total_sessions": fitness_stats.get("total_sessions", 0),
+                    "total_activities": fitness_stats.get("total_activities", 0),
+                    "total_time_min": fitness_stats.get("total_time_min", 0),
+                    "total_activity_time_min": fitness_stats.get("total_activity_time_min", 0),
+                    "total_calories": fitness_stats.get("total_calories", 0),
+                    "total_activity_calories": fitness_stats.get("total_activity_calories", 0),
+                    "current_streak_days": fitness_stats.get("current_streak_days", 0),
+                },
+            }
             return json.dumps(result, ensure_ascii=False)
 
     @tool

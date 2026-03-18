@@ -525,5 +525,7 @@ async def trigger_cross_module_analysis(
             "calendar_events_today": result["signals"].get("calendar_events_today", 0),
             "last_workout_days_ago": result["signals"].get("last_workout_days_ago", 0),
             "habits_completion_rate": result["signals"].get("habits_completion_rate_week", 0),
+            "activities_this_week": result["signals"].get("activities_this_week", 0),
+            "last_activity_days_ago": result["signals"].get("last_activity_days_ago", 999),
         },
     }

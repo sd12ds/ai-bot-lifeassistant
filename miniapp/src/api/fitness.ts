@@ -105,7 +105,7 @@ export interface BodyMetricCreateDto {
   notes?: string
 }
 
-/** Статистика тренировок */
+/** Статистика тренировок и активностей */
 export interface FitnessStats {
   period_days: number
   total_sessions: number
@@ -115,6 +115,10 @@ export interface FitnessStats {
   avg_mood: number | null
   top_exercises: { exercise_id: number; name: string; sets_count: number }[]
   current_streak_days: number
+  // Активности (кардио, растяжка и пр.)
+  total_activities: number
+  total_activity_time_min: number
+  total_activity_calories: number
 }
 
 /** Личный рекорд */

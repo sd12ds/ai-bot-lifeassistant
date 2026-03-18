@@ -56,6 +56,7 @@ class WorkoutCreateDto(BaseModel):
     name: str = ""
     workout_type: str = "strength"
     exercises: List[ExerciseData]
+    started_at: Optional[str] = None  # ISO-формат с таймзоной
 
 
 class SetOut(BaseModel):
@@ -133,6 +134,7 @@ class ActivityCreateDto(BaseModel):
     duration_min: Optional[int] = None
     calories_burned: Optional[float] = None
     notes: str = ""
+    logged_at: Optional[str] = None  # ISO-формат с таймзоной, например 2026-03-18T11:00:00+03:00
 
 
 class ActivityOut(BaseModel):
@@ -143,11 +145,12 @@ class ActivityOut(BaseModel):
     unit: str
     duration_min: Optional[int] = None
     calories_burned: Optional[float] = None
+    notes: Optional[str] = None
     logged_at: Optional[str] = None
 
 
 class StatsOut(BaseModel):
-    """Статистика тренировок."""
+    """Статистика тренировок и активностей."""
     period_days: int
     total_sessions: int
     total_volume_kg: float
@@ -156,6 +159,10 @@ class StatsOut(BaseModel):
     avg_mood: Optional[float] = None
     top_exercises: list = []
     current_streak_days: int = 0
+    # Активности (кардио, растяжка и пр.)
+    total_activities: int = 0
+    total_activity_time_min: float = 0
+    total_activity_calories: float = 0
 
 
 class RecordOut(BaseModel):
@@ -224,11 +231,20 @@ async def create_session(dto: WorkoutCreateDto, user: User = Depends(get_current
         }
         for ex in dto.exercises
     ]
+    # Парсим started_at если передан
+    parsed_started_at = None
+    if dto.started_at:
+        try:
+            from datetime import datetime as _dt
+            parsed_started_at = _dt.fromisoformat(dto.started_at)
+        except (ValueError, TypeError):
+            raise HTTPException(status_code=400, detail="Некорректный формат started_at")
     result = await fs.quick_log_workout(
         user_id=user.telegram_id,
         exercises=exercises,
         workout_type=dto.workout_type,
         name=dto.name,
+        started_at=parsed_started_at,
     )
     return result
 
@@ -392,6 +408,14 @@ async def delete_progress_photo(photo_id: int, user: User = Depends(get_current_
 @router.post("/activities", response_model=ActivityOut)
 async def create_activity(dto: ActivityCreateDto, user: User = Depends(get_current_user)):
     """Записать активность."""
+    # Парсим logged_at если передан
+    parsed_logged_at = None
+    if dto.logged_at:
+        try:
+            from datetime import datetime as _dt
+            parsed_logged_at = _dt.fromisoformat(dto.logged_at)
+        except (ValueError, TypeError):
+            raise HTTPException(status_code=400, detail="Некорректный формат logged_at")
     return await fs.log_activity(
         user_id=user.telegram_id,
         activity_type=dto.activity_type,
@@ -400,6 +424,7 @@ async def create_activity(dto: ActivityCreateDto, user: User = Depends(get_curre
         duration_min=dto.duration_min,
         calories_burned=dto.calories_burned,
         notes=dto.notes,
+        logged_at=parsed_logged_at,
     )
 
 
@@ -412,6 +437,47 @@ async def list_activities(
 ):
     """Получить список активностей (бег, шаги, вело и т.д.) за последние N дней."""
     return await fs.get_activities(user_id=user.telegram_id, days=days, limit=limit)
+
+
+@router.patch("/activities/{activity_id}", response_model=ActivityOut)
+async def update_activity_endpoint(
+    activity_id: int,
+    dto: ActivityCreateDto,
+    user: User = Depends(get_current_user),
+):
+    """Обновить активность."""
+    kwargs: dict = {}
+    if dto.activity_type:
+        kwargs["activity_type"] = dto.activity_type
+    if dto.value:
+        kwargs["value"] = dto.value
+    if dto.unit:
+        kwargs["unit"] = dto.unit
+    if dto.duration_min is not None:
+        kwargs["duration_min"] = dto.duration_min
+    if dto.calories_burned is not None:
+        kwargs["calories_burned"] = dto.calories_burned
+    if dto.notes:
+        kwargs["notes"] = dto.notes
+    if dto.logged_at:
+        try:
+            from datetime import datetime as _dt
+            kwargs["logged_at"] = _dt.fromisoformat(dto.logged_at)
+        except (ValueError, TypeError):
+            raise HTTPException(status_code=400, detail="Некорректный формат logged_at")
+    result = await fs.update_activity(activity_id=activity_id, user_id=user.telegram_id, **kwargs)
+    if not result:
+        raise HTTPException(status_code=404, detail="Активность не найдена")
+    return result
+
+
+@router.delete("/activities/{activity_id}")
+async def delete_activity_endpoint(activity_id: int, user: User = Depends(get_current_user)):
+    """Удалить активность."""
+    ok = await fs.delete_activity(activity_id=activity_id, user_id=user.telegram_id)
+    if not ok:
+        raise HTTPException(status_code=404, detail="Активность не найдена")
+    return {"ok": True}
 
 
 # ── Статистика ────────────────────────────────────────────────────────────────

@@ -109,6 +109,24 @@ _SYSTEM_PROMPT = """Ты — персональный фитнес-тренер 
    
    ПРАВИЛО: любой текст с числом + единица (км, мин, шагов) в контексте фитнес-диалога → НЕМЕДЛЕННО activity_log
 
+   ВРЕМЯ АКТИВНОСТИ (logged_at):
+   Если пользователь указывает КОГДА он делал активность — передай logged_at в формате ISO.
+   Формат: YYYY-MM-DDTHH:MM:SS+03:00 (МСК). Текущую дату бери из «Текущее время» внизу промпта.
+   «растяжка 30 мин в 11 утра» → activity_log(..., logged_at="{сегодня}T11:00:00+03:00")
+   «бегал вчера утром 5 км» → activity_log(..., logged_at="{вчера}T08:00:00+03:00")
+   Если время НЕ указано — НЕ передавай logged_at, оно автоматически = сейчас.
+
+   РЕДАКТИРОВАНИЕ / УДАЛЕНИЕ АКТИВНОСТИ:
+   «измени время на 11 утра» → activity_update(activity_id=..., logged_at="...T11:00:00+03:00")
+   «удали последнюю активность» → activity_delete(activity_id=...)
+   Для получения id — используй последние данные из контекста диалога (результат activity_log).
+
+   ВРЕМЯ ТРЕНИРОВКИ (started_at):
+   Если пользователь указывает КОГДА он тренировался — передай started_at в формате ISO.
+   «30 отжиманий в 10 утра» → workout_log(..., started_at="{сегодня}T10:00:00+03:00")
+   «вчера делал жим 80x8 3» → workout_log(..., started_at="{вчера}T...+03:00")
+   Если время НЕ указано — НЕ передавай started_at, оно автоматически = сейчас.
+
 3) Замеры тела:
    «вешу 82» или «82 кг» → body_metric_log(weight_kg=82)
    «талия 85 см» → body_metric_log(waist_cm=85)
@@ -196,9 +214,18 @@ def build_fitness_agent(checkpointer=None, user_id: int = 0):
     from tools.fitness_tools import make_fitness_tools
     # Создаём tools привязанные к user_id
     fitness_tools = make_fitness_tools(user_id)
+    # Динамически добавляем текущее время и таймзону (для парсинга «в 11 утра» → ISO)
+    from datetime import datetime as _dt, timezone as _tz, timedelta as _td
+    _MSK = _tz(_td(hours=3))
+    _now_msk = _dt.now(_MSK).strftime("%Y-%m-%dT%H:%M:%S+03:00")
+    _dynamic_prompt = (
+        _SYSTEM_PROMPT
+        + f"\n\nТекущее время (МСК): {_now_msk}"
+        + "\nЧасовой пояс: Europe/Moscow (UTC+3)"
+    )
     return create_react_agent(
         model=_llm,
         tools=fitness_tools,
-        prompt=_SYSTEM_PROMPT,
+        prompt=_dynamic_prompt,
         checkpointer=checkpointer,
     )

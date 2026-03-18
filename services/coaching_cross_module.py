@@ -20,6 +20,7 @@ from db.models import (
     Task, WorkoutSession, Meal, Reminder, NotificationLog,
     FitnessGoal, CoachingOrchestrationAction,
     Goal, Habit, HabitLog, UserCoachingProfile,
+    ActivityLog,
 )
 from db import coaching_storage as cs
 
@@ -192,10 +193,33 @@ async def collect_module_signals(session: AsyncSession, user_id: int) -> dict:
         signals["fitness_goal_progress"] = round(
             signals["workouts_this_week"] / signals["fitness_target_workouts_week"], 2
         ) if signals["fitness_target_workouts_week"] else 0
+
+        # Активности (кардио, шаги, растяжка и пр.) за неделю
+        activities_week_result = await session.execute(
+            select(func.count(ActivityLog.id)).where(
+                ActivityLog.user_id == user_id,
+                ActivityLog.logged_at >= week_ago,
+            )
+        )
+        signals["activities_this_week"] = activities_week_result.scalar_one() or 0
+
+        # Последняя активность
+        last_activity_result = await session.execute(
+            select(ActivityLog.logged_at).where(
+                ActivityLog.user_id == user_id,
+            ).order_by(ActivityLog.logged_at.desc()).limit(1)
+        )
+        last_act_row = last_activity_result.scalar_one_or_none()
+        if last_act_row:
+            delta_act = now - (last_act_row.replace(tzinfo=timezone.utc) if last_act_row.tzinfo is None else last_act_row)
+            signals["last_activity_days_ago"] = delta_act.days
+        else:
+            signals["last_activity_days_ago"] = 999
     except Exception as exc:
         logger.warning("cross_module: Fitness сигналы недоступны: %s", exc)
         signals.update({"last_workout_days_ago": 0, "workouts_this_week": 0,
-                        "fitness_target_workouts_week": 3, "fitness_goal_progress": 0})
+                        "fitness_target_workouts_week": 3, "fitness_goal_progress": 0,
+                        "activities_this_week": 0, "last_activity_days_ago": 999})
 
     # ── Nutrition сигналы ─────────────────────────────────────────────────────
     try:

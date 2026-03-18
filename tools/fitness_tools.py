@@ -54,6 +54,7 @@ def make_fitness_tools(user_id: int) -> list:
         exercises_json: str,
         workout_type: str = "strength",
         name: str = "",
+        started_at: str = "",
     ) -> str:
         """Залогировать тренировку целиком одним вызовом.
         exercises_json — JSON-массив:
@@ -61,17 +62,27 @@ def make_fitness_tools(user_id: int) -> list:
         Для кардио: [{"exercise_id": 55, "sets": [{"duration_sec": 1800, "distance_m": 5000}]}]
         workout_type — strength | cardio | home | functional | stretching
         name — название тренировки (необязательно)
+        started_at — время тренировки в ISO-формате, например 2026-03-18T10:00:00+03:00 (необязательно, по умолчанию = сейчас)
         """
         try:
             exercises = json.loads(exercises_json)
             if not isinstance(exercises, list) or len(exercises) == 0:
                 return "Ошибка: нужен непустой JSON-массив упражнений."
 
+            # Парсим started_at если передан
+            parsed_started_at = None
+            if started_at:
+                try:
+                    from datetime import datetime as _dt
+                    parsed_started_at = _dt.fromisoformat(started_at)
+                except (ValueError, TypeError):
+                    pass  # Невалидный формат — используем NOW()
             result = await fs.quick_log_workout(
                 user_id=user_id,
                 exercises=exercises,
                 workout_type=workout_type,
                 name=name,
+                started_at=parsed_started_at,
             )
 
             # Формируем ответ
@@ -151,6 +162,14 @@ def make_fitness_tools(user_id: int) -> list:
             lines.append(f"  😊 Среднее настроение: {stats['avg_mood']}/5")
         if stats["current_streak_days"]:
             lines.append(f"  🔥 Streak: {stats['current_streak_days']} дней подряд")
+
+        # Активности (кардио, растяжка и пр.)
+        if stats.get("total_activities"):
+            lines.append(f"  🏃 Активностей: {stats['total_activities']}")
+            if stats.get("total_activity_time_min"):
+                lines.append(f"  ⏱ Время активностей: {int(stats['total_activity_time_min'])} мин")
+            if stats.get("total_activity_calories"):
+                lines.append(f"  🔥 Калории (активности): {int(stats['total_activity_calories'])} ккал")
 
         if stats["top_exercises"]:
             lines.append("  📌 Топ упражнений:")
@@ -250,6 +269,7 @@ def make_fitness_tools(user_id: int) -> list:
         duration_min: int = 0,
         calories_burned: float = 0,
         notes: str = "",
+        logged_at: str = "",
     ) -> str:
         """Записать физическую активность (бег, шаги, вело, плавание).
         activity_type — тип: run | walk | cycling | swimming | steps | yoga | hiit | stretching | elliptical | rowing | jump_rope | other
@@ -257,7 +277,16 @@ def make_fitness_tools(user_id: int) -> list:
         unit — единица: km | m | steps | min
         duration_min — продолжительность в минутах (необязательно)
         calories_burned — сожжённые калории (необязательно)
+        logged_at — время активности в ISO-формате с таймзоной, например 2026-03-18T11:00:00+03:00 (необязательно, по умолчанию = сейчас)
         """
+        # Парсим logged_at если передан
+        parsed_logged_at = None
+        if logged_at:
+            try:
+                from datetime import datetime as _dt
+                parsed_logged_at = _dt.fromisoformat(logged_at)
+            except (ValueError, TypeError):
+                pass  # Невалидный формат — используем NOW()
         result = await fs.log_activity(
             user_id=user_id,
             activity_type=activity_type,
@@ -266,6 +295,7 @@ def make_fitness_tools(user_id: int) -> list:
             duration_min=duration_min or None,
             calories_burned=calories_burned or None,
             notes=notes,
+            logged_at=parsed_logged_at,
         )
 
         # Формируем сообщение
@@ -282,6 +312,64 @@ def make_fitness_tools(user_id: int) -> list:
         if result.get("calories_burned"):
             line += f" · {int(result['calories_burned'])} ккал"
         return line
+
+    # ── Редактирование / удаление активности ────────────────────────────
+
+    @tool
+    async def activity_update(
+        activity_id: int,
+        value: float = 0,
+        unit: str = "",
+        duration_min: int = 0,
+        calories_burned: float = 0,
+        notes: str = "",
+        logged_at: str = "",
+    ) -> str:
+        """Обновить существующую активность.
+        activity_id — ID активности (обязательно)
+        value — новое значение (0 = не менять)
+        unit — новая единица (пусто = не менять)
+        duration_min — новая продолжительность (0 = не менять)
+        calories_burned — новые калории (0 = не менять)
+        notes — новые заметки (пусто = не менять)
+        logged_at — новое время в ISO-формате, например 2026-03-18T11:00:00+03:00 (пусто = не менять)
+        """
+        # Собираем kwargs только для непустых значений
+        kwargs: dict = {}
+        if value:
+            kwargs["value"] = value
+        if unit:
+            kwargs["unit"] = unit
+        if duration_min:
+            kwargs["duration_min"] = duration_min
+        if calories_burned:
+            kwargs["calories_burned"] = calories_burned
+        if notes:
+            kwargs["notes"] = notes
+        if logged_at:
+            try:
+                from datetime import datetime as _dt
+                kwargs["logged_at"] = _dt.fromisoformat(logged_at)
+            except (ValueError, TypeError):
+                return "❌ Некорректный формат logged_at. Используй ISO: 2026-03-18T11:00:00+03:00"
+
+        if not kwargs:
+            return "❌ Нечего обновлять — укажи хотя бы одно поле."
+
+        result = await fs.update_activity(activity_id=activity_id, user_id=user_id, **kwargs)
+        if not result:
+            return f"❌ Активность #{activity_id} не найдена."
+        return f"✅ Активность #{activity_id} обновлена."
+
+    @tool
+    async def activity_delete(activity_id: int) -> str:
+        """Удалить активность по ID.
+        activity_id — ID активности для удаления
+        """
+        ok = await fs.delete_activity(activity_id=activity_id, user_id=user_id)
+        if ok:
+            return f"🗑 Активность #{activity_id} удалена."
+        return f"❌ Активность #{activity_id} не найдена."
 
     # ── Фитнес-цель ──────────────────────────────────────────────────────
 
@@ -816,6 +904,8 @@ def make_fitness_tools(user_id: int) -> list:
         workout_history,
         body_metric_log,
         activity_log,
+        activity_update,
+        activity_delete,
         fitness_goal_set,
         program_info,
         next_workout_tool,

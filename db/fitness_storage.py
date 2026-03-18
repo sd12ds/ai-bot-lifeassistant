@@ -8,7 +8,7 @@ import json
 from datetime import datetime, date, timedelta, time
 from typing import Optional
 
-from sqlalchemy import select, and_, func, or_, delete, update, desc, cast, String
+from sqlalchemy import select, and_, func, or_, delete, update, desc, cast, String, case
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import selectinload
 
@@ -276,6 +276,7 @@ async def quick_log_workout(
     exercises: list[dict],
     workout_type: str = "strength",
     name: str = "",
+    started_at: "datetime | None" = None,
 ) -> dict:
     """
     Быстрое логирование тренировки одним вызовом.
@@ -284,6 +285,8 @@ async def quick_log_workout(
     """
     async with AsyncSessionLocal() as session:
         now = datetime.now(DEFAULT_TZ)
+        # Если передано конкретное время начала — используем его
+        effective_start = started_at if started_at is not None else now
 
         # Генерируем информативное название из первых 2 упражнений если не задано
         auto_name = name
@@ -318,10 +321,10 @@ async def quick_log_workout(
 
         ws = WorkoutSession(
             user_id=user_id,
-            name=auto_name or f"Тренировка {now.strftime('%d.%m')}",
+            name=auto_name or f"Тренировка {effective_start.strftime('%d.%m')}",
             workout_type=workout_type,
-            started_at=now,
-            ended_at=now,
+            started_at=effective_start,
+            ended_at=effective_start,
         )
         session.add(ws)
         await session.flush()  # Получаем ws.id
@@ -544,8 +547,11 @@ async def log_activity(
     duration_min: int | None = None,
     calories_burned: float | None = None,
     notes: str = "",
+    logged_at: "datetime | None" = None,
 ) -> dict:
-    """Записать активность (бег, шаги, вело и т.д.)."""
+    """Записать активность (бег, шаги, вело и т.д.).
+    logged_at — если передан, используется вместо NOW() (для указания времени вручную).
+    """
     async with AsyncSessionLocal() as session:
         al = ActivityLog(
             user_id=user_id,
@@ -556,6 +562,9 @@ async def log_activity(
             calories_burned=calories_burned,
             notes=notes,
         )
+        # Если передано конкретное время — ставим его явно
+        if logged_at is not None:
+            al.logged_at = logged_at
         session.add(al)
         await session.commit()
         await session.refresh(al)
@@ -599,6 +608,64 @@ async def get_activities(
             }
             for r in rows
         ]
+
+
+async def update_activity(
+    activity_id: int,
+    user_id: int,
+    **kwargs,
+) -> dict | None:
+    """Обновить активность по id. Обновляет только переданные поля.
+    Допустимые поля: activity_type, value, unit, duration_min, calories_burned, notes, logged_at.
+    Возвращает обновлённый dict или None если не найдено.
+    """
+    # Фильтруем допустимые поля
+    allowed = {"activity_type", "value", "unit", "duration_min", "calories_burned", "notes", "logged_at"}
+    updates = {k: v for k, v in kwargs.items() if k in allowed and v is not None}
+    if not updates:
+        return None
+    async with AsyncSessionLocal() as session:
+        result = await session.execute(
+            select(ActivityLog).where(
+                ActivityLog.id == activity_id,
+                ActivityLog.user_id == user_id,  # Защита от чужих записей
+            )
+        )
+        al = result.scalar_one_or_none()
+        if not al:
+            return None
+        # Применяем обновления
+        for field, val in updates.items():
+            setattr(al, field, val)
+        await session.commit()
+        await session.refresh(al)
+        return {
+            "id": al.id,
+            "activity_type": al.activity_type,
+            "value": al.value,
+            "unit": al.unit,
+            "duration_min": al.duration_min,
+            "calories_burned": al.calories_burned,
+            "notes": al.notes,
+            "logged_at": al.logged_at.isoformat() if al.logged_at else None,
+        }
+
+
+async def delete_activity(activity_id: int, user_id: int) -> bool:
+    """Удалить активность по id. Проверяет user_id. Возвращает True/False."""
+    async with AsyncSessionLocal() as session:
+        result = await session.execute(
+            select(ActivityLog).where(
+                ActivityLog.id == activity_id,
+                ActivityLog.user_id == user_id,
+            )
+        )
+        al = result.scalar_one_or_none()
+        if not al:
+            return False
+        await session.delete(al)
+        await session.commit()
+        return True
 
 
 # ── Статистика ────────────────────────────────────────────────────────────────
@@ -653,7 +720,25 @@ async def get_workout_stats(user_id: int, days: int = 30) -> dict:
             for r in top_res.all()
         ]
 
-        # Streak: подряд дни с тренировками
+        # Активности (кардио, растяжка, шаги и пр.) из activity_logs
+        act_stmt = select(
+            func.count(ActivityLog.id).label("total_activities"),
+            # Время: если unit='min' берём value, иначе duration_min
+            func.sum(
+                case(
+                    (ActivityLog.unit == "min", ActivityLog.value),
+                    else_=func.coalesce(ActivityLog.duration_min, 0),
+                )
+            ).label("activity_time"),
+            func.sum(func.coalesce(ActivityLog.calories_burned, 0)).label("activity_calories"),
+        ).where(and_(
+            ActivityLog.user_id == user_id,
+            ActivityLog.logged_at >= since,
+        ))
+        act_res = await session.execute(act_stmt)
+        act_row = act_res.one()
+
+        # Streak: подряд дни с тренировками И активностями
         streak = await _calc_streak(session, user_id)
 
         return {
@@ -665,24 +750,42 @@ async def get_workout_stats(user_id: int, days: int = 30) -> dict:
             "avg_mood": round(row.avg_mood or 0, 1) if row.avg_mood else None,
             "top_exercises": top_exercises,
             "current_streak_days": streak,
+            "total_activities": act_row.total_activities or 0,
+            "total_activity_time_min": round(float(act_row.activity_time or 0), 0),
+            "total_activity_calories": round(float(act_row.activity_calories or 0), 0),
         }
 
 
 async def _calc_streak(session: AsyncSession, user_id: int) -> int:
-    """Вычисляет текущий streak — дни подряд с тренировками."""
+    """Вычисляет текущий streak — дни подряд с тренировками ИЛИ активностями."""
     # Получаем уникальные даты тренировок (последние 60 дней)
     since = datetime.now(DEFAULT_TZ) - timedelta(days=60)
-    stmt = (
+    # Даты тренировок
+    ws_stmt = (
         select(func.date(WorkoutSession.created_at))
         .where(and_(
             WorkoutSession.user_id == user_id,
             WorkoutSession.created_at >= since,
         ))
         .distinct()
-        .order_by(desc(func.date(WorkoutSession.created_at)))
     )
-    result = await session.execute(stmt)
-    dates = [r[0] for r in result.all()]
+    ws_result = await session.execute(ws_stmt)
+    ws_dates = {r[0] for r in ws_result.all()}
+
+    # Даты активностей из activity_logs
+    al_stmt = (
+        select(func.date(ActivityLog.logged_at))
+        .where(and_(
+            ActivityLog.user_id == user_id,
+            ActivityLog.logged_at >= since,
+        ))
+        .distinct()
+    )
+    al_result = await session.execute(al_stmt)
+    al_dates = {r[0] for r in al_result.all()}
+
+    # Объединяем даты тренировок и активностей
+    dates = sorted(ws_dates | al_dates, reverse=True)
 
     if not dates:
         return 0

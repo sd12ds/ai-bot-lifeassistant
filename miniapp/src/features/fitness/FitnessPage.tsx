@@ -283,6 +283,36 @@ export function FitnessPage() {
               </div>
             </div>
 
+            {/* Активности (кардио, растяжка и пр.) */}
+            {stats.total_activities > 0 && (
+              <div className="grid grid-cols-3 gap-3 text-center mt-2 pt-2 border-t border-white/[0.06]">
+                <div>
+                  <div className="text-lg font-bold" style={{ color: 'var(--app-text)' }}>
+                    {stats.total_activities}
+                  </div>
+                  <div className="text-[10px]" style={{ color: 'var(--app-hint)' }}>
+                    активностей
+                  </div>
+                </div>
+                <div>
+                  <div className="text-lg font-bold" style={{ color: 'var(--app-text)' }}>
+                    {stats.total_activity_time_min > 0 ? Math.round(stats.total_activity_time_min) : '—'}
+                  </div>
+                  <div className="text-[10px]" style={{ color: 'var(--app-hint)' }}>
+                    мин (кардио)
+                  </div>
+                </div>
+                <div>
+                  <div className="text-lg font-bold" style={{ color: 'var(--app-text)' }}>
+                    {stats.total_activity_calories > 0 ? Math.round(stats.total_activity_calories) : '—'}
+                  </div>
+                  <div className="text-[10px]" style={{ color: 'var(--app-hint)' }}>
+                    ккал
+                  </div>
+                </div>
+              </div>
+            )}
+
             {/* Топ упражнений */}
             {stats.top_exercises.length > 0 && (
               <div className="mt-3 pt-3 border-t border-white/[0.06]">
