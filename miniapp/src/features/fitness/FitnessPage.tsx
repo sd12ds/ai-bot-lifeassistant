@@ -4,11 +4,12 @@
  */
 import { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
-import { TrendingUp, ChevronRight, History, Play, BarChart3, Ruler, Target, Sparkles, Trash2, Pencil, X } from 'lucide-react'
+import { TrendingUp, ChevronRight, History, Play, BarChart3, Ruler, Target, Sparkles, Trash2, Pencil, X, Plus, Minus } from 'lucide-react'
 import {
   useFitnessStats, useSessions, useBodyMetrics, useNextWorkout, useFitnessGoals,
   useActivities, useDeleteActivity, useUpdateActivity, useDeleteSession, useUpdateSession,
-  ACTIVITY_EMOJI, ACTIVITY_LABELS, type WorkoutSession, type Activity,
+  useUpdateSet, useDeleteSet, useAddSet,
+  ACTIVITY_EMOJI, ACTIVITY_LABELS, type WorkoutSession, type WorkoutSet, type Activity,
 } from '../../api/fitness'
 import { GlassCard } from '../../shared/ui/GlassCard'
 import { FAB } from '../../shared/components/FAB'
@@ -789,28 +790,68 @@ const SESSION_TYPE_OPTIONS = [
   { value: 'stretching', label: '🧘 Растяжка' },
 ]
 
-/** ─── Форма редактирования тренировки (overlay) ─── */
+/** Группировка подходов по упражнениям */
+function groupExercises(sets: WorkoutSet[]) {
+  const map = new Map<number, { name: string; sets: WorkoutSet[] }>()
+  for (const s of sets) {
+    if (!map.has(s.exercise_id)) {
+      map.set(s.exercise_id, { name: s.exercise_name || `Упражнение #${s.exercise_id}`, sets: [] })
+    }
+    map.get(s.exercise_id)!.sets.push(s)
+  }
+  return Array.from(map.values())
+}
+
+/** ─── Форма редактирования тренировки — подходы (вес + повторения) ─── */
 function EditSessionSheet({ session, onSave, onClose }: {
   session: WorkoutSession
   onSave: (data: Record<string, any>) => void
   onClose: () => void
 }) {
-  // Локальный стейт полей
+  // Название и тип
   const [name, setName] = useState(session.name || '')
   const [workoutType, setWorkoutType] = useState(session.workout_type || 'strength')
-  const [notes, setNotes] = useState(session.notes || '')
-  const [moodBefore, setMoodBefore] = useState(session.mood_before || 0)
-  const [moodAfter, setMoodAfter] = useState(session.mood_after || 0)
 
-  const handleSubmit = () => {
+  // Хуки мутаций для подходов
+  const updateSet = useUpdateSet()
+  const deleteSet = useDeleteSet()
+  const addSet = useAddSet()
+
+  // Группируем подходы по упражнениям
+  const exercises = groupExercises(session.sets || [])
+
+  // Сохранение названия/типа
+  const handleSaveHeader = () => {
     const data: Record<string, any> = {}
     if (name !== session.name) data.name = name
     if (workoutType !== session.workout_type) data.workout_type = workoutType
-    if (notes !== (session.notes || '')) data.notes = notes
-    if (moodBefore && moodBefore !== session.mood_before) data.mood_before = moodBefore
-    if (moodAfter && moodAfter !== session.mood_after) data.mood_after = moodAfter
     if (Object.keys(data).length > 0) onSave(data)
     else onClose()
+  }
+
+  // Обновление подхода
+  const handleUpdateSet = (setId: number, field: string, value: number | null) => {
+    updateSet.mutate({ id: setId, [field]: value })
+  }
+
+  // Удаление подхода
+  const handleDeleteSet = (setId: number) => {
+    deleteSet.mutate(setId)
+  }
+
+  // Добавление подхода (копирует последний)
+  const handleAddSet = (exerciseId: number, lastSet: WorkoutSet) => {
+    addSet.mutate({
+      sessionId: session.id,
+      dto: {
+        exercise_id: exerciseId,
+        reps: lastSet.reps ?? undefined,
+        weight_kg: lastSet.weight_kg ?? undefined,
+        duration_sec: lastSet.duration_sec ?? undefined,
+        distance_m: lastSet.distance_m ?? undefined,
+        set_type: lastSet.set_type || 'working',
+      },
+    })
   }
 
   const inputStyle = {
@@ -819,30 +860,11 @@ function EditSessionSheet({ session, onSave, onClose }: {
     border: '1px solid rgba(255,255,255,0.1)',
   }
 
-  // Рендер кнопок настроения (1-5)
-  const MoodPicker = ({ value, onChange, label }: { value: number; onChange: (v: number) => void; label: string }) => (
-    <div className="mb-3">
-      <label className="text-xs mb-1.5 block" style={{ color: 'var(--app-hint)' }}>{label}</label>
-      <div className="flex gap-2">
-        {[1, 2, 3, 4, 5].map((v) => (
-          <button key={v} onClick={() => onChange(v)}
-            className="w-10 h-10 rounded-xl text-sm font-bold"
-            style={{
-              background: value === v ? 'rgba(99,102,241,0.3)' : 'rgba(255,255,255,0.06)',
-              color: value === v ? '#a5b4fc' : 'var(--app-hint)',
-            }}>
-            {v}
-          </button>
-        ))}
-      </div>
-    </div>
-  )
-
   return (
     <div className="fixed inset-0 z-50 flex items-end justify-center"
       style={{ background: 'rgba(0,0,0,0.5)' }}
       onClick={(e) => { if (e.target === e.currentTarget) onClose() }}>
-      <div className="w-full max-w-lg rounded-t-2xl p-4 pb-8 max-h-[80vh] overflow-y-auto"
+      <div className="w-full max-w-lg rounded-t-2xl p-4 pb-8 max-h-[85vh] overflow-y-auto"
         style={{ background: 'var(--app-bg, #1a1a2e)' }}>
         {/* Заголовок */}
         <div className="flex items-center justify-between mb-4">
@@ -864,7 +886,7 @@ function EditSessionSheet({ session, onSave, onClose }: {
         </div>
 
         {/* Тип */}
-        <div className="mb-3">
+        <div className="mb-4">
           <label className="text-xs mb-1 block" style={{ color: 'var(--app-hint)' }}>Тип</label>
           <select value={workoutType} onChange={(e) => setWorkoutType(e.target.value)}
             className="w-full px-3 py-2.5 rounded-lg text-sm outline-none"
@@ -875,23 +897,69 @@ function EditSessionSheet({ session, onSave, onClose }: {
           </select>
         </div>
 
-        {/* Настроение до */}
-        <MoodPicker value={moodBefore} onChange={setMoodBefore} label="Настроение до (1-5)" />
+        {/* Упражнения с подходами */}
+        {exercises.length > 0 ? (
+          <div className="space-y-4 mb-4">
+            {exercises.map((ex, exIdx) => (
+              <div key={exIdx} className="rounded-xl p-3"
+                style={{ background: 'rgba(255,255,255,0.03)' }}>
+                <div className="text-xs font-bold mb-2" style={{ color: 'var(--app-text)' }}>
+                  {ex.name}
+                </div>
 
-        {/* Настроение после */}
-        <MoodPicker value={moodAfter} onChange={setMoodAfter} label="Настроение после (1-5)" />
+                {/* Заголовки столбцов */}
+                <div className="flex items-center gap-2 mb-1.5 px-1">
+                  <span className="text-[10px] w-8 text-center" style={{ color: 'var(--app-hint)' }}>#</span>
+                  <span className="text-[10px] flex-1 text-center" style={{ color: 'var(--app-hint)' }}>Вес (кг)</span>
+                  <span className="text-[10px] flex-1 text-center" style={{ color: 'var(--app-hint)' }}>Повторы</span>
+                  <span className="w-8" />
+                </div>
 
-        {/* Заметки */}
-        <div className="mb-4">
-          <label className="text-xs mb-1 block" style={{ color: 'var(--app-hint)' }}>Заметки</label>
-          <textarea value={notes} onChange={(e) => setNotes(e.target.value)}
-            className="w-full px-3 py-2.5 rounded-lg text-sm outline-none resize-none"
-            rows={3}
-            style={inputStyle} placeholder="Как прошла тренировка..." />
-        </div>
+                {/* Подходы */}
+                {ex.sets.map((s, sIdx) => (
+                  <div key={s.id} className="flex items-center gap-2 mb-1.5">
+                    <span className="text-[11px] w-8 text-center font-medium"
+                      style={{ color: 'var(--app-hint)' }}>{sIdx + 1}</span>
+                    <input type="number" inputMode="decimal"
+                      defaultValue={s.weight_kg ?? ''}
+                      onBlur={(e) => {
+                        const v = e.target.value ? parseFloat(e.target.value) : null
+                        if (v !== s.weight_kg) handleUpdateSet(s.id, 'weight_kg', v)
+                      }}
+                      className="flex-1 px-2 py-2 rounded-lg text-sm text-center outline-none"
+                      style={inputStyle} placeholder="—" />
+                    <input type="number" inputMode="numeric"
+                      defaultValue={s.reps ?? ''}
+                      onBlur={(e) => {
+                        const v = e.target.value ? parseInt(e.target.value) : null
+                        if (v !== s.reps) handleUpdateSet(s.id, 'reps', v)
+                      }}
+                      className="flex-1 px-2 py-2 rounded-lg text-sm text-center outline-none"
+                      style={inputStyle} placeholder="—" />
+                    <button onClick={() => handleDeleteSet(s.id)}
+                      className="w-8 h-8 flex items-center justify-center rounded-lg shrink-0"
+                      style={{ background: 'rgba(239,68,68,0.1)' }}>
+                      <Minus size={14} style={{ color: '#ef4444' }} />
+                    </button>
+                  </div>
+                ))}
 
-        {/* Кнопка */}
-        <button onClick={handleSubmit}
+                <button
+                  onClick={() => handleAddSet(ex.sets[0].exercise_id, ex.sets[ex.sets.length - 1])}
+                  className="flex items-center gap-1.5 w-full justify-center py-2 mt-1 rounded-lg text-xs font-medium"
+                  style={{ background: 'rgba(99,102,241,0.08)', color: '#818cf8' }}>
+                  <Plus size={14} /> Добавить подход
+                </button>
+              </div>
+            ))}
+          </div>
+        ) : (
+          <div className="text-xs py-4 text-center mb-4" style={{ color: 'var(--app-hint)' }}>
+            Подходы не записаны
+          </div>
+        )}
+
+        <button onClick={handleSaveHeader}
           className="w-full py-3 rounded-xl text-sm font-bold"
           style={{ background: 'rgba(99,102,241,0.3)', color: '#a5b4fc' }}>
           Сохранить

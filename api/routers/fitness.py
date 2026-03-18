@@ -644,6 +644,42 @@ async def delete_session_endpoint(session_id: int, user: User = Depends(get_curr
     return {"ok": True}
 
 
+
+
+# -- Подходы (sets): редактирование и удаление --------------------------------
+
+class UpdateSetDto(BaseModel):
+    """DTO обновления подхода."""
+    reps: Optional[int] = None
+    weight_kg: Optional[float] = None
+    duration_sec: Optional[int] = None
+    distance_m: Optional[float] = None
+    pace_sec_per_km: Optional[int] = None
+    set_type: Optional[str] = None
+
+
+@router.patch("/sets/{set_id}", response_model=SetOut)
+async def update_set_endpoint(
+    set_id: int,
+    dto: UpdateSetDto,
+    user: User = Depends(get_current_user),
+):
+    """Обновить подход (вес, повторения и т.д.)."""
+    kwargs = {k: v for k, v in dto.model_dump().items() if v is not None}
+    result = await fs.update_set(set_id=set_id, user_id=user.telegram_id, **kwargs)
+    if not result:
+        raise HTTPException(status_code=404, detail="Подход не найден")
+    return result
+
+
+@router.delete("/sets/{set_id}")
+async def delete_set_endpoint(set_id: int, user: User = Depends(get_current_user)):
+    """Удалить подход."""
+    ok = await fs.delete_set(set_id=set_id, user_id=user.telegram_id)
+    if not ok:
+        raise HTTPException(status_code=404, detail="Подход не найден")
+    return {"ok": True}
+
 # ── Прогресс по упражнению ────────────────────────────────────────────────────
 
 class ExerciseProgressOut(BaseModel):

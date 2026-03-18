@@ -2146,3 +2146,50 @@ async def delete_all_templates(user_id: int) -> int:
         )
         await session.commit()
         return result.rowcount
+
+
+async def update_set(set_id: int, user_id: int, **kwargs) -> dict | None:
+    """Обновить подход (вес, повторения и т.д.). Проверяет user_id через сессию."""
+    allowed = {"reps", "weight_kg", "duration_sec", "distance_m", "pace_sec_per_km", "set_type"}
+    updates = {k: v for k, v in kwargs.items() if k in allowed}
+    if not updates:
+        return None
+    async with AsyncSessionLocal() as session:
+        # Загружаем подход с проверкой принадлежности через WorkoutSession
+        result = await session.execute(
+            select(WorkoutSet)
+            .join(WorkoutSession, WorkoutSet.session_id == WorkoutSession.id)
+            .options(selectinload(WorkoutSet.exercise))
+            .where(
+                WorkoutSet.id == set_id,
+                WorkoutSession.user_id == user_id,  # защита от чужих записей
+            )
+        )
+        ws = result.scalar_one_or_none()
+        if not ws:
+            return None
+        # Применяем обновления
+        for field, val in updates.items():
+            setattr(ws, field, val)
+        await session.commit()
+        await session.refresh(ws)
+        return _set_to_dict(ws)
+
+
+async def delete_set(set_id: int, user_id: int) -> bool:
+    """Удалить подход. Проверяет user_id через WorkoutSession."""
+    async with AsyncSessionLocal() as session:
+        result = await session.execute(
+            select(WorkoutSet)
+            .join(WorkoutSession, WorkoutSet.session_id == WorkoutSession.id)
+            .where(
+                WorkoutSet.id == set_id,
+                WorkoutSession.user_id == user_id,
+            )
+        )
+        ws = result.scalar_one_or_none()
+        if not ws:
+            return False
+        await session.delete(ws)
+        await session.commit()
+        return True

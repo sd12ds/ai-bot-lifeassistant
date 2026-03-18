@@ -450,8 +450,8 @@ export function useAddSet() {
   return useMutation({
     mutationFn: addSetApi,
     onSuccess: () => {
-      // Инвалидируем активную сессию для обновления данных
-      qc.invalidateQueries({ queryKey: ['fitness', 'sessions', 'active'] })
+      // Широкая инвалидация — обновляет сессии, статистику, прогресс
+      qc.invalidateQueries({ queryKey: ['fitness'] })
     },
   })
 }
@@ -482,6 +482,45 @@ export function useWeeklyVolume(weeks: number = 8) {
   return useQuery({
     queryKey: ['fitness', 'weekly-volume', weeks],
     queryFn: () => fetchWeeklyVolume(weeks),
+  })
+}
+
+
+// -- Подходы (sets): редактирование и удаление --------------------------------
+
+/** DTO обновления подхода */
+export interface UpdateSetDto {
+  reps?: number | null
+  weight_kg?: number | null
+  duration_sec?: number | null
+  distance_m?: number | null
+  pace_sec_per_km?: number | null
+  set_type?: string
+}
+
+/** Обновить подход (PATCH /fitness/sets/{id}) */
+const updateSetApi = async ({ id, ...data }: { id: number } & UpdateSetDto): Promise<any> =>
+  (await apiClient.patch(`/fitness/sets/${id}`, data)).data
+
+/** Удалить подход (DELETE /fitness/sets/{id}) */
+const deleteSetApi = async (setId: number): Promise<any> =>
+  (await apiClient.delete(`/fitness/sets/${setId}`)).data
+
+/** Обновить подход */
+export function useUpdateSet() {
+  const qc = useQueryClient()
+  return useMutation({
+    mutationFn: updateSetApi,
+    onSuccess: () => { qc.invalidateQueries({ queryKey: ['fitness'] }) },
+  })
+}
+
+/** Удалить подход */
+export function useDeleteSet() {
+  const qc = useQueryClient()
+  return useMutation({
+    mutationFn: deleteSetApi,
+    onSuccess: () => { qc.invalidateQueries({ queryKey: ['fitness'] }) },
   })
 }
 
