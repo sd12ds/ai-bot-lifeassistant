@@ -479,8 +479,8 @@ export function ProgressDashboard() {
         {/* ── Прогресс по упражнению (кастомный dropdown) ── */}
         {stats?.top_exercises && stats.top_exercises.length > 0 && (
           <GlassCard>
-            <div className="flex items-center justify-between mb-3">
-              <span className="text-sm font-medium" style={{ color: 'var(--app-text)' }}>
+            <div className="flex flex-col gap-2 mb-3">
+              <span className="text-sm font-medium whitespace-nowrap" style={{ color: 'var(--app-text)' }}>
                 🏋️ Рабочий вес
               </span>
 
@@ -488,14 +488,14 @@ export function ProgressDashboard() {
               <div className="relative" ref={dropdownRef}>
                 <button
                   onClick={() => setDropdownOpen(!dropdownOpen)}
-                  className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-medium transition-all"
+                  className="w-full flex items-center justify-between gap-1.5 px-3 py-1.5 rounded-xl text-xs font-medium transition-all"
                   style={{
                     background: 'rgba(34,197,94,0.15)',
                     color: '#22c55e',
                     border: '1px solid rgba(34,197,94,0.25)',
                   }}
                 >
-                  {selectedExName || 'Упражнение'}
+                  <span className="truncate">{selectedExName || 'Упражнение'}</span>
                   <ChevronDown
                     size={14}
                     className={`transition-transform ${dropdownOpen ? 'rotate-180' : ''}`}
