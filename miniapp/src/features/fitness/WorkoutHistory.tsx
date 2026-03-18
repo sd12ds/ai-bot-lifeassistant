@@ -492,7 +492,7 @@ function EditSessionOverlay({ session, onSave, onClose }: {
     <div className="fixed inset-0 z-50 flex items-end justify-center"
       style={{ background: 'rgba(0,0,0,0.5)' }}
       onClick={(e) => { if (e.target === e.currentTarget) onClose() }}>
-      <div className="w-full max-w-lg rounded-t-2xl p-4 pb-8 max-h-[85vh] overflow-y-auto"
+      <div className="w-full max-w-lg rounded-t-2xl p-4 pb-28 max-h-[85vh] overflow-y-auto"
         style={{ background: 'var(--app-bg, #1a1a2e)' }}>
         {/* Заголовок */}
         <div className="flex items-center justify-between mb-4">

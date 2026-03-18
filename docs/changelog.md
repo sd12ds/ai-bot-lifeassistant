@@ -339,3 +339,7 @@
 ## [355374c] — 2026-03-18 23:05 (МСК)
 📦 Перезапись EditSessionOverlay и EditSessionSheet — локальный стейт подходов, CSS Grid layout по паттерну QuickWorkoutSheet, батч-сохранение (add/update/delete) по кнопке
 
+
+## [15c94e0] — 2026-03-18 23:09 (МСК)
+📦 Sticky кнопка Сохранить — всегда видна внизу оверлея редактирования, с gradient-фейдом фона
+
