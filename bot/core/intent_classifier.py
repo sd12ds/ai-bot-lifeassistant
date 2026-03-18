@@ -117,6 +117,23 @@ _REMINDER_STRONG = {
     "встреч", "созвон", "событи",
     "к врачу", "на приём", "на прием",
     "запись к", "бронь", "билет",
+    # Глаголы-действия → задача/напоминание
+    "поехать", "поехат", "сходить", "зайти", "заехать",
+    "забрать", "отвезти", "привезти", "отнести",
+    "позвонить", "записаться", "оплатить",
+    "забронировать", "отправить посылк",
+}
+
+# Обычные маркеры — нужно >= 2 или sticky-breaking сигнал
+_REMINDER_NORMAL = {
+    # Временные маркеры (сами по себе не задача, но усиливают сигнал)
+    "завтра в ", "послезавтра", "через час",
+    "в понедельник", "во вторник", "в среду",
+    "в четверг", "в пятницу", "в субботу", "в воскресенье",
+    # Бытовые действия
+    "купить", "сделать", "заказать", "забронировать",
+    "починить", "отремонтировать", "проверить",
+    "оформить", "подать заявку", "зарегистрировать",
 }
 
 # Антимаркеры — слова которые ИСКЛЮЧАЮТ домен при конфликте
@@ -180,6 +197,7 @@ def classify_by_rules(text: str) -> str | None:
     fit_normal = _count_matches(low, _FITNESS_NORMAL)
     
     rem_strong = _count_matches(low, _REMINDER_STRONG)
+    rem_normal = _count_matches(low, _REMINDER_NORMAL)
     rem_anti = _count_matches(low, _REMINDER_ANTI)
 
     # Coaching-счётчики
@@ -264,7 +282,7 @@ def has_any_signal(text: str, exclude_domain: str) -> str | None:
     elif exclude_domain == "fitness":
         sticky_signal = _count_matches(low, _FITNESS_STRONG) + _count_matches(low, _FITNESS_NORMAL)
     elif exclude_domain == "reminder":
-        sticky_signal = _count_matches(low, _REMINDER_STRONG)
+        sticky_signal = _count_matches(low, _REMINDER_STRONG) + _count_matches(low, _REMINDER_NORMAL)
     elif exclude_domain == "coaching":
         sticky_signal = _count_matches(low, _COACHING_STRONG) + _count_matches(low, _COACHING_NORMAL)
 
@@ -277,10 +295,14 @@ def has_any_signal(text: str, exclude_domain: str) -> str | None:
         return "fitness"
     if exclude_domain != "nutrition" and _count_matches(low, _NUTRITION_NORMAL) > 0:
         return "nutrition"
+    if exclude_domain != "reminder" and _count_matches(low, _REMINDER_NORMAL) > 0:
+        return "reminder"
     if exclude_domain != "coaching" and _count_matches(low, _COACHING_NORMAL) > 0:
         return "coaching"
 
     return None
+
+
 
 def has_strong_signal(text: str, exclude_domain: str) -> str | None:
     """Проверяет ТОЛЬКО strong-маркеры всех доменов КРОМЕ exclude_domain.
