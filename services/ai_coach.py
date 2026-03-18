@@ -205,10 +205,15 @@ async def analyze_progress(user_id: int) -> dict:
 - Объём: {round(stats_30.get('total_volume_kg', 0))} кг
 - Время: {round(stats_30.get('total_time_min', 0))} мин
 - Streak: {stats_30.get('current_streak_days', 0)} дней
+- Активностей (кардио, растяжка и пр.): {stats_30.get('total_activities', 0)}
+- Время активностей: {round(stats_30.get('total_activity_time_min', 0))} мин
+- Калории от активностей: {round(stats_30.get('total_activity_calories', 0))} ккал
 
 СТАТИСТИКА ЗА 90 ДНЕЙ:
 - Тренировок: {stats_90.get('total_sessions', 0)}
 - Объём: {round(stats_90.get('total_volume_kg', 0))} кг
+- Активностей: {stats_90.get('total_activities', 0)}
+- Время активностей: {round(stats_90.get('total_activity_time_min', 0))} мин
 
 ИСТОРИЯ ВЕСА ТЕЛА:
 {chr(10).join(weight_history) if weight_history else 'Нет данных'}
@@ -268,6 +273,8 @@ async def get_recommendations(user_id: int) -> dict:
 
 ДАННЫЕ ПОЛЬЗОВАТЕЛЯ:
 - Тренировок за 30 дней: {stats.get('total_sessions', 0)}
+- Активностей (кардио, растяжка и пр.): {stats.get('total_activities', 0)}
+- Время активностей: {round(stats.get('total_activity_time_min', 0))} мин
 - Streak: {stats.get('current_streak_days', 0)} дней
 - Объём за месяц: {round(stats.get('total_volume_kg', 0))} кг
 {f'- Текущий вес: {last_weight} кг' if last_weight else ''}
