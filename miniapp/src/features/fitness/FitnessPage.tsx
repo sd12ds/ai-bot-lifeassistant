@@ -25,6 +25,7 @@ const WORKOUT_TYPE_LABELS: Record<string, { label: string; icon: string }> = {
 export function FitnessPage() {
   const navigate = useNavigate()
   const [createOpen, setCreateOpen] = useState(false)
+  const [showAllActivities, setShowAllActivities] = useState(false) // Раскрытие списка активностей
 
   // Данные
   const { data: stats } = useFitnessStats(30)
@@ -310,7 +311,7 @@ export function FitnessPage() {
               Активности
             </span>
             <div className="flex flex-col gap-2 mt-2">
-              {activities.map((a: Activity) => (
+              {(showAllActivities ? activities : activities.slice(0, 3)).map((a: Activity) => (
                 <GlassCard key={a.id} className="p-3">
                   <div className="flex items-center gap-3">
                     {/* Emoji типа */}
@@ -336,6 +337,25 @@ export function FitnessPage() {
                 </GlassCard>
               ))}
             </div>
+            {/* Кнопка раскрытия всех активностей */}
+            {!showAllActivities && activities.length > 3 && (
+              <button
+                onClick={() => setShowAllActivities(true)}
+                className="w-full mt-2 py-2 text-xs font-medium rounded-xl transition-colors"
+                style={{ color: 'var(--app-accent)', background: 'var(--app-glass)' }}
+              >
+                Все активности ({activities.length})
+              </button>
+            )}
+            {showAllActivities && activities.length > 3 && (
+              <button
+                onClick={() => setShowAllActivities(false)}
+                className="w-full mt-2 py-2 text-xs font-medium rounded-xl transition-colors"
+                style={{ color: 'var(--app-hint)', background: 'var(--app-glass)' }}
+              >
+                Свернуть
+              </button>
+            )}
           </div>
         )}
 
