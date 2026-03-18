@@ -13,7 +13,7 @@ import {
   useUpdateSet, useDeleteSet, useAddSet,
   type WorkoutSession, type WorkoutSet,
 } from '../../api/fitness'
-import { X, Plus, Minus } from 'lucide-react'
+import { X, Plus } from 'lucide-react'
 import { GlassCard } from '../../shared/ui/GlassCard'
 
 // Типы тренировок
@@ -334,63 +334,159 @@ const SESSION_TYPES = [
   { value: 'stretching', label: '🧘 Растяжка' },
 ]
 
-/** Форма редактирования тренировки — подходы (вес + повторения), +/- подход */
+/** Локальный подход для редактирования */
+interface LocalSet {
+  id: number           // >0 = существующий, <0 = новый (временный)
+  exercise_id: number
+  exercise_name: string | null
+  weight_kg: number
+  reps: number
+  duration_sec: number
+  distance_m: number
+  set_type: string
+}
+
+/** Конвертация WorkoutSet → LocalSet */
+function toLocalSet(s: WorkoutSet): LocalSet {
+  return {
+    id: s.id,
+    exercise_id: s.exercise_id,
+    exercise_name: s.exercise_name,
+    weight_kg: s.weight_kg ?? 0,
+    reps: s.reps ?? 0,
+    duration_sec: s.duration_sec ?? 0,
+    distance_m: s.distance_m ?? 0,
+    set_type: s.set_type || 'working',
+  }
+}
+
+/** Группировка локальных подходов по упражнениям */
+function groupLocalSets(sets: LocalSet[]) {
+  const map = new Map<number, { name: string; sets: LocalSet[] }>()
+  for (const s of sets) {
+    if (!map.has(s.exercise_id)) {
+      map.set(s.exercise_id, { name: s.exercise_name || `Упражнение #${s.exercise_id}`, sets: [] })
+    }
+    map.get(s.exercise_id)!.sets.push(s)
+  }
+  return Array.from(map.values())
+}
+
+/** Форма редактирования тренировки — локальный стейт + батч-сохранение */
 function EditSessionOverlay({ session, onSave, onClose }: {
   session: WorkoutSession
   onSave: (data: Record<string, any>) => void
   onClose: () => void
 }) {
-  // Название и тип тренировки
+  // Заголовок
   const [name, setName] = useState(session.name || '')
   const [workoutType, setWorkoutType] = useState(session.workout_type || 'strength')
 
-  // Хуки мутаций для подходов
-  const updateSet = useUpdateSet()
-  const deleteSet = useDeleteSet()
-  const addSet = useAddSet()
+  // Локальный стейт подходов — копия из session
+  const [localSets, setLocalSets] = useState<LocalSet[]>(() =>
+    (session.sets || []).map(toLocalSet)
+  )
+  // Счётчик для временных ID новых подходов
+  const [tempId, setTempId] = useState(-1)
+  // ID удалённых существующих подходов
+  const [deletedIds, setDeletedIds] = useState<number[]>([])
+  // Состояние сохранения
+  const [saving, setSaving] = useState(false)
 
-  // Группируем подходы по упражнениям
-  const exercises = groupExercises(session.sets || [])
+  // Хуки мутаций
+  const updateSetMut = useUpdateSet()
+  const deleteSetMut = useDeleteSet()
+  const addSetMut = useAddSet()
 
-  // Сохранение названия/типа
-  const handleSaveHeader = () => {
-    const data: Record<string, any> = {}
-    if (name !== session.name) data.name = name
-    if (workoutType !== session.workout_type) data.workout_type = workoutType
-    if (Object.keys(data).length > 0) onSave(data)
-    else onClose()
+  // Группировка по упражнениям
+  const exercises = groupLocalSets(localSets)
+
+  // Обновить поле подхода локально
+  const handleSetChange = (setId: number, field: string, value: number) => {
+    setLocalSets(prev => prev.map(s =>
+      s.id === setId ? { ...s, [field]: value } : s
+    ))
   }
 
-  // Обновление конкретного подхода (вес или повторения)
-  const handleUpdateSet = (setId: number, field: string, value: number | null) => {
-    updateSet.mutate({ id: setId, [field]: value })
+  // Удалить подход локально
+  const handleRemoveSet = (setId: number) => {
+    setLocalSets(prev => prev.filter(s => s.id !== setId))
+    if (setId > 0) setDeletedIds(prev => [...prev, setId])
   }
 
-  // Удаление подхода
-  const handleDeleteSet = (setId: number) => {
-    deleteSet.mutate(setId)
+  // Добавить подход локально
+  const handleAddSet = (exerciseId: number, exerciseName: string, lastSet?: LocalSet) => {
+    const newId = tempId
+    setTempId(prev => prev - 1)
+    setLocalSets(prev => [...prev, {
+      id: newId,
+      exercise_id: exerciseId,
+      exercise_name: exerciseName,
+      weight_kg: lastSet?.weight_kg ?? 0,
+      reps: lastSet?.reps ?? 10,
+      duration_sec: lastSet?.duration_sec ?? 0,
+      distance_m: lastSet?.distance_m ?? 0,
+      set_type: 'working',
+    }])
   }
 
-  // Добавление подхода к упражнению (копирует параметры последнего)
-  const handleAddSet = (exerciseId: number, lastSet: WorkoutSet) => {
-    addSet.mutate({
-      sessionId: session.id,
-      dto: {
-        exercise_id: exerciseId,
-        reps: lastSet.reps ?? undefined,
-        weight_kg: lastSet.weight_kg ?? undefined,
-        duration_sec: lastSet.duration_sec ?? undefined,
-        distance_m: lastSet.distance_m ?? undefined,
-        set_type: lastSet.set_type || 'working',
-      },
-    })
+  // Батч-сохранение всех изменений
+  const handleSave = async () => {
+    setSaving(true)
+    try {
+      // 1. Сохраняем заголовок
+      const headerData: Record<string, any> = {}
+      if (name !== session.name) headerData.name = name
+      if (workoutType !== session.workout_type) headerData.workout_type = workoutType
+      if (Object.keys(headerData).length > 0) onSave(headerData)
+
+      // 2. Удаляем подходы
+      for (const id of deletedIds) {
+        deleteSetMut.mutate(id)
+      }
+
+      // 3. Обновляем изменённые существующие
+      const origMap = new Map((session.sets || []).map(s => [s.id, s]))
+      for (const ls of localSets) {
+        if (ls.id <= 0) continue
+        const orig = origMap.get(ls.id)
+        if (!orig) continue
+        const changes: Record<string, any> = {}
+        if (ls.weight_kg !== (orig.weight_kg ?? 0)) changes.weight_kg = ls.weight_kg || null
+        if (ls.reps !== (orig.reps ?? 0)) changes.reps = ls.reps || null
+        if (ls.duration_sec !== (orig.duration_sec ?? 0)) changes.duration_sec = ls.duration_sec || null
+        if (ls.distance_m !== (orig.distance_m ?? 0)) changes.distance_m = ls.distance_m || null
+        if (Object.keys(changes).length > 0) {
+          updateSetMut.mutate({ id: ls.id, ...changes })
+        }
+      }
+
+      // 4. Добавляем новые подходы
+      for (const ls of localSets) {
+        if (ls.id >= 0) continue
+        addSetMut.mutate({
+          sessionId: session.id,
+          dto: {
+            exercise_id: ls.exercise_id,
+            reps: ls.reps || undefined,
+            weight_kg: ls.weight_kg || undefined,
+            duration_sec: ls.duration_sec || undefined,
+            distance_m: ls.distance_m || undefined,
+            set_type: ls.set_type || 'working',
+          },
+        })
+      }
+
+      onClose()
+    } catch (e) {
+      console.error('Ошибка сохранения:', e)
+    } finally {
+      setSaving(false)
+    }
   }
 
-  const inputStyle = {
-    background: 'rgba(255,255,255,0.06)',
-    color: 'var(--app-text)',
-    border: '1px solid rgba(255,255,255,0.1)',
-  }
+  const inputCls = 'w-full px-2 py-1.5 rounded-lg text-sm bg-transparent text-center outline-none'
+  const inputBorder = { border: '1px solid rgba(255,255,255,0.08)', color: 'var(--app-text)' }
 
   return (
     <div className="fixed inset-0 z-50 flex items-end justify-center"
@@ -413,104 +509,99 @@ function EditSessionOverlay({ session, onSave, onClose }: {
         <div className="mb-3">
           <label className="text-xs mb-1 block" style={{ color: 'var(--app-hint)' }}>Название</label>
           <input type="text" value={name} onChange={(e) => setName(e.target.value)}
-            className="w-full px-3 py-2.5 rounded-lg text-sm outline-none" style={inputStyle} />
+            className="w-full px-3 py-2 rounded-lg text-sm outline-none"
+            style={{ background: 'rgba(255,255,255,0.06)', color: 'var(--app-text)', border: '1px solid rgba(255,255,255,0.1)' }} />
         </div>
 
         {/* Тип */}
         <div className="mb-4">
           <label className="text-xs mb-1 block" style={{ color: 'var(--app-hint)' }}>Тип</label>
           <select value={workoutType} onChange={(e) => setWorkoutType(e.target.value)}
-            className="w-full px-3 py-2.5 rounded-lg text-sm outline-none" style={inputStyle}>
+            className="w-full px-3 py-2 rounded-lg text-sm outline-none"
+            style={{ background: 'rgba(255,255,255,0.06)', color: 'var(--app-text)', border: '1px solid rgba(255,255,255,0.1)' }}>
             {SESSION_TYPES.map((o) => (
               <option key={o.value} value={o.value}>{o.label}</option>
             ))}
           </select>
         </div>
 
-        {/* Упражнения с подходами */}
-        {exercises.length > 0 ? (
-          <div className="space-y-4 mb-4">
-            {exercises.map((ex, exIdx) => (
-              <div key={exIdx} className="rounded-xl p-3"
-                style={{ background: 'rgba(255,255,255,0.03)' }}>
-                {/* Название упражнения */}
-                <div className="text-xs font-bold mb-2" style={{ color: 'var(--app-text)' }}>
+        {/* Упражнения (подходы) */}
+        <div className="space-y-3 mb-4">
+          {exercises.length > 0 && (
+            <div className="text-xs font-medium mb-1" style={{ color: 'var(--app-hint)' }}>
+              Упражнения ({exercises.length})
+            </div>
+          )}
+
+          {exercises.map((ex, exIdx) => (
+            <div key={exIdx} className="rounded-xl p-3 border border-white/[0.06]"
+              style={{ background: 'rgba(255,255,255,0.03)' }}>
+              {/* Название упражнения */}
+              <div className="flex items-center gap-2 mb-2">
+                <Dumbbell size={16} style={{ color: '#818cf8' }} />
+                <span className="text-sm font-medium" style={{ color: 'var(--app-text)' }}>
                   {ex.name}
-                </div>
+                </span>
+                <span className="text-[10px] px-1.5 py-0.5 rounded-full"
+                  style={{ background: 'rgba(99,102,241,0.15)', color: '#a5b4fc' }}>
+                  {ex.sets.length} подх
+                </span>
+              </div>
 
-                {/* Заголовки столбцов */}
-                <div className="flex items-center gap-2 mb-1.5 px-1">
-                  <span className="text-[10px] w-8 text-center" style={{ color: 'var(--app-hint)' }}>#</span>
-                  <span className="text-[10px] flex-1 text-center" style={{ color: 'var(--app-hint)' }}>Вес (кг)</span>
-                  <span className="text-[10px] flex-1 text-center" style={{ color: 'var(--app-hint)' }}>Повторы</span>
-                  <span className="w-8" />
-                </div>
+              {/* Заголовки столбцов */}
+              <div className="grid grid-cols-[28px_1fr_1fr_28px] gap-2 text-[10px] px-1 mb-1"
+                style={{ color: 'var(--app-hint)' }}>
+                <span>#</span>
+                <span>Вес (кг)</span>
+                <span>Повторы</span>
+                <span />
+              </div>
 
-                {/* Подходы */}
+              {/* Подходы */}
+              <div className="space-y-1.5">
                 {ex.sets.map((s, sIdx) => (
-                  <div key={s.id} className="flex items-center gap-2 mb-1.5">
-                    {/* Номер подхода */}
-                    <span className="text-[11px] w-8 text-center font-medium"
-                      style={{ color: 'var(--app-hint)' }}>{sIdx + 1}</span>
-
-                    {/* Вес */}
-                    <input
-                      type="number"
-                      inputMode="decimal"
-                      defaultValue={s.weight_kg ?? ''}
-                      onBlur={(e) => {
-                        const v = e.target.value ? parseFloat(e.target.value) : null
-                        if (v !== s.weight_kg) handleUpdateSet(s.id, 'weight_kg', v)
-                      }}
-                      className="flex-1 px-2 py-2 rounded-lg text-sm text-center outline-none"
-                      style={inputStyle}
-                      placeholder="—"
-                    />
-
-                    {/* Повторения */}
-                    <input
-                      type="number"
-                      inputMode="numeric"
-                      defaultValue={s.reps ?? ''}
-                      onBlur={(e) => {
-                        const v = e.target.value ? parseInt(e.target.value) : null
-                        if (v !== s.reps) handleUpdateSet(s.id, 'reps', v)
-                      }}
-                      className="flex-1 px-2 py-2 rounded-lg text-sm text-center outline-none"
-                      style={inputStyle}
-                      placeholder="—"
-                    />
-
-                    {/* Удалить подход */}
-                    <button onClick={() => handleDeleteSet(s.id)}
-                      className="w-8 h-8 flex items-center justify-center rounded-lg shrink-0"
-                      style={{ background: 'rgba(239,68,68,0.1)' }}>
-                      <Minus size={14} style={{ color: '#ef4444' }} />
+                  <div key={s.id} className="grid grid-cols-[28px_1fr_1fr_28px] gap-2 items-center">
+                    <span className="text-xs text-center" style={{ color: 'var(--app-hint)' }}>{sIdx + 1}</span>
+                    <input type="number" inputMode="decimal"
+                      value={s.weight_kg || ''}
+                      onChange={(e) => handleSetChange(s.id, 'weight_kg', parseFloat(e.target.value) || 0)}
+                      className={inputCls} style={inputBorder} placeholder="0" />
+                    <input type="number" inputMode="numeric"
+                      value={s.reps || ''}
+                      onChange={(e) => handleSetChange(s.id, 'reps', parseInt(e.target.value) || 0)}
+                      className={inputCls} style={inputBorder} placeholder="0" />
+                    <button onClick={() => handleRemoveSet(s.id)} className="p-0.5">
+                      <X size={14} style={{ color: 'var(--app-hint)' }} />
                     </button>
                   </div>
                 ))}
-
-                {/* Кнопка добавить подход */}
-                <button
-                  onClick={() => handleAddSet(ex.sets[0].exercise_id, ex.sets[ex.sets.length - 1])}
-                  className="flex items-center gap-1.5 w-full justify-center py-2 mt-1 rounded-lg text-xs font-medium"
-                  style={{ background: 'rgba(99,102,241,0.08)', color: '#818cf8' }}>
-                  <Plus size={14} /> Добавить подход
-                </button>
               </div>
-            ))}
-          </div>
-        ) : (
-          <div className="text-xs py-4 text-center mb-4" style={{ color: 'var(--app-hint)' }}>
-            Подходы не записаны
-          </div>
-        )}
 
-        {/* Кнопка сохранить название/тип */}
-        <button onClick={handleSaveHeader}
+              {/* + Подход */}
+              <button onClick={() => handleAddSet(ex.sets[0].exercise_id, ex.name, ex.sets[ex.sets.length - 1])}
+                className="flex items-center gap-1 mt-2 text-xs font-medium px-2 py-1 rounded-lg"
+                style={{ color: '#818cf8' }}>
+                <Plus size={14} /> Подход
+              </button>
+            </div>
+          ))}
+
+          {exercises.length === 0 && (
+            <div className="text-xs py-4 text-center" style={{ color: 'var(--app-hint)' }}>
+              Подходы не записаны
+            </div>
+          )}
+        </div>
+
+        {/* Кнопка сохранить */}
+        <button onClick={handleSave} disabled={saving}
           className="w-full py-3 rounded-xl text-sm font-bold"
-          style={{ background: 'rgba(99,102,241,0.3)', color: '#a5b4fc' }}>
-          Сохранить
+          style={{
+            background: 'linear-gradient(135deg, #6366f1, #8b5cf6)',
+            color: '#fff',
+            opacity: saving ? 0.6 : 1,
+          }}>
+          {saving ? 'Сохранение...' : 'Сохранить'}
         </button>
       </div>
     </div>
