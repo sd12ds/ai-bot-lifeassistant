@@ -612,6 +612,15 @@ async def finish_session(session_id: int, dto: FinishDto, user: User = Depends(g
     return result
 
 
+@router.delete("/sessions/{session_id}")
+async def delete_session_endpoint(session_id: int, user: User = Depends(get_current_user)):
+    """Удалить тренировку (с каскадным удалением подходов)."""
+    ok = await fs.delete_session(session_id=session_id, user_id=user.telegram_id)
+    if not ok:
+        raise HTTPException(status_code=404, detail="Тренировка не найдена")
+    return {"ok": True}
+
+
 # ── Прогресс по упражнению ────────────────────────────────────────────────────
 
 class ExerciseProgressOut(BaseModel):

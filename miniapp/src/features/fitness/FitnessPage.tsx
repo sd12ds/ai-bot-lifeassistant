@@ -4,8 +4,12 @@
  */
 import { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
-import { TrendingUp, ChevronRight, History, Play, BarChart3, Ruler, Target, Sparkles } from 'lucide-react'
-import { useFitnessStats, useSessions, useBodyMetrics, useNextWorkout, useFitnessGoals, useActivities, ACTIVITY_EMOJI, ACTIVITY_LABELS, type WorkoutSession, type Activity } from '../../api/fitness'
+import { TrendingUp, ChevronRight, History, Play, BarChart3, Ruler, Target, Sparkles, Trash2, Pencil, X } from 'lucide-react'
+import {
+  useFitnessStats, useSessions, useBodyMetrics, useNextWorkout, useFitnessGoals,
+  useActivities, useDeleteActivity, useUpdateActivity, useDeleteSession,
+  ACTIVITY_EMOJI, ACTIVITY_LABELS, type WorkoutSession, type Activity,
+} from '../../api/fitness'
 import { GlassCard } from '../../shared/ui/GlassCard'
 import { FAB } from '../../shared/components/FAB'
 import { QuickWorkoutSheet } from './QuickWorkoutSheet'
@@ -26,6 +30,10 @@ export function FitnessPage() {
   const navigate = useNavigate()
   const [createOpen, setCreateOpen] = useState(false)
   const [showAllActivities, setShowAllActivities] = useState(false) // Раскрытие списка активностей
+  // Стейты для удаления/редактирования
+  const [confirmDeleteActivity, setConfirmDeleteActivity] = useState<number | null>(null)
+  const [confirmDeleteSession, setConfirmDeleteSession] = useState<number | null>(null)
+  const [editingActivity, setEditingActivity] = useState<Activity | null>(null)
 
   // Данные
   const { data: stats } = useFitnessStats(30)
@@ -37,6 +45,10 @@ export function FitnessPage() {
   const { data: fitnessGoal } = useFitnessGoals()
   // Активности (кардио, шаги и т.д.) — записанные через бота
   const { data: activities } = useActivities(7)
+  // Мутации удаления/редактирования
+  const deleteActivity = useDeleteActivity()
+  const updateActivity = useUpdateActivity()
+  const deleteSession = useDeleteSession()
 
   // Определяем дни тренировок за текущую неделю
   const weekWorkoutDays = getWeekWorkoutDays(recentSessions || [])
@@ -344,9 +356,7 @@ export function FitnessPage() {
               {(showAllActivities ? activities : activities.slice(0, 3)).map((a: Activity) => (
                 <GlassCard key={a.id} className="p-3">
                   <div className="flex items-center gap-3">
-                    {/* Emoji типа */}
                     <span className="text-2xl">{ACTIVITY_EMOJI[a.activity_type] || '💪'}</span>
-                    {/* Название + значение */}
                     <div className="flex-1 min-w-0">
                       <div className="text-sm font-medium" style={{ color: 'var(--app-text)' }}>
                         {ACTIVITY_LABELS[a.activity_type] || a.activity_type}
@@ -357,13 +367,33 @@ export function FitnessPage() {
                         {a.calories_burned ? ` · ${Math.round(a.calories_burned)} ккал` : ''}
                       </div>
                     </div>
-                    {/* Дата */}
-                    <div className="text-xs text-right" style={{ color: 'var(--app-hint)' }}>
-                      {a.logged_at ? new Date(a.logged_at).toLocaleDateString('ru-RU', { day: 'numeric', month: 'short' }) : ''}
-                      <br />
-                      {a.logged_at ? new Date(a.logged_at).toLocaleTimeString('ru-RU', { hour: '2-digit', minute: '2-digit' }) : ''}
+                    {/* Кнопки: редактировать + удалить */}
+                    <div className="flex gap-1 shrink-0">
+                      <button onClick={() => setEditingActivity(a)}
+                        className="p-1.5 rounded-lg"
+                        style={{ background: 'rgba(99,102,241,0.1)' }}>
+                        <Pencil size={12} style={{ color: '#818cf8' }} />
+                      </button>
+                      <button onClick={() => setConfirmDeleteActivity(a.id)}
+                        className="p-1.5 rounded-lg"
+                        style={{ background: 'rgba(239,68,68,0.1)' }}>
+                        <Trash2 size={12} style={{ color: '#ef4444' }} />
+                      </button>
                     </div>
                   </div>
+                  {/* Confirm удаления */}
+                  {confirmDeleteActivity === a.id && (
+                    <div className="flex items-center gap-2 mt-2 pt-2"
+                      style={{ borderTop: '1px solid rgba(239,68,68,0.2)' }}>
+                      <span className="text-xs flex-1" style={{ color: '#ef4444' }}>Удалить активность?</span>
+                      <button onClick={() => { deleteActivity.mutate(a.id); setConfirmDeleteActivity(null) }}
+                        className="px-3 py-1.5 rounded-lg text-xs font-bold"
+                        style={{ background: 'rgba(239,68,68,0.2)', color: '#ef4444' }}>Да</button>
+                      <button onClick={() => setConfirmDeleteActivity(null)}
+                        className="px-3 py-1.5 rounded-lg text-xs"
+                        style={{ background: 'rgba(255,255,255,0.06)', color: 'var(--app-hint)' }}>Отмена</button>
+                    </div>
+                  )}
                 </GlassCard>
               ))}
             </div>
@@ -469,6 +499,12 @@ export function FitnessPage() {
                             </span>
                           </div>
                         </div>
+                        {/* Кнопка удаления тренировки */}
+                        <button onClick={() => setConfirmDeleteSession(s.id)}
+                          className="p-1.5 rounded-lg shrink-0"
+                          style={{ background: 'rgba(239,68,68,0.1)' }}>
+                          <Trash2 size={12} style={{ color: '#ef4444' }} />
+                        </button>
                       </div>
 
                       {/* Упражнения (до 3шт) */}
@@ -489,6 +525,19 @@ export function FitnessPage() {
                               +{exercises.length - 3} ещё
                             </div>
                           )}
+                        </div>
+                      )}
+                      {/* Confirm удаления тренировки */}
+                      {confirmDeleteSession === s.id && (
+                        <div className="flex items-center gap-2 mt-2 pt-2"
+                          style={{ borderTop: '1px solid rgba(239,68,68,0.2)' }}>
+                          <span className="text-xs flex-1" style={{ color: '#ef4444' }}>Удалить тренировку?</span>
+                          <button onClick={() => { deleteSession.mutate(s.id); setConfirmDeleteSession(null) }}
+                            className="px-3 py-1.5 rounded-lg text-xs font-bold"
+                            style={{ background: 'rgba(239,68,68,0.2)', color: '#ef4444' }}>Да</button>
+                          <button onClick={() => setConfirmDeleteSession(null)}
+                            className="px-3 py-1.5 rounded-lg text-xs"
+                            style={{ background: 'rgba(255,255,255,0.06)', color: 'var(--app-hint)' }}>Отмена</button>
                         </div>
                       )}
                     </GlassCard>
@@ -549,6 +598,18 @@ export function FitnessPage() {
       {/* FAB */}
       <FAB onClick={() => setCreateOpen(true)} />
 
+      {/* ── Модалка редактирования активности ── */}
+      {editingActivity && (
+        <EditActivitySheet
+          activity={editingActivity}
+          onSave={(data) => {
+            updateActivity.mutate({ id: editingActivity.id, ...data })
+            setEditingActivity(null)
+          }}
+          onClose={() => setEditingActivity(null)}
+        />
+      )}
+
       {/* Bottom sheet создания тренировки */}
       <QuickWorkoutSheet open={createOpen} onClose={() => setCreateOpen(false)} />
     </div>
@@ -579,4 +640,120 @@ function getWeekWorkoutDays(sessions: WorkoutSession[]): Set<number> {
     }
   }
   return result
+}
+
+
+/** ─── Форма редактирования активности (overlay) ─── */
+function EditActivitySheet({ activity, onSave, onClose }: {
+  activity: Activity
+  onSave: (data: Record<string, any>) => void
+  onClose: () => void
+}) {
+  // Локальный стейт полей формы
+  const [value, setValue] = useState(String(activity.value || ''))
+  const [unit, setUnit] = useState(activity.unit || 'min')
+  const [durationMin, setDurationMin] = useState(String(activity.duration_min || ''))
+  const [calories, setCalories] = useState(String(activity.calories_burned || ''))
+  const [notes, setNotes] = useState(activity.notes || '')
+
+  const handleSubmit = () => {
+    const data: Record<string, any> = {
+      activity_type: activity.activity_type,
+      value: parseFloat(value) || 0,
+      unit,
+    }
+    if (durationMin) data.duration_min = parseFloat(durationMin)
+    if (calories) data.calories_burned = parseFloat(calories)
+    if (notes) data.notes = notes
+    onSave(data)
+  }
+
+  // Стиль полей ввода
+  const inputStyle = {
+    background: 'rgba(255,255,255,0.06)',
+    color: 'var(--app-text)',
+    border: '1px solid rgba(255,255,255,0.1)',
+  }
+
+  return (
+    <div className="fixed inset-0 z-50 flex items-end justify-center"
+      style={{ background: 'rgba(0,0,0,0.5)' }}
+      onClick={(e) => { if (e.target === e.currentTarget) onClose() }}>
+      <div className="w-full max-w-lg rounded-t-2xl p-4 pb-8"
+        style={{ background: 'var(--app-bg, #1a1a2e)' }}>
+        {/* Заголовок */}
+        <div className="flex items-center justify-between mb-4">
+          <h3 className="text-base font-bold" style={{ color: 'var(--app-text)' }}>
+            Изменить активность
+          </h3>
+          <button onClick={onClose} className="p-1.5 rounded-lg"
+            style={{ background: 'rgba(255,255,255,0.06)' }}>
+            <X size={16} style={{ color: 'var(--app-hint)' }} />
+          </button>
+        </div>
+
+        {/* Тип (readonly) */}
+        <div className="mb-3">
+          <label className="text-xs mb-1 block" style={{ color: 'var(--app-hint)' }}>Тип</label>
+          <div className="px-3 py-2 rounded-lg text-sm"
+            style={{ ...inputStyle, opacity: 0.6 }}>
+            {ACTIVITY_EMOJI[activity.activity_type] || '💪'}{' '}
+            {ACTIVITY_LABELS[activity.activity_type] || activity.activity_type}
+          </div>
+        </div>
+
+        {/* Значение + единица в одну строку */}
+        <div className="flex gap-2 mb-3">
+          <div className="flex-1">
+            <label className="text-xs mb-1 block" style={{ color: 'var(--app-hint)' }}>Значение</label>
+            <input type="number" value={value} onChange={(e) => setValue(e.target.value)}
+              className="w-full px-3 py-2 rounded-lg text-sm outline-none"
+              style={inputStyle} />
+          </div>
+          <div className="w-24">
+            <label className="text-xs mb-1 block" style={{ color: 'var(--app-hint)' }}>Ед.</label>
+            <select value={unit} onChange={(e) => setUnit(e.target.value)}
+              className="w-full px-2 py-2 rounded-lg text-sm outline-none"
+              style={inputStyle}>
+              <option value="min">мин</option>
+              <option value="km">км</option>
+              <option value="m">м</option>
+              <option value="steps">шагов</option>
+            </select>
+          </div>
+        </div>
+
+        {/* Длительность */}
+        <div className="mb-3">
+          <label className="text-xs mb-1 block" style={{ color: 'var(--app-hint)' }}>Длительность (мин)</label>
+          <input type="number" value={durationMin} onChange={(e) => setDurationMin(e.target.value)}
+            className="w-full px-3 py-2 rounded-lg text-sm outline-none"
+            style={inputStyle} placeholder="Необязательно" />
+        </div>
+
+        {/* Калории */}
+        <div className="mb-3">
+          <label className="text-xs mb-1 block" style={{ color: 'var(--app-hint)' }}>Калории</label>
+          <input type="number" value={calories} onChange={(e) => setCalories(e.target.value)}
+            className="w-full px-3 py-2 rounded-lg text-sm outline-none"
+            style={inputStyle} placeholder="Необязательно" />
+        </div>
+
+        {/* Заметка */}
+        <div className="mb-4">
+          <label className="text-xs mb-1 block" style={{ color: 'var(--app-hint)' }}>Заметка</label>
+          <input type="text" value={notes} onChange={(e) => setNotes(e.target.value)}
+            className="w-full px-3 py-2 rounded-lg text-sm outline-none"
+            style={inputStyle} placeholder="Необязательно" />
+        </div>
+
+        {/* Кнопка сохранения */}
+        <button onClick={handleSubmit}
+          className="w-full py-3 rounded-xl text-sm font-bold"
+          style={{ background: 'rgba(99,102,241,0.3)', color: '#a5b4fc' }}>
+          Сохранить
+        </button>
+      </div>
+    </div>
+  )
 }

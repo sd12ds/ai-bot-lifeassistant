@@ -668,6 +668,23 @@ async def delete_activity(activity_id: int, user_id: int) -> bool:
         return True
 
 
+async def delete_session(session_id: int, user_id: int) -> bool:
+    """Удалить тренировку по id. Каскадно удаляет все подходы. Проверяет user_id."""
+    async with AsyncSessionLocal() as session:
+        result = await session.execute(
+            select(WorkoutSession).where(
+                WorkoutSession.id == session_id,
+                WorkoutSession.user_id == user_id,
+            )
+        )
+        ws = result.scalar_one_or_none()
+        if not ws:
+            return False
+        await session.delete(ws)  # cascade удалит WorkoutSet
+        await session.commit()
+        return True
+
+
 # ── Статистика ────────────────────────────────────────────────────────────────
 
 async def get_workout_stats(user_id: int, days: int = 30) -> dict:

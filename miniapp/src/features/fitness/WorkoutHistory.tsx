@@ -6,9 +6,9 @@ import { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import {
   ChevronLeft, ChevronDown, ChevronUp,
-  Dumbbell, RotateCcw, FileText,
+  Dumbbell, RotateCcw, FileText, Trash2,
 } from 'lucide-react'
-import { useSessions, useRepeatSession, type WorkoutSession, type WorkoutSet } from '../../api/fitness'
+import { useSessions, useRepeatSession, useDeleteSession, type WorkoutSession, type WorkoutSet } from '../../api/fitness'
 import { GlassCard } from '../../shared/ui/GlassCard'
 
 // Типы тренировок
@@ -92,6 +92,9 @@ export function WorkoutHistory() {
   const [days, setDays] = useState(30)
   const { data: allSessions, isLoading } = useSessions(days)
   const repeatSession = useRepeatSession()
+  const deleteSession = useDeleteSession()
+  // ID тренировки для подтверждения удаления
+  const [confirmDeleteId, setConfirmDeleteId] = useState<number | null>(null)
 
   // Фильтруем пустые сессии
   const sessions = allSessions?.filter(s => {
@@ -151,7 +154,18 @@ export function WorkoutHistory() {
         )}
 
         {sessions?.map((s) => (
-          <SessionCard key={s.id} session={s} onRepeat={handleRepeat} />
+          <SessionCard
+            key={s.id}
+            session={s}
+            onRepeat={handleRepeat}
+            onDelete={(id) => setConfirmDeleteId(id)}
+            isConfirming={confirmDeleteId === s.id}
+            onConfirmDelete={() => {
+              deleteSession.mutate(s.id)
+              setConfirmDeleteId(null)
+            }}
+            onCancelDelete={() => setConfirmDeleteId(null)}
+          />
         ))}
       </div>
     </div>
@@ -160,7 +174,14 @@ export function WorkoutHistory() {
 
 
 /** ─── Карточка тренировки ─── */
-function SessionCard({ session, onRepeat }: { session: WorkoutSession; onRepeat: (id: number) => void }) {
+function SessionCard({ session, onRepeat, onDelete, isConfirming, onConfirmDelete, onCancelDelete }: {
+  session: WorkoutSession
+  onRepeat: (id: number) => void
+  onDelete: (id: number) => void
+  isConfirming: boolean
+  onConfirmDelete: () => void
+  onCancelDelete: () => void
+}) {
   const [expanded, setExpanded] = useState(false)
 
   const type = TYPE_LABELS[session.workout_type] || { label: session.workout_type, icon: '🏋️' }
@@ -202,11 +223,18 @@ function SessionCard({ session, onRepeat }: { session: WorkoutSession; onRepeat:
             </div>
           </div>
         </div>
-        <button onClick={() => onRepeat(session.id)}
-          className="p-2 rounded-xl shrink-0"
-          style={{ background: 'rgba(99,102,241,0.1)' }}>
-          <RotateCcw size={14} style={{ color: '#818cf8' }} />
-        </button>
+        <div className="flex gap-1.5 shrink-0">
+          <button onClick={() => onRepeat(session.id)}
+            className="p-2 rounded-xl"
+            style={{ background: 'rgba(99,102,241,0.1)' }}>
+            <RotateCcw size={14} style={{ color: '#818cf8' }} />
+          </button>
+          <button onClick={() => onDelete(session.id)}
+            className="p-2 rounded-xl"
+            style={{ background: 'rgba(239,68,68,0.1)' }}>
+            <Trash2 size={14} style={{ color: '#ef4444' }} />
+          </button>
+        </div>
       </div>
 
       {/* ── Упражнения ── */}
@@ -237,6 +265,24 @@ function SessionCard({ session, onRepeat }: { session: WorkoutSession; onRepeat:
       ) : (
         <div className="text-[11px] py-1" style={{ color: 'var(--app-hint)' }}>
           Подходы не записаны
+        </div>
+      )}
+
+      {/* Подтверждение удаления */}
+      {isConfirming && (
+        <div className="flex items-center gap-2 mt-2 pt-2"
+          style={{ borderTop: '1px solid rgba(239,68,68,0.2)' }}>
+          <span className="text-xs flex-1" style={{ color: '#ef4444' }}>Удалить тренировку?</span>
+          <button onClick={onConfirmDelete}
+            className="px-3 py-1.5 rounded-lg text-xs font-bold"
+            style={{ background: 'rgba(239,68,68,0.2)', color: '#ef4444' }}>
+            Да
+          </button>
+          <button onClick={onCancelDelete}
+            className="px-3 py-1.5 rounded-lg text-xs"
+            style={{ background: 'rgba(255,255,255,0.06)', color: 'var(--app-hint)' }}>
+            Отмена
+          </button>
         </div>
       )}
 

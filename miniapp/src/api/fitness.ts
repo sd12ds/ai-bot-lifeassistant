@@ -933,3 +933,33 @@ export function useWeeklyActivities(weeks: number = 8, activityType?: string) {
     queryFn: () => fetchWeeklyActivities(weeks, activityType),
   })
 }
+
+// ── Мутации: удаление/редактирование тренировок и активностей ─────────────
+
+/** Удалить тренировку (каскадно удаляет подходы) */
+export function useDeleteSession() {
+  const qc = useQueryClient()
+  return useMutation({
+    mutationFn: (sessionId: number) => apiClient.delete(`/fitness/sessions/${sessionId}`),
+    onSuccess: () => { qc.invalidateQueries({ queryKey: ['fitness'] }) },
+  })
+}
+
+/** Удалить активность */
+export function useDeleteActivity() {
+  const qc = useQueryClient()
+  return useMutation({
+    mutationFn: (activityId: number) => apiClient.delete(`/fitness/activities/${activityId}`),
+    onSuccess: () => { qc.invalidateQueries({ queryKey: ['fitness'] }) },
+  })
+}
+
+/** Обновить активность (PATCH) */
+export function useUpdateActivity() {
+  const qc = useQueryClient()
+  return useMutation({
+    mutationFn: ({ id, ...data }: { id: number; [key: string]: any }) =>
+      apiClient.patch(`/fitness/activities/${id}`, data),
+    onSuccess: () => { qc.invalidateQueries({ queryKey: ['fitness'] }) },
+  })
+}
