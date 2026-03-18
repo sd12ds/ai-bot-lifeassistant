@@ -685,6 +685,28 @@ async def delete_session(session_id: int, user_id: int) -> bool:
         return True
 
 
+async def update_session(session_id: int, user_id: int, **kwargs) -> dict | None:
+    """Обновить тренировку. Допустимые поля: name, workout_type, notes, mood_before, mood_after."""
+    allowed = {"name", "workout_type", "notes", "mood_before", "mood_after"}
+    updates = {k: v for k, v in kwargs.items() if k in allowed}
+    if not updates:
+        return None
+    async with AsyncSessionLocal() as session:
+        result = await session.execute(
+            select(WorkoutSession).where(
+                WorkoutSession.id == session_id,
+                WorkoutSession.user_id == user_id,
+            )
+        )
+        ws = result.scalar_one_or_none()
+        if not ws:
+            return None
+        for field, val in updates.items():
+            setattr(ws, field, val)
+        await session.commit()
+        return {"ok": True, "id": ws.id}
+
+
 # ── Статистика ────────────────────────────────────────────────────────────────
 
 async def get_workout_stats(user_id: int, days: int = 30) -> dict:

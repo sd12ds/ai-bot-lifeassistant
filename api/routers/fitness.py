@@ -612,6 +612,29 @@ async def finish_session(session_id: int, dto: FinishDto, user: User = Depends(g
     return result
 
 
+class UpdateSessionDto(BaseModel):
+    """Обновление тренировки."""
+    name: Optional[str] = None
+    workout_type: Optional[str] = None
+    notes: Optional[str] = None
+    mood_before: Optional[int] = None
+    mood_after: Optional[int] = None
+
+
+@router.patch("/sessions/{session_id}")
+async def update_session_endpoint(
+    session_id: int,
+    dto: UpdateSessionDto,
+    user: User = Depends(get_current_user),
+):
+    """Обновить тренировку (название, тип, заметки, настроение)."""
+    kwargs = {k: v for k, v in dto.model_dump().items() if v is not None}
+    result = await fs.update_session(session_id=session_id, user_id=user.telegram_id, **kwargs)
+    if not result:
+        raise HTTPException(status_code=404, detail="Тренировка не найдена")
+    return result
+
+
 @router.delete("/sessions/{session_id}")
 async def delete_session_endpoint(session_id: int, user: User = Depends(get_current_user)):
     """Удалить тренировку (с каскадным удалением подходов)."""

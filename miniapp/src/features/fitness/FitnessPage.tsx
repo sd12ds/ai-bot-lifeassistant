@@ -7,7 +7,7 @@ import { useNavigate } from 'react-router-dom'
 import { TrendingUp, ChevronRight, History, Play, BarChart3, Ruler, Target, Sparkles, Trash2, Pencil, X } from 'lucide-react'
 import {
   useFitnessStats, useSessions, useBodyMetrics, useNextWorkout, useFitnessGoals,
-  useActivities, useDeleteActivity, useUpdateActivity, useDeleteSession,
+  useActivities, useDeleteActivity, useUpdateActivity, useDeleteSession, useUpdateSession,
   ACTIVITY_EMOJI, ACTIVITY_LABELS, type WorkoutSession, type Activity,
 } from '../../api/fitness'
 import { GlassCard } from '../../shared/ui/GlassCard'
@@ -34,6 +34,7 @@ export function FitnessPage() {
   const [confirmDeleteActivity, setConfirmDeleteActivity] = useState<number | null>(null)
   const [confirmDeleteSession, setConfirmDeleteSession] = useState<number | null>(null)
   const [editingActivity, setEditingActivity] = useState<Activity | null>(null)
+  const [editingSession, setEditingSession] = useState<WorkoutSession | null>(null)
 
   // Данные
   const { data: stats } = useFitnessStats(30)
@@ -49,6 +50,7 @@ export function FitnessPage() {
   const deleteActivity = useDeleteActivity()
   const updateActivity = useUpdateActivity()
   const deleteSession = useDeleteSession()
+  const updateSession = useUpdateSession()
 
   // Определяем дни тренировок за текущую неделю
   const weekWorkoutDays = getWeekWorkoutDays(recentSessions || [])
@@ -368,16 +370,16 @@ export function FitnessPage() {
                       </div>
                     </div>
                     {/* Кнопки: редактировать + удалить */}
-                    <div className="flex gap-1 shrink-0">
+                    <div className="flex gap-1.5 shrink-0">
                       <button onClick={() => setEditingActivity(a)}
-                        className="p-1.5 rounded-lg"
+                        className="p-2.5 rounded-xl"
                         style={{ background: 'rgba(99,102,241,0.1)' }}>
-                        <Pencil size={12} style={{ color: '#818cf8' }} />
+                        <Pencil size={16} style={{ color: '#818cf8' }} />
                       </button>
                       <button onClick={() => setConfirmDeleteActivity(a.id)}
-                        className="p-1.5 rounded-lg"
+                        className="p-2.5 rounded-xl"
                         style={{ background: 'rgba(239,68,68,0.1)' }}>
-                        <Trash2 size={12} style={{ color: '#ef4444' }} />
+                        <Trash2 size={16} style={{ color: '#ef4444' }} />
                       </button>
                     </div>
                   </div>
@@ -499,12 +501,19 @@ export function FitnessPage() {
                             </span>
                           </div>
                         </div>
-                        {/* Кнопка удаления тренировки */}
-                        <button onClick={() => setConfirmDeleteSession(s.id)}
-                          className="p-1.5 rounded-lg shrink-0"
-                          style={{ background: 'rgba(239,68,68,0.1)' }}>
-                          <Trash2 size={12} style={{ color: '#ef4444' }} />
-                        </button>
+                        {/* Кнопки: изменить + удалить тренировку */}
+                        <div className="flex gap-1.5 shrink-0">
+                          <button onClick={() => setEditingSession(s)}
+                            className="p-2.5 rounded-xl"
+                            style={{ background: 'rgba(99,102,241,0.1)' }}>
+                            <Pencil size={16} style={{ color: '#818cf8' }} />
+                          </button>
+                          <button onClick={() => setConfirmDeleteSession(s.id)}
+                            className="p-2.5 rounded-xl"
+                            style={{ background: 'rgba(239,68,68,0.1)' }}>
+                            <Trash2 size={16} style={{ color: '#ef4444' }} />
+                          </button>
+                        </div>
                       </div>
 
                       {/* Упражнения (до 3шт) */}
@@ -597,6 +606,18 @@ export function FitnessPage() {
 
       {/* FAB */}
       <FAB onClick={() => setCreateOpen(true)} />
+
+      {/* ── Модалка редактирования тренировки ── */}
+      {editingSession && (
+        <EditSessionSheet
+          session={editingSession}
+          onSave={(data) => {
+            updateSession.mutate({ id: editingSession.id, ...data })
+            setEditingSession(null)
+          }}
+          onClose={() => setEditingSession(null)}
+        />
+      )}
 
       {/* ── Модалка редактирования активности ── */}
       {editingActivity && (
@@ -748,6 +769,128 @@ function EditActivitySheet({ activity, onSave, onClose }: {
         </div>
 
         {/* Кнопка сохранения */}
+        <button onClick={handleSubmit}
+          className="w-full py-3 rounded-xl text-sm font-bold"
+          style={{ background: 'rgba(99,102,241,0.3)', color: '#a5b4fc' }}>
+          Сохранить
+        </button>
+      </div>
+    </div>
+  )
+}
+
+
+/** ─── Типы тренировок для выбора ─── */
+const SESSION_TYPE_OPTIONS = [
+  { value: 'strength', label: '🏋️ Силовая' },
+  { value: 'cardio', label: '🏃 Кардио' },
+  { value: 'home', label: '🏠 Домашняя' },
+  { value: 'functional', label: '⚡ Функциональная' },
+  { value: 'stretching', label: '🧘 Растяжка' },
+]
+
+/** ─── Форма редактирования тренировки (overlay) ─── */
+function EditSessionSheet({ session, onSave, onClose }: {
+  session: WorkoutSession
+  onSave: (data: Record<string, any>) => void
+  onClose: () => void
+}) {
+  // Локальный стейт полей
+  const [name, setName] = useState(session.name || '')
+  const [workoutType, setWorkoutType] = useState(session.workout_type || 'strength')
+  const [notes, setNotes] = useState(session.notes || '')
+  const [moodBefore, setMoodBefore] = useState(session.mood_before || 0)
+  const [moodAfter, setMoodAfter] = useState(session.mood_after || 0)
+
+  const handleSubmit = () => {
+    const data: Record<string, any> = {}
+    if (name !== session.name) data.name = name
+    if (workoutType !== session.workout_type) data.workout_type = workoutType
+    if (notes !== (session.notes || '')) data.notes = notes
+    if (moodBefore && moodBefore !== session.mood_before) data.mood_before = moodBefore
+    if (moodAfter && moodAfter !== session.mood_after) data.mood_after = moodAfter
+    if (Object.keys(data).length > 0) onSave(data)
+    else onClose()
+  }
+
+  const inputStyle = {
+    background: 'rgba(255,255,255,0.06)',
+    color: 'var(--app-text)',
+    border: '1px solid rgba(255,255,255,0.1)',
+  }
+
+  // Рендер кнопок настроения (1-5)
+  const MoodPicker = ({ value, onChange, label }: { value: number; onChange: (v: number) => void; label: string }) => (
+    <div className="mb-3">
+      <label className="text-xs mb-1.5 block" style={{ color: 'var(--app-hint)' }}>{label}</label>
+      <div className="flex gap-2">
+        {[1, 2, 3, 4, 5].map((v) => (
+          <button key={v} onClick={() => onChange(v)}
+            className="w-10 h-10 rounded-xl text-sm font-bold"
+            style={{
+              background: value === v ? 'rgba(99,102,241,0.3)' : 'rgba(255,255,255,0.06)',
+              color: value === v ? '#a5b4fc' : 'var(--app-hint)',
+            }}>
+            {v}
+          </button>
+        ))}
+      </div>
+    </div>
+  )
+
+  return (
+    <div className="fixed inset-0 z-50 flex items-end justify-center"
+      style={{ background: 'rgba(0,0,0,0.5)' }}
+      onClick={(e) => { if (e.target === e.currentTarget) onClose() }}>
+      <div className="w-full max-w-lg rounded-t-2xl p-4 pb-8 max-h-[80vh] overflow-y-auto"
+        style={{ background: 'var(--app-bg, #1a1a2e)' }}>
+        {/* Заголовок */}
+        <div className="flex items-center justify-between mb-4">
+          <h3 className="text-base font-bold" style={{ color: 'var(--app-text)' }}>
+            Изменить тренировку
+          </h3>
+          <button onClick={onClose} className="p-1.5 rounded-lg"
+            style={{ background: 'rgba(255,255,255,0.06)' }}>
+            <X size={16} style={{ color: 'var(--app-hint)' }} />
+          </button>
+        </div>
+
+        {/* Название */}
+        <div className="mb-3">
+          <label className="text-xs mb-1 block" style={{ color: 'var(--app-hint)' }}>Название</label>
+          <input type="text" value={name} onChange={(e) => setName(e.target.value)}
+            className="w-full px-3 py-2.5 rounded-lg text-sm outline-none"
+            style={inputStyle} />
+        </div>
+
+        {/* Тип */}
+        <div className="mb-3">
+          <label className="text-xs mb-1 block" style={{ color: 'var(--app-hint)' }}>Тип</label>
+          <select value={workoutType} onChange={(e) => setWorkoutType(e.target.value)}
+            className="w-full px-3 py-2.5 rounded-lg text-sm outline-none"
+            style={inputStyle}>
+            {SESSION_TYPE_OPTIONS.map((o) => (
+              <option key={o.value} value={o.value}>{o.label}</option>
+            ))}
+          </select>
+        </div>
+
+        {/* Настроение до */}
+        <MoodPicker value={moodBefore} onChange={setMoodBefore} label="Настроение до (1-5)" />
+
+        {/* Настроение после */}
+        <MoodPicker value={moodAfter} onChange={setMoodAfter} label="Настроение после (1-5)" />
+
+        {/* Заметки */}
+        <div className="mb-4">
+          <label className="text-xs mb-1 block" style={{ color: 'var(--app-hint)' }}>Заметки</label>
+          <textarea value={notes} onChange={(e) => setNotes(e.target.value)}
+            className="w-full px-3 py-2.5 rounded-lg text-sm outline-none resize-none"
+            rows={3}
+            style={inputStyle} placeholder="Как прошла тренировка..." />
+        </div>
+
+        {/* Кнопка */}
         <button onClick={handleSubmit}
           className="w-full py-3 rounded-xl text-sm font-bold"
           style={{ background: 'rgba(99,102,241,0.3)', color: '#a5b4fc' }}>

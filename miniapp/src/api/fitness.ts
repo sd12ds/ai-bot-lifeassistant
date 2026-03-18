@@ -936,6 +936,16 @@ export function useWeeklyActivities(weeks: number = 8, activityType?: string) {
 
 // ── Мутации: удаление/редактирование тренировок и активностей ─────────────
 
+/** Обновить тренировку (PATCH: название, тип, заметки, настроение) */
+export function useUpdateSession() {
+  const qc = useQueryClient()
+  return useMutation({
+    mutationFn: ({ id, ...data }: { id: number; [key: string]: any }) =>
+      apiClient.patch(`/fitness/sessions/${id}`, data),
+    onSuccess: () => { qc.invalidateQueries({ queryKey: ['fitness'] }) },
+  })
+}
+
 /** Удалить тренировку (каскадно удаляет подходы) */
 export function useDeleteSession() {
   const qc = useQueryClient()
