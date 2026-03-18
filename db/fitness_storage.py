@@ -697,7 +697,7 @@ async def get_workout_stats(user_id: int, days: int = 30) -> dict:
         stats_res = await session.execute(stats_stmt)
         row = stats_res.one()
 
-        # Все упражнения с подходами (сортировка по частоте)
+        # Все силовые упражнения с подходами (кардио исключено — у них нет рабочего веса)
         top_stmt = (
             select(
                 WorkoutSet.exercise_id,
@@ -709,6 +709,7 @@ async def get_workout_stats(user_id: int, days: int = 30) -> dict:
             .where(and_(
                 WorkoutSession.user_id == user_id,
                 WorkoutSession.created_at >= since,
+                ExerciseLibrary.category != "cardio",  # кардио → в секцию активностей
             ))
             .group_by(WorkoutSet.exercise_id, ExerciseLibrary.name)
             .order_by(desc("cnt"))
