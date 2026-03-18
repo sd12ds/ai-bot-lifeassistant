@@ -697,7 +697,7 @@ async def get_workout_stats(user_id: int, days: int = 30) -> dict:
         stats_res = await session.execute(stats_stmt)
         row = stats_res.one()
 
-        # Самые частые упражнения (top-5)
+        # Все упражнения с подходами (сортировка по частоте)
         top_stmt = (
             select(
                 WorkoutSet.exercise_id,
@@ -712,7 +712,6 @@ async def get_workout_stats(user_id: int, days: int = 30) -> dict:
             ))
             .group_by(WorkoutSet.exercise_id, ExerciseLibrary.name)
             .order_by(desc("cnt"))
-            .limit(5)
         )
         top_res = await session.execute(top_stmt)
         top_exercises = [
