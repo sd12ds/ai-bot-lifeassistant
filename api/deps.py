@@ -23,6 +23,9 @@ from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from db.models import User
+import logging
+
+_auth_logger = logging.getLogger("api.auth")
 from dotenv import load_dotenv
 from db.session import get_session
 
@@ -83,9 +86,11 @@ def _verify_init_data(init_data: str, bot_token: str) -> dict:
     if not received_hash:
         raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Missing hash")
 
-    # Проверяем свежесть данных (не старше 1 часа)
+    # Проверяем свежесть данных (не старше 24 часов — Telegram может кешировать initData)
     auth_date = int(parsed.get("auth_date", 0))
-    if time.time() - auth_date > 3600:
+    age_seconds = int(time.time() - auth_date)
+    if age_seconds > 86400:
+        _auth_logger.warning("initData expired: auth_date=%s, age=%ds", auth_date, age_seconds)
         raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="initData expired")
 
     # Строка для верификации: отсортированные пары key=value через \n
@@ -135,6 +140,10 @@ async def get_current_user(
             telegram_id = verify_jwt(parts[1], expected_purpose="session")
 
     if telegram_id is None:
+        _auth_logger.warning(
+            "Auth failed: init_data=%s, authorization=%s",
+            bool(x_init_data), bool(authorization),
+        )
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
             detail="No valid auth: provide X-Init-Data or Authorization Bearer token",
