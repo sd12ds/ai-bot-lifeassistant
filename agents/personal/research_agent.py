@@ -38,7 +38,19 @@ _SYSTEM_PROMPT = """Ты - AI-агент сбора данных из интер
 
 Запрос: "спарси сайт example.com"
 -> create_research_job(title="Парсинг example.com", job_type="crawl", urls="example.com")
--> run_research_job(полученный_id)"""
+-> run_research_job(полученный_id)
+
+ЕСЛИ ПРОСЯТ РЕЗУЛЬТАТЫ / СТАТУС:
+- "покажи результаты" / "что нашел" / "статус" -> вызови list_research_jobs() чтобы найти последний job, затем get_job_results(job_id)
+- "мои задачи" / "список задач" -> вызови list_research_jobs()
+- "отмени" -> вызови cancel_research_job(job_id)
+
+ФОРМАТ ОТВЕТА ПОСЛЕ СБОРА:
+Когда показываешь результаты, форматируй красиво:
+- Название компании / сайта
+- URL
+- Краткое описание
+Не показывай raw JSON. Не показывай технические ID."""
 
 _llm = ChatOpenAI(
     model=OPENAI_AGENT_MODEL,

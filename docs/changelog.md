@@ -370,3 +370,6 @@
 ## [b69ed0c] — 2026-03-20 14:52 (МСК)
 📦 Research домен Phase 1 MVP: модели БД, CRUD, Firecrawl provider, service layer, agent, tools, supervisor routing, FastAPI endpoints, webapp scaffold (research.thalors.ai)
 
+## [804df74] — 2026-03-20 16:04 (МСК)
+📦 Research фиксы: supervisor routing, Firecrawl Search API, action-first prompt, PostgresSaver sticky domain
+
