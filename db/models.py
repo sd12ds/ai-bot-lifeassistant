@@ -26,7 +26,7 @@ class Base(DeclarativeBase):
 # ══════════════════════════════════════════════════════════════════════════════
 
 class User(Base):
-    """Пользователь бота — идентифицируется по telegram_id."""
+    """Пользователь бота - идентифицируется по telegram_id."""
     __tablename__ = "users"
 
     telegram_id: Mapped[int] = mapped_column(BigInteger, primary_key=True)
@@ -43,7 +43,7 @@ class User(Base):
 
 
 class UserProfile(Base):
-    """Профиль пользователя — дополнительные данные."""
+    """Профиль пользователя - дополнительные данные."""
     __tablename__ = "user_profiles"
 
     id: Mapped[int] = mapped_column(Integer, primary_key=True, autoincrement=True)
@@ -111,7 +111,7 @@ class Calendar(Base):
 
 
 class Task(Base):
-    """Задача или событие. event_type='task' — дедлайн, 'event' — временной слот."""
+    """Задача или событие. event_type='task' - дедлайн, 'event' - временной слот."""
     __tablename__ = "tasks"
 
     id: Mapped[int] = mapped_column(Integer, primary_key=True, autoincrement=True)
@@ -144,7 +144,7 @@ class Task(Base):
 # ══════════════════════════════════════════════════════════════════════════════
 
 class FoodItem(Base):
-    """Справочник продуктов питания. user_id=None — системный справочник."""
+    """Справочник продуктов питания. user_id=None - системный справочник."""
     __tablename__ = "food_items"
 
     id: Mapped[int] = mapped_column(Integer, primary_key=True, autoincrement=True)
@@ -225,7 +225,7 @@ class NutritionGoal(Base):
 # ══════════════════════════════════════════════════════════════════════════════
 
 class ExerciseLibrary(Base):
-    """Справочник упражнений. user_id=None — системный справочник."""
+    """Справочник упражнений. user_id=None - системный справочник."""
     __tablename__ = "exercise_library"
 
     id: Mapped[int] = mapped_column(Integer, primary_key=True, autoincrement=True)
@@ -747,7 +747,7 @@ class GoalCheckin(Base):
     __tablename__ = "goal_checkins"
 
     id: Mapped[int] = mapped_column(Integer, primary_key=True, autoincrement=True)
-    goal_id: Mapped[Optional[int]] = mapped_column(Integer, ForeignKey("goals.id", ondelete="SET NULL"), nullable=True)  # опционально — привязка к цели
+    goal_id: Mapped[Optional[int]] = mapped_column(Integer, ForeignKey("goals.id", ondelete="SET NULL"), nullable=True)  # опционально - привязка к цели
     user_id: Mapped[int] = mapped_column(BigInteger, ForeignKey("users.telegram_id"))
     progress_pct: Mapped[int] = mapped_column(Integer, default=0)              # 0-100
     energy_level: Mapped[Optional[int]] = mapped_column(Integer, nullable=True) # 1-5
@@ -1009,3 +1009,127 @@ class CoachingOrchestrationAction(Base):
     confirmed_at: Mapped[Optional[datetime]] = mapped_column(DateTime(timezone=True), nullable=True)
     executed_at: Mapped[Optional[datetime]] = mapped_column(DateTime(timezone=True), nullable=True)
     created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now())
+
+
+
+# ==============================================================================
+# Research домен - сбор, парсинг и анализ данных из интернета
+# ==============================================================================
+
+import uuid
+from sqlalchemy.dialects.postgresql import UUID as PG_UUID
+
+
+class ResearchJob(Base):
+    """Задача исследования - основная сущность Research домена."""
+    __tablename__ = "research_jobs"
+
+    id: Mapped[str] = mapped_column(PG_UUID(as_uuid=False), primary_key=True, default=lambda: str(uuid.uuid4()))
+    workspace_id: Mapped[Optional[str]] = mapped_column(PG_UUID(as_uuid=False), nullable=True, index=True)
+    created_by: Mapped[int] = mapped_column(BigInteger, ForeignKey("users.telegram_id"), index=True)
+    title: Mapped[str] = mapped_column(String(500))
+    description: Mapped[Optional[str]] = mapped_column(Text, nullable=True)
+    original_request: Mapped[Optional[str]] = mapped_column(Text, nullable=True)
+    normalized_spec: Mapped[Optional[dict]] = mapped_column(JSONB, nullable=True)
+    status: Mapped[str] = mapped_column(String(20), default="draft", index=True)
+    job_type: Mapped[str] = mapped_column(String(20), default="search")
+    provider: Mapped[str] = mapped_column(String(30), default="firecrawl")
+    config: Mapped[Optional[dict]] = mapped_column(JSONB, nullable=True)
+    visibility: Mapped[str] = mapped_column(String(20), default="private")
+    origin: Mapped[str] = mapped_column(String(10), default="chat")
+    usage_estimate: Mapped[Optional[dict]] = mapped_column(JSONB, nullable=True)
+    tags: Mapped[Optional[dict]] = mapped_column(JSONB, nullable=True)
+    last_run_at: Mapped[Optional[datetime]] = mapped_column(DateTime(timezone=True), nullable=True)
+    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now())
+    updated_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now(), onupdate=func.now())
+
+    runs: Mapped[List["ResearchJobRun"]] = relationship(back_populates="job")
+    results: Mapped[List["ResearchResultItem"]] = relationship(back_populates="job")
+    sources: Mapped[List["ResearchSource"]] = relationship(back_populates="job")
+    message_logs: Mapped[List["ResearchMessageLog"]] = relationship(back_populates="job")
+    status_events: Mapped[List["ResearchStatusEvent"]] = relationship(back_populates="job")
+
+
+class ResearchJobRun(Base):
+    """Запуск задачи - каждый run фиксирует одну попытку выполнения."""
+    __tablename__ = "research_job_runs"
+
+    id: Mapped[str] = mapped_column(PG_UUID(as_uuid=False), primary_key=True, default=lambda: str(uuid.uuid4()))
+    job_id: Mapped[str] = mapped_column(PG_UUID(as_uuid=False), ForeignKey("research_jobs.id"), index=True)
+    status: Mapped[str] = mapped_column(String(20), default="queued")
+    started_at: Mapped[Optional[datetime]] = mapped_column(DateTime(timezone=True), nullable=True)
+    finished_at: Mapped[Optional[datetime]] = mapped_column(DateTime(timezone=True), nullable=True)
+    provider_metadata: Mapped[Optional[dict]] = mapped_column(JSONB, nullable=True)
+    error_details: Mapped[Optional[str]] = mapped_column(Text, nullable=True)
+    metrics: Mapped[Optional[dict]] = mapped_column(JSONB, nullable=True)
+    usage_actual: Mapped[Optional[dict]] = mapped_column(JSONB, nullable=True)
+    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now())
+
+    job: Mapped["ResearchJob"] = relationship(back_populates="runs")
+    results: Mapped[List["ResearchResultItem"]] = relationship(back_populates="run")
+
+
+class ResearchResultItem(Base):
+    """Отдельный найденный элемент - строка результата задачи."""
+    __tablename__ = "research_result_items"
+
+    id: Mapped[str] = mapped_column(PG_UUID(as_uuid=False), primary_key=True, default=lambda: str(uuid.uuid4()))
+    job_id: Mapped[str] = mapped_column(PG_UUID(as_uuid=False), ForeignKey("research_jobs.id"), index=True)
+    run_id: Mapped[str] = mapped_column(PG_UUID(as_uuid=False), ForeignKey("research_job_runs.id"), index=True)
+    source_url: Mapped[Optional[str]] = mapped_column(String(2048), nullable=True)
+    domain: Mapped[Optional[str]] = mapped_column(String(255), nullable=True, index=True)
+    title: Mapped[Optional[str]] = mapped_column(String(1000), nullable=True)
+    raw_content: Mapped[Optional[str]] = mapped_column(Text, nullable=True)
+    extracted_fields: Mapped[Optional[dict]] = mapped_column(JSONB, nullable=True)
+    dedupe_hash: Mapped[Optional[str]] = mapped_column(String(64), nullable=True, index=True)
+    extra_metadata: Mapped[Optional[dict]] = mapped_column(JSONB, nullable=True)
+    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now())
+
+    job: Mapped["ResearchJob"] = relationship(back_populates="results")
+    run: Mapped["ResearchJobRun"] = relationship(back_populates="results")
+
+
+class ResearchSource(Base):
+    """Источник данных для задачи - seed URL, найденный URL или результат поиска."""
+    __tablename__ = "research_sources"
+
+    id: Mapped[str] = mapped_column(PG_UUID(as_uuid=False), primary_key=True, default=lambda: str(uuid.uuid4()))
+    job_id: Mapped[str] = mapped_column(PG_UUID(as_uuid=False), ForeignKey("research_jobs.id"), index=True)
+    url: Mapped[str] = mapped_column(String(2048))
+    domain: Mapped[Optional[str]] = mapped_column(String(255), nullable=True)
+    source_type: Mapped[str] = mapped_column(String(20), default="seed")
+    status: Mapped[str] = mapped_column(String(20), default="pending")
+    extra_metadata: Mapped[Optional[dict]] = mapped_column(JSONB, nullable=True)
+
+    job: Mapped["ResearchJob"] = relationship(back_populates="sources")
+
+
+class ResearchMessageLog(Base):
+    """Лог сообщений агента по задаче - история диалога."""
+    __tablename__ = "research_message_logs"
+
+    id: Mapped[str] = mapped_column(PG_UUID(as_uuid=False), primary_key=True, default=lambda: str(uuid.uuid4()))
+    job_id: Mapped[str] = mapped_column(PG_UUID(as_uuid=False), ForeignKey("research_jobs.id"), index=True)
+    role: Mapped[str] = mapped_column(String(20))
+    content: Mapped[str] = mapped_column(Text)
+    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now())
+
+    job: Mapped["ResearchJob"] = relationship(back_populates="message_logs")
+
+
+class ResearchStatusEvent(Base):
+    """Событие смены статуса задачи - для аудита и timeline."""
+    __tablename__ = "research_status_events"
+
+    id: Mapped[str] = mapped_column(PG_UUID(as_uuid=False), primary_key=True, default=lambda: str(uuid.uuid4()))
+    job_id: Mapped[str] = mapped_column(PG_UUID(as_uuid=False), ForeignKey("research_jobs.id"), index=True)
+    run_id: Mapped[Optional[str]] = mapped_column(PG_UUID(as_uuid=False), ForeignKey("research_job_runs.id"), nullable=True)
+    event_type: Mapped[str] = mapped_column(String(30))
+    old_status: Mapped[Optional[str]] = mapped_column(String(20), nullable=True)
+    new_status: Mapped[Optional[str]] = mapped_column(String(20), nullable=True)
+    actor_id: Mapped[Optional[int]] = mapped_column(BigInteger, nullable=True)
+    source: Mapped[Optional[str]] = mapped_column(String(10), nullable=True)
+    extra_metadata: Mapped[Optional[dict]] = mapped_column(JSONB, nullable=True)
+    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now())
+
+    job: Mapped["ResearchJob"] = relationship(back_populates="status_events")

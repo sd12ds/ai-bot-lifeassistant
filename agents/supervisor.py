@@ -28,11 +28,12 @@ from typing_extensions import TypedDict
 
 from config import OPENAI_API_KEY, OPENAI_CLASSIFIER_MODEL
 from db.checkpointer import get_checkpointer
+from agents.personal.research_agent import build_research_agent
 
 logger = logging.getLogger(__name__)
 
 # ── Типы агентов ──────────────────────────────────────────────────────────────
-AgentType = Literal["calendar", "reminder", "nutrition", "fitness", "crm", "team", "assistant"]
+AgentType = Literal["calendar", "reminder", "nutrition", "fitness", "crm", "team", "assistant", "research"]
 
 # Агенты, доступные только в бизнес-режиме
 _BUSINESS_ONLY_AGENTS: set[AgentType] = {"crm", "team"}
@@ -78,6 +79,7 @@ reminder — задачи, напоминания, записи (к врачу, 
 nutrition — еда, питание, калории, КБЖУ, приём пищи, вода, диета, продукты, перекус, завтрак, обед, ужин, сколько съел, что я ел, выпил воды, граммовка, порция, поменяй продукт, убери продукт, добавь продукт, сыр, каша, мясо, курица, рис, EWA, bodybox, протеин, батончик, вафли, какао, зефир, состав продукта
 fitness — тренировка, упражнения, жим, присед, тяга, подтягивания, бег, пробежка, кардио, зал, качалка, фитнес, спорт, замеры тела, вес, мышцы, подходы, повторения, workout, программа тренировок
 crm — клиенты, контакты, сделки, продажи (только бизнес-режим)
+research — сбор данных из интернета, парсинг сайтов, crawling, scraping, извлечение информации, поиск компаний, конкурентов, контактов, собери сайты, найди компании
 team — команда, сотрудники, совместные события (только бизнес-режим)
 coaching — цели и достижения (поставить цель, прогресс по цели, достиг цели, моя цель), привычки-трекер (завести привычку, стрик привычки, пропустил привычку, отметить привычку), коучинг, мотивация, check-in по целям, обзор недели, план достижений (только personal-режим)
 assistant — всё остальное (вопросы, разговор, объяснения, помощь без даты)
@@ -334,6 +336,17 @@ def build_supervisor(
         from agents.personal.coaching_agent import build_coaching_agent
         agent = build_coaching_agent(checkpointer=get_checkpointer(), user_id=state["user_id"])
         return await _run_agent(agent, state)
+
+    
+    async def run_research(state: SupervisorState) -> SupervisorState:
+        """Узел графа для Research агента."""
+        user_id = state["user_id"]
+        graph = build_research_agent(checkpointer=checkpointer, user_id=user_id)
+        result = await graph.ainvoke(
+            {"messages": state["messages"]},
+            config={"configurable": {"thread_id": str(user_id)}},
+        )
+        return {"response": result["messages"][-1].content}
 
     async def run_assistant(state):
         return await _run_agent(assistant_agent, state)

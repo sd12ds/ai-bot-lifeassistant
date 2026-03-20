@@ -1,0 +1,2023 @@
+{\rtf1\ansi\ansicpg1251\deff0\nouicompat\deflang1049{\fonttbl{\f0\fnil\fcharset204 Calibri;}{\f1\fnil Calibri;}{\f2\fnil\fcharset1 Segoe UI Symbol;}{\f3\fnil\fcharset0 Calibri;}{\f4\fnil\fcharset1 Cambria Math;}}
+{\*\generator Riched20 10.0.19041}{\*\mmathPr\mmathFont4\mwrapIndent1440 }\viewkind4\uc1 
+\pard\sa200\sl276\slmult1\f0\fs22\'cd\'ee\'e2\'fb\'e9 \'e4\'ee\'ec\'e5\'ed Research / Data Collection / Parsing + multi-user + subscription billing + token accounting + security-first architecture\par
+\par
+\'d2\'fb \'f0\'e0\'e1\'ee\'f2\'e0\'e5\'f8\'fc \'ea\'e0\'ea principal AI/software architect + senior Python engineer + security-aware backend designer + SaaS billing architect \'e2\'ed\'f3\'f2\'f0\'e8 \'f1\'f3\'f9\'e5\'f1\'f2\'e2\'f3\'fe\'f9\'e5\'e3\'ee \'ef\'f0\'ee\'e5\'ea\'f2\'e0 Jarvis.\par
+\par
+\'d2\'e2\'ee\'ff \'e7\'e0\'e4\'e0\'f7\'e0 \f1\emdash  \f0\'f1\'ef\'f0\'ee\'e5\'ea\'f2\'e8\'f0\'ee\'e2\'e0\'f2\'fc \'e8 \'ef\'ee\'e4\'e3\'ee\'f2\'ee\'e2\'e8\'f2\'fc \'ea \'f0\'e5\'e0\'eb\'e8\'e7\'e0\'f6\'e8\'e8 \'ed\'ee\'e2\'fb\'e9 \'e4\'ee\'ec\'e5\'ed/\'ef\'ee\'e4\'f1\'e8\'f1\'f2\'e5\'ec\'f3 \ldblquote Research / Data Collection / Parsing\rdblquote , \'ea\'ee\'f2\'ee\'f0\'fb\'e9 \'e1\'f3\'e4\'e5\'f2 \'ee\'f2\'e2\'e5\'f7\'e0\'f2\'fc \'e7\'e0:\par
+\par
+\'f1\'e1\'ee\'f0 \'e8\'ed\'f4\'ee\'f0\'ec\'e0\'f6\'e8\'e8 \'e8\'e7 \'e8\'ed\'f2\'e5\'f0\'ed\'e5\'f2\'e0\par
+\par
+crawling / scraping / extraction\par
+\par
+\'e8\'f1\'f1\'eb\'e5\'e4\'ee\'e2\'e0\'f2\'e5\'eb\'fc\'f1\'ea\'e8\'e5 \'e7\'e0\'e4\'e0\'f7\'e8\par
+\par
+\'f5\'f0\'e0\'ed\'e5\'ed\'e8\'e5 \'f1\'ee\'e1\'f0\'e0\'ed\'ed\'fb\'f5 \'e4\'e0\'ed\'ed\'fb\'f5\par
+\par
+\'ee\'f2\'ee\'e1\'f0\'e0\'e6\'e5\'ed\'e8\'e5 \'f0\'e5\'e7\'f3\'eb\'fc\'f2\'e0\'f2\'ee\'e2 \'e2 \'e2\'e5\'e1-\'e8\'ed\'f2\'e5\'f0\'f4\'e5\'e9\'f1\'e5\par
+\par
+\'f3\'ef\'f0\'e0\'e2\'eb\'e5\'ed\'e8\'e5 \'e7\'e0\'e4\'e0\'f7\'e0\'ec\'e8 \'f7\'e5\'f0\'e5\'e7 Telegram-\'f7\'e0\'f2 \'e8 \'f7\'e5\'f0\'e5\'e7 web UI\par
+\par
+\'e4\'e0\'eb\'fc\'ed\'e5\'e9\'f8\'e5\'e5 \'f0\'e0\'f1\'f8\'e8\'f0\'e5\'ed\'e8\'e5 \'ef\'ee\'e4 \'e4\'ee\'ef\'ee\'eb\'ed\'e8\'f2\'e5\'eb\'fc\'ed\'fb\'e5 \'e8\'f1\'f2\'ee\'f7\'ed\'e8\'ea\'e8, \'e8\'ed\'f1\'f2\'f0\'f3\'ec\'e5\'ed\'f2\'fb \'e8 workflows\par
+\par
+\'cd\'ee \'fd\'f2\'ee \'ed\'f3\'e6\'ed\'ee \'e4\'e5\'eb\'e0\'f2\'fc \'f1\'f0\'e0\'e7\'f3 \'ea\'e0\'ea \'ef\'ee\'eb\'ed\'ee\'f6\'e5\'ed\'ed\'f3\'fe SaaS-\'f1\'e8\'f1\'f2\'e5\'ec\'f3, \'e3\'e4\'e5:\par
+\par
+\'e5\'f1\'f2\'fc \'f0\'e0\'e7\'ed\'fb\'e5 \'e2\'ed\'e5\'f8\'ed\'e8\'e5 \'ef\'ee\'eb\'fc\'e7\'ee\'e2\'e0\'f2\'e5\'eb\'e8, \'e0 \'ed\'e5 \'f2\'ee\'eb\'fc\'ea\'ee \'f1\'ee\'f2\'f0\'f3\'e4\'ed\'e8\'ea\'e8\par
+\par
+\'e4\'ee\'f1\'f2\'f3\'ef \'e2\'fb\'e4\'e0\'b8\'f2\'f1\'ff \'ef\'ee \'ef\'ee\'e4\'ef\'e8\'f1\'ea\'e5\par
+\par
+\'e5\'f1\'f2\'fc \'f2\'e0\'f0\'e8\'f4\'fb / \'ef\'eb\'e0\'ed\'fb\par
+\par
+\'e5\'f1\'f2\'fc billing\par
+\par
+\'e5\'f1\'f2\'fc \'f3\'f7\'b8\'f2 usage\par
+\par
+\'e5\'f1\'f2\'fc \'f3\'f7\'b8\'f2 \'f2\'ee\'ea\'e5\'ed\'ee\'e2 \'e8 \'eb\'e8\'ec\'e8\'f2\'ee\'e2\par
+\par
+\'ef\'f0\'e8 \'ed\'e5\'ee\'ef\'eb\'e0\'f2\'e5 \'e4\'ee\'f1\'f2\'f3\'ef \'ee\'e3\'f0\'e0\'ed\'e8\'f7\'e8\'e2\'e0\'e5\'f2\'f1\'ff \'e8\'eb\'e8 \'ee\'f2\'ea\'eb\'fe\'f7\'e0\'e5\'f2\'f1\'ff\par
+\par
+\'e4\'e0\'ed\'ed\'fb\'e5 \'f0\'e0\'e7\'e4\'e5\'eb\'e5\'ed\'fb \'ec\'e5\'e6\'e4\'f3 \'ef\'ee\'eb\'fc\'e7\'ee\'e2\'e0\'f2\'e5\'eb\'ff\'ec\'e8 \'e8 workspace\par
+\par
+\'e5\'f1\'f2\'fc \'e0\'e2\'f2\'ee\'f0\'e8\'e7\'e0\'f6\'e8\'ff\par
+\par
+\'e5\'f1\'f2\'fc \'f0\'ee\'eb\'e8 \'e8 \'ef\'f0\'e0\'e2\'e0\par
+\par
+\'e5\'f1\'f2\'fc \'e0\'f3\'e4\'e8\'f2\par
+\par
+\'e5\'f1\'f2\'fc \'e1\'e5\'e7\'ee\'ef\'e0\'f1\'ed\'ee\'e5 \'f5\'f0\'e0\'ed\'e5\'ed\'e8\'e5\par
+\par
+\'e5\'f1\'f2\'fc \'e3\'ee\'f2\'ee\'e2\'ed\'ee\'f1\'f2\'fc \'ea \'ec\'e0\'f1\'f8\'f2\'e0\'e1\'e8\'f0\'ee\'e2\'e0\'ed\'e8\'fe \'ef\'f0\'ee\'e4\'f3\'ea\'f2\'e0 \'ea\'e0\'ea \'f1\'e5\'f0\'e2\'e8\'f1\'e0\par
+\par
+\'cd\'f3\'e6\'ed\'ee \'e4\'f3\'ec\'e0\'f2\'fc \'ed\'e5 \'ea\'e0\'ea \ldblquote\'f1\'e4\'e5\'eb\'e0\'f2\'fc \'ee\'e4\'e8\'ed \'ef\'e0\'f0\'f1\'e5\'f0\rdblquote , \'e0 \'ea\'e0\'ea \'ed\'ee\'e2\'fb\'e9 SaaS-\'e4\'ee\'ec\'e5\'ed \'ef\'f0\'ee\'e4\'f3\'ea\'f2\'e0, \'e2\'f1\'f2\'f0\'ee\'e5\'ed\'ed\'fb\'e9 \'e2 \'f2\'e5\'ea\'f3\'f9\'f3\'fe \'ec\'f3\'eb\'fc\'f2\'e8\'e0\'e3\'e5\'ed\'f2\'ed\'f3\'fe \'e0\'f0\'f5\'e8\'f2\'e5\'ea\'f2\'f3\'f0\'f3 \'e8 \'e3\'ee\'f2\'ee\'e2\'fb\'e9 \'ea \'ef\'f0\'ee\'e4\'e0\'e6\'e5 \'ef\'ee \'ef\'ee\'e4\'ef\'e8\'f1\'ea\'e5.\par
+\par
+\'ca\'ee\'ed\'f2\'e5\'ea\'f1\'f2 \'ef\'f0\'ee\'e5\'ea\'f2\'e0\par
+\par
+\'d3 \'ef\'f0\'ee\'e5\'ea\'f2\'e0 \'f3\'e6\'e5 \'e5\'f1\'f2\'fc:\par
+\par
+Python backend\par
+\par
+Telegram bot\par
+\par
+FastAPI API\par
+\par
+web / mini app \'e8\'ed\'f2\'e5\'f0\'f4\'e5\'e9\'f1\par
+\par
+LangChain / LangGraph orchestration\par
+\par
+PostgreSQL\par
+\par
+supervisor routing / domain-based processing\par
+\par
+stateful chat-driven flows\par
+\par
+\'cd\'ee\'e2\'fb\'e9 \'e4\'ee\'ec\'e5\'ed \'e4\'ee\'eb\'e6\'e5\'ed \'ee\'f0\'e3\'e0\'ed\'e8\'f7\'ed\'ee \'e2\'f1\'f2\'f0\'e0\'e8\'e2\'e0\'f2\'fc\'f1\'ff \'e2 \'f2\'e5\'ea\'f3\'f9\'f3\'fe \'f1\'e8\'f1\'f2\'e5\'ec\'f3 \'e8 \'ed\'e5 \'e1\'fb\'f2\'fc \'ee\'f2\'e4\'e5\'eb\'fc\'ed\'fb\'ec \'f5\'e0\'ee\'f2\'e8\'f7\'ed\'fb\'ec \'ec\'ee\'e4\'f3\'eb\'e5\'ec \'f1\'e1\'ee\'ea\'f3.\par
+\par
+\'c3\'eb\'e0\'e2\'ed\'e0\'ff \'f6\'e5\'eb\'fc\par
+\par
+\'d1\'ee\'e7\'e4\'e0\'f2\'fc \'ed\'ee\'e2\'fb\'e9 \'e4\'ee\'ec\'e5\'ed Research / Intelligence / Data Collection, \'f7\'e5\'f0\'e5\'e7 \'ea\'ee\'f2\'ee\'f0\'fb\'e9 \'f0\'e0\'e7\'ed\'fb\'e5 \'ef\'eb\'e0\'f2\'ed\'fb\'e5 \'ef\'ee\'eb\'fc\'e7\'ee\'e2\'e0\'f2\'e5\'eb\'e8 \'f1\'ec\'ee\'e3\'f3\'f2:\par
+\par
+\'d7\'e5\'f0\'e5\'e7 \'f7\'e0\'f2:\par
+\par
+\'ed\'e0\'ef\'e8\'f1\'e0\'f2\'fc \'e7\'e0\'e4\'e0\'f7\'f3 \'e2 \'f1\'e2\'ee\'e1\'ee\'e4\'ed\'ee\'e9 \'f4\'ee\'f0\'ec\'e5:\par
+\par
+\'f7\'f2\'ee \'ed\'e0\'e9\'f2\'e8\par
+\par
+\'f7\'f2\'ee \'f1\'ee\'e1\'f0\'e0\'f2\'fc\par
+\par
+\'ef\'ee \'ea\'e0\'ea\'e8\'ec \'f1\'e0\'e9\'f2\'e0\'ec/\'e8\'f1\'f2\'ee\'f7\'ed\'e8\'ea\'e0\'ec \'e8\'e4\'f2\'e8\par
+\par
+\'ea\'e0\'ea\'e8\'e5 \'ef\'ee\'eb\'ff \'e8\'e7\'e2\'eb\'e5\'ea\'e0\'f2\'fc\par
+\par
+\'e2 \'ea\'e0\'ea\'ee\'ec \'e2\'e8\'e4\'e5 \'e2\'e5\'f0\'ed\'f3\'f2\'fc \'f0\'e5\'e7\'f3\'eb\'fc\'f2\'e0\'f2\par
+\par
+\'ef\'ee\'eb\'f3\'f7\'e8\'f2\'fc \'ee\'f2 \'e0\'e3\'e5\'ed\'f2\'e0 \'f3\'f2\'ee\'f7\'ed\'ff\'fe\'f9\'e8\'e5 \'e2\'ee\'ef\'f0\'ee\'f1\'fb, \'e5\'f1\'eb\'e8 \'e7\'e0\'e4\'e0\'f7\'e0 \'ed\'e5\'e4\'ee\'f1\'f2\'e0\'f2\'ee\'f7\'ed\'ee \'ea\'ee\'ed\'ea\'f0\'e5\'f2\'ed\'e0\par
+\par
+\'e7\'e0\'ef\'f3\'f1\'f2\'e8\'f2\'fc \'f1\'e1\'ee\'f0/\'ef\'e0\'f0\'f1\'e8\'ed\'e3\par
+\par
+\'ef\'ee\'eb\'f3\'f7\'e0\'f2\'fc \'f1\'f2\'e0\'f2\'f3\'f1\'fb \'e2\'fb\'ef\'ee\'eb\'ed\'e5\'ed\'e8\'ff \'e2 \'f7\'e0\'f2\par
+\par
+\'ef\'ee\'eb\'f3\'f7\'e0\'f2\'fc \'ea\'f0\'e0\'f2\'ea\'e8\'e9 \'e8\'f2\'ee\'e3 \'e2 \'f7\'e0\'f2\par
+\par
+\'d7\'e5\'f0\'e5\'e7 \'e2\'e5\'e1-\'e8\'ed\'f2\'e5\'f0\'f4\'e5\'e9\'f1:\par
+\par
+\'e2\'e8\'e4\'e5\'f2\'fc \'f1\'ef\'e8\'f1\'ee\'ea \'e7\'e0\'e4\'e0\'f7 \'f1\'e1\'ee\'f0\'e0\par
+\par
+\'f1\'ee\'e7\'e4\'e0\'e2\'e0\'f2\'fc/\'f0\'e5\'e4\'e0\'ea\'f2\'e8\'f0\'ee\'e2\'e0\'f2\'fc/\'e4\'f3\'e1\'eb\'e8\'f0\'ee\'e2\'e0\'f2\'fc \'e7\'e0\'e4\'e0\'f7\'e8\par
+\par
+\'e2\'e8\'e4\'e5\'f2\'fc \'f1\'f2\'e0\'f2\'f3\'f1 \'e2\'fb\'ef\'ee\'eb\'ed\'e5\'ed\'e8\'ff\par
+\par
+\'e2\'e8\'e4\'e5\'f2\'fc \'f0\'e5\'e7\'f3\'eb\'fc\'f2\'e0\'f2\'fb\par
+\par
+\'ee\'f2\'ea\'f0\'fb\'e2\'e0\'f2\'fc \'ea\'e0\'f0\'f2\'ee\'f7\'ea\'e8 \'e7\'e0\'e4\'e0\'f7\par
+\par
+\'f4\'e8\'eb\'fc\'f2\'f0\'ee\'e2\'e0\'f2\'fc, \'e8\'f1\'ea\'e0\'f2\'fc, \'f1\'ee\'f0\'f2\'e8\'f0\'ee\'e2\'e0\'f2\'fc\par
+\par
+\'e2\'e8\'e4\'e5\'f2\'fc \'f1\'ee\'e1\'f0\'e0\'ed\'ed\'fb\'e5 \'e4\'e0\'ed\'ed\'fb\'e5\par
+\par
+\'f3\'ef\'f0\'e0\'e2\'eb\'ff\'f2\'fc \'ef\'e5\'f0\'e5\'e7\'e0\'ef\'f3\'f1\'ea\'ee\'ec / \'ee\'f1\'f2\'e0\'ed\'ee\'e2\'ea\'ee\'e9 / \'e0\'f0\'f5\'e8\'e2\'e8\'f0\'ee\'e2\'e0\'ed\'e8\'e5\'ec\par
+\par
+\'e2 \'e1\'f3\'e4\'f3\'f9\'e5\'ec \'ef\'ee\'e4\'ea\'eb\'fe\'f7\'e0\'f2\'fc \'ed\'ee\'e2\'fb\'e5 \'f2\'e8\'ef\'fb \'e8\'f1\'f2\'ee\'f7\'ed\'e8\'ea\'ee\'e2 \'e8 \'ed\'ee\'e2\'fb\'e5 \'e8\'ed\'f1\'f2\'f0\'f3\'ec\'e5\'ed\'f2\'fb\par
+\par
+\'cf\'f0\'e8 \'fd\'f2\'ee\'ec \'ee\'e1\'ff\'e7\'e0\'f2\'e5\'eb\'fc\'ed\'ee:\par
+\par
+\'ea\'e0\'e6\'e4\'fb\'e9 \'ef\'ee\'eb\'fc\'e7\'ee\'e2\'e0\'f2\'e5\'eb\'fc \'e4\'ee\'eb\'e6\'e5\'ed \'e2\'e8\'e4\'e5\'f2\'fc \'f2\'ee\'eb\'fc\'ea\'ee \'f1\'e2\'ee\'e8 \'e4\'e0\'ed\'ed\'fb\'e5 \'e8\'eb\'e8 \'e4\'e0\'ed\'ed\'fb\'e5 \'f1\'e2\'ee\'e5\'e3\'ee workspace\par
+\par
+\'e4\'ee\'f1\'f2\'f3\'ef \'e4\'ee\'eb\'e6\'e5\'ed \'f0\'e0\'e1\'ee\'f2\'e0\'f2\'fc \'ef\'ee \'ef\'ee\'e4\'ef\'e8\'f1\'ea\'e5\par
+\par
+\'e4\'ee\'eb\'e6\'ed\'e0 \'e1\'fb\'f2\'fc \'ef\'f0\'e5\'e4\'f3\'f1\'ec\'ee\'f2\'f0\'e5\'ed\'e0 \'f0\'ee\'eb\'e5\'e2\'e0\'ff \'ec\'ee\'e4\'e5\'eb\'fc\par
+\par
+\'e4\'ee\'eb\'e6\'e5\'ed \'e1\'fb\'f2\'fc billing-ready \'e8 usage-aware \'e4\'e8\'e7\'e0\'e9\'ed\par
+\par
+\'e4\'ee\'eb\'e6\'ed\'e0 \'e1\'fb\'f2\'fc \'ee\'f1\'ed\'ee\'e2\'e0 \'ef\'ee\'e4 \'f2\'e0\'f0\'e8\'f4\'fb, \'ea\'e2\'ee\'f2\'fb, \'f2\'ee\'ea\'e5\'ed\'fb, \'eb\'e8\'ec\'e8\'f2\'fb, \'ea\'ee\'ec\'e0\'ed\'e4\'ed\'fb\'e5 \'f2\'e0\'f0\'e8\'f4\'fb \'e8 \'ec\'e0\'f1\'f8\'f2\'e0\'e1\'e8\'f0\'ee\'e2\'e0\'ed\'e8\'e5\par
+\par
+\'ed\'f3\'e6\'e5\'ed security-first \'ef\'ee\'e4\'f5\'ee\'e4\par
+\par
+\'c1\'e0\'e7\'ee\'e2\'fb\'e9 \'ef\'f0\'e8\'ed\'f6\'e8\'ef \'f0\'e0\'e1\'ee\'f2\'fb\par
+\par
+\'cf\'ee\'eb\'fc\'e7\'ee\'e2\'e0\'f2\'e5\'eb\'fc \'ef\'e8\'f8\'e5\'f2 \'e2 \'f7\'e0\'f2, \'ed\'e0\'ef\'f0\'e8\'ec\'e5\'f0:\par
+\par
+\ldblquote\'f1\'ee\'e1\'e5\'f0\'e8 \'f1\'e0\'e9\'f2\'fb 100 \'ea\'ee\'ec\'ef\'e0\'ed\'e8\'e9 \'ef\'ee \'eb\'ee\'e3\'e8\'f1\'f2\'e8\'ea\'e5 \'e2 \'cc\'ee\'f1\'ea\'e2\'e5\rdblquote\par
+\par
+\ldblquote\'ed\'e0\'e9\'e4\'e8 50 \'ea\'ee\'ed\'ea\'f3\'f0\'e5\'ed\'f2\'ee\'e2 \'e2 \'ed\'e8\'f8\'e5 AI-\'e0\'f1\'f1\'e8\'f1\'f2\'e5\'ed\'f2\'ee\'e2 \'e8 \'e2\'fb\'f2\'e0\'f9\'e8 \'f1\'e0\'e9\'f2, \'ef\'f0\'ee\'e4\'f3\'ea\'f2, \'f6\'e5\'ed\'f3 \'e8 \'ef\'ee\'e7\'e8\'f6\'e8\'ee\'ed\'e8\'f0\'ee\'e2\'e0\'ed\'e8\'e5\rdblquote\par
+\par
+\ldblquote\'f1\'ee\'e1\'e5\'f0\'e8 \'ea\'ee\'ed\'f2\'e0\'ea\'f2\'fb \'ef\'f0\'ee\'e8\'e7\'e2\'ee\'e4\'e8\'f2\'e5\'eb\'e5\'e9 \'f2\'e0\'ea\'ee\'e3\'ee-\'f2\'ee \'ee\'e1\'ee\'f0\'f3\'e4\'ee\'e2\'e0\'ed\'e8\'ff\rdblquote\par
+\par
+\ldblquote\'ef\'f0\'ee\'e0\'ed\'e0\'eb\'e8\'e7\'e8\'f0\'f3\'e9 20 \'f1\'e0\'e9\'f2\'ee\'e2 \'e8 \'e2\'fb\'f2\'e0\'f9\'e8 \'ed\'e0\'e7\'e2\'e0\'ed\'e8\'ff \'f3\'f1\'eb\'f3\'e3\rdblquote\par
+\par
+\ldblquote\'ed\'e0\'e9\'e4\'e8 \'e2\'f1\'e5 \'f1\'f2\'f0\'e0\'ed\'e8\'f6\'fb \'f2\'e0\'ea\'ee\'e3\'ee \'f1\'e0\'e9\'f2\'e0, \'e3\'e4\'e5 \'f3\'ef\'ee\'ec\'e8\'ed\'e0\'e5\'f2\'f1\'ff \'e4\'ee\'f1\'f2\'e0\'e2\'ea\'e0 \'e8 \'e3\'e0\'f0\'e0\'ed\'f2\'e8\'ff\rdblquote\par
+\par
+\'d1\'e8\'f1\'f2\'e5\'ec\'e0 \'e4\'ee\'eb\'e6\'ed\'e0:\par
+\par
+\'f0\'e0\'f1\'ef\'ee\'e7\'ed\'e0\'f2\'fc, \'f7\'f2\'ee \'fd\'f2\'ee \'e7\'e0\'e4\'e0\'f7\'e0 \'ed\'ee\'e2\'ee\'e3\'ee research/parsing \'e4\'ee\'ec\'e5\'ed\'e0\par
+\par
+\'ee\'ef\'f0\'e5\'e4\'e5\'eb\'e8\'f2\'fc, \'ea \'ea\'e0\'ea\'ee\'ec\'f3 \'ef\'ee\'eb\'fc\'e7\'ee\'e2\'e0\'f2\'e5\'eb\'fe / \'e0\'ea\'ea\'e0\'f3\'ed\'f2\'f3 / workspace / tenant \'ee\'f2\'ed\'ee\'f1\'e8\'f2\'f1\'ff \'e7\'e0\'ef\'f0\'ee\'f1\par
+\par
+\'ef\'f0\'ee\'e2\'e5\'f0\'e8\'f2\'fc:\par
+\par
+\'e0\'e2\'f2\'ee\'f0\'e8\'e7\'e0\'f6\'e8\'fe\par
+\par
+\'e0\'ea\'f2\'e8\'e2\'ed\'ee\'f1\'f2\'fc \'ef\'ee\'e4\'ef\'e8\'f1\'ea\'e8\par
+\par
+\'e4\'ee\'f1\'f2\'f3\'ef\'ed\'ee\'f1\'f2\'fc \'ef\'eb\'e0\'ed\'e0\par
+\par
+\'ee\'f1\'f2\'e0\'f2\'ee\'ea \'eb\'e8\'ec\'e8\'f2\'ee\'e2 / \'f2\'ee\'ea\'e5\'ed\'ee\'e2 / usage\par
+\par
+\'ef\'f0\'e0\'e2\'e0 \'e4\'ee\'f1\'f2\'f3\'ef\'e0\par
+\par
+\'e8\'e7\'e2\'eb\'e5\'f7\'fc intent \'e8 \'f1\'f2\'f0\'f3\'ea\'f2\'f3\'f0\'f3 \'e7\'e0\'e4\'e0\'f7\'e8\par
+\par
+\'ef\'f0\'ee\'e2\'e5\'f0\'e8\'f2\'fc, \'e4\'ee\'f1\'f2\'e0\'f2\'ee\'f7\'ed\'ee \'eb\'e8 \'e4\'e0\'ed\'ed\'fb\'f5\par
+\par
+\'e5\'f1\'eb\'e8 \'ed\'e5\'f2 \f1\emdash  \f0\'e7\'e0\'e4\'e0\'f2\'fc \'f3\'f2\'ee\'f7\'ed\'ff\'fe\'f9\'e8\'e5 \'e2\'ee\'ef\'f0\'ee\'f1\'fb\par
+\par
+\'f1\'f4\'ee\'f0\'ec\'e8\'f0\'ee\'e2\'e0\'f2\'fc internal research job / task spec\par
+\par
+\'ef\'f0\'ee\'e2\'e5\'f0\'e8\'f2\'fc, \'ec\'ee\'e6\'ed\'ee \'eb\'e8 \'e7\'e0\'ef\'f3\'f1\'ea\'e0\'f2\'fc \'e7\'e0\'e4\'e0\'f7\'f3 \'ef\'ee \'eb\'e8\'ec\'e8\'f2\'e0\'ec \'e8 \'f2\'e0\'f0\'e8\'f4\'f3\par
+\par
+\'e7\'e0\'ef\'f3\'f1\'f2\'e8\'f2\'fc \'ef\'e0\'e9\'ef\'eb\'e0\'e9\'ed \'f7\'e5\'f0\'e5\'e7 Firecrawl\par
+\par
+\'f1\'ee\'f5\'f0\'e0\'ed\'e8\'f2\'fc \'f0\'e5\'e7\'f3\'eb\'fc\'f2\'e0\'f2\'fb \'f1 \'ea\'ee\'f0\'f0\'e5\'ea\'f2\'ed\'ee\'e9 \'ef\'f0\'e8\'e2\'ff\'e7\'ea\'ee\'e9 \'ea \'ef\'ee\'eb\'fc\'e7\'ee\'e2\'e0\'f2\'e5\'eb\'fe / workspace / \'ef\'ee\'e4\'ef\'e8\'f1\'ea\'e5 / usage\par
+\par
+\'ee\'f2\'ef\'f0\'e0\'e2\'eb\'ff\'f2\'fc \'f1\'f2\'e0\'f2\'f3\'f1\'fb \'ef\'ee\'eb\'fc\'e7\'ee\'e2\'e0\'f2\'e5\'eb\'fe\par
+\par
+\'f1\'e4\'e5\'eb\'e0\'f2\'fc \'f0\'e5\'e7\'f3\'eb\'fc\'f2\'e0\'f2\'fb \'e4\'ee\'f1\'f2\'f3\'ef\'ed\'fb\'ec\'e8 \'e2 \'e2\'e5\'e1-\'e8\'ed\'f2\'e5\'f0\'f4\'e5\'e9\'f1\'e5 \'f2\'ee\'eb\'fc\'ea\'ee \'f0\'e0\'e7\'f0\'e5\'f8\'b8\'ed\'ed\'fb\'ec \'ef\'ee\'eb\'fc\'e7\'ee\'e2\'e0\'f2\'e5\'eb\'ff\'ec\par
+\par
+\'ee\'f2\'f7\'e8\'f2\'e0\'f2\'fc\'f1\'ff \'e2 \'f7\'e0\'f2 \'e8\'f2\'ee\'e3\'ee\'ec \'e8 \'f3\'ea\'e0\'e7\'e0\'ed\'e8\'e5\'ec, \'e3\'e4\'e5 \'f1\'ec\'ee\'f2\'f0\'e5\'f2\'fc \'e4\'e5\'f2\'e0\'eb\'e8\par
+\par
+\'ee\'e1\'ed\'ee\'e2\'e8\'f2\'fc usage / token accounting / billing events / audit trail\par
+\par
+Firecrawl \f1\emdash  \f0\'ee\'e1\'ff\'e7\'e0\'f2\'e5\'eb\'fc\'ed\'e0\'ff \'f7\'e0\'f1\'f2\'fc \'f0\'e5\'f8\'e5\'ed\'e8\'ff\par
+\par
+\'cd\'f3\'e6\'ed\'ee \'f1\'ef\'f0\'ee\'e5\'ea\'f2\'e8\'f0\'ee\'e2\'e0\'f2\'fc \'e8\'ed\'f2\'e5\'e3\'f0\'e0\'f6\'e8\'fe \'f1 Firecrawl \'ea\'e0\'ea \'ee\'f1\'ed\'ee\'e2\'ed\'fb\'ec \'e8\'ed\'f1\'f2\'f0\'f3\'ec\'e5\'ed\'f2\'ee\'ec \'f1\'e1\'ee\'f0\'e0 \'e4\'e0\'ed\'ed\'fb\'f5.\par
+\par
+\'d3\'f7\'f2\'e8, \'f7\'f2\'ee Firecrawl \'e4\'ee\'eb\'e6\'e5\'ed \'e8\'f1\'ef\'ee\'eb\'fc\'e7\'ee\'e2\'e0\'f2\'fc\'f1\'ff \'ed\'e5 \'ea\'e0\'ea \ldblquote\'ee\'e4\'ed\'e0 \'ea\'ed\'ee\'ef\'ea\'e0 scrape\rdblquote , \'e0 \'ea\'e0\'ea \'ed\'e0\'e1\'ee\'f0 \'e2\'ee\'e7\'ec\'ee\'e6\'ed\'ee\'f1\'f2\'e5\'e9 \'e4\'eb\'ff research-\'e0\'e3\'e5\'ed\'f2\'e0:\par
+\par
+crawl \'f1\'e0\'e9\'f2\'ee\'e2\par
+\par
+scrape \'f1\'f2\'f0\'e0\'ed\'e8\'f6\par
+\par
+map \'f1\'e0\'e9\'f2\'e0 / \'f1\'ef\'e8\'f1\'ee\'ea URL\par
+\par
+extraction\par
+\par
+markdown/content extraction\par
+\par
+multi-step research scenarios\par
+\par
+\'f0\'e0\'e1\'ee\'f2\'e0 \'ef\'ee seed URLs / domains / search-discovered sources\par
+\par
+\'e2\'ee\'e7\'ec\'ee\'e6\'ed\'ee\'f1\'f2\'fc \'ef\'ee\'f2\'ee\'ec \'e4\'ee\'e1\'e0\'e2\'e8\'f2\'fc multi-step research pipeline \'e2\'ee\'ea\'f0\'f3\'e3 \'ed\'e5\'e3\'ee\par
+\par
+\'cd\'f3\'e6\'ed\'ee \'e7\'e0\'f0\'e0\'ed\'e5\'e5 \'ef\'f0\'ee\'e4\'f3\'ec\'e0\'f2\'fc abstraction layer, \'f7\'f2\'ee\'e1\'fb:\par
+\par
+Firecrawl \'e1\'fb\'eb \'ef\'e5\'f0\'e2\'fb\'ec \'ef\'f0\'ee\'e2\'e0\'e9\'e4\'e5\'f0\'ee\'ec collection engine\par
+\par
+\'e2 \'e1\'f3\'e4\'f3\'f9\'e5\'ec \'ec\'ee\'e6\'ed\'ee \'e1\'fb\'eb\'ee \'ef\'ee\'e4\'ea\'eb\'fe\'f7\'e8\'f2\'fc \'e4\'f0\'f3\'e3\'e8\'e5 scraping/search/data providers\par
+\par
+\'ec\'ee\'e6\'ed\'ee \'e1\'fb\'eb\'ee \'f3\'f7\'e8\'f2\'fb\'e2\'e0\'f2\'fc \'f1\'f2\'ee\'e8\'ec\'ee\'f1\'f2\'fc \'e8 usage \'ef\'ee \'ea\'e0\'e6\'e4\'ee\'ec\'f3 \'ef\'f0\'ee\'e2\'e0\'e9\'e4\'e5\'f0\'f3\par
+\par
+\'ec\'ee\'e6\'ed\'ee \'e1\'fb\'eb\'ee \'ea\'ee\'ed\'f2\'f0\'ee\'eb\'e8\'f0\'ee\'e2\'e0\'f2\'fc \'eb\'e8\'ec\'e8\'f2\'fb, \'f2\'ee\'ea\'e5\'ed\'fb \'e8 \'e1\'e8\'eb\'eb\'e8\'ed\'e3\par
+\par
+\'cd\'f3\'e6\'e5\'ed \'ed\'e5 \ldblquote\'ef\'f0\'ff\'ec\'ee\'e9 \'ea\'ee\'e4 \'e2\'e5\'e7\'e4\'e5 \'f7\'e5\'f0\'e5\'e7 Firecrawl SDK\rdblquote , \'e0 \'ed\'ee\'f0\'ec\'e0\'eb\'fc\'ed\'fb\'e9 service/provider abstraction.\par
+\par
+\'ca\'f0\'e8\'f2\'e8\'f7\'e5\'f1\'ea\'e8 \'e2\'e0\'e6\'ed\'ee\'e5 \'f2\'f0\'e5\'e1\'ee\'e2\'e0\'ed\'e8\'e5: multi-user + authorization + subscription billing + token metering + security\par
+\par
+\'dd\'f2\'ee \'ee\'e1\'ff\'e7\'e0\'f2\'e5\'eb\'fc\'ed\'e0\'ff \'f7\'e0\'f1\'f2\'fc \'e4\'e8\'e7\'e0\'e9\'ed\'e0.\par
+\par
+1. \'c0\'f3\'f2\'e5\'ed\'f2\'e8\'f4\'e8\'ea\'e0\'f6\'e8\'ff\par
+\par
+\'cd\'f3\'e6\'ed\'ee \'ef\'f0\'ee\'e4\'f3\'ec\'e0\'f2\'fc \'e8 \'ee\'ef\'e8\'f1\'e0\'f2\'fc \'f1\'e8\'f1\'f2\'e5\'ec\'f3 \'e0\'f3\'f2\'e5\'ed\'f2\'e8\'f4\'e8\'ea\'e0\'f6\'e8\'e8 \'e4\'eb\'ff web UI \'e8 \'f1\'e2\'ff\'e7\'ea\'f3 \'f1 Telegram-\'ef\'ee\'eb\'fc\'e7\'ee\'e2\'e0\'f2\'e5\'eb\'e5\'ec.\par
+\par
+\'cd\'f3\'e6\'ed\'ee \'f3\'f7\'e5\'f1\'f2\'fc:\par
+\par
+login/auth \'e4\'eb\'ff \'e2\'e5\'e1-\'e8\'ed\'f2\'e5\'f0\'f4\'e5\'e9\'f1\'e0\par
+\par
+Telegram user identity mapping\par
+\par
+\'f1\'e2\'ff\'e7\'fc Telegram account \f2\u8596?\f3\lang1033  web account\par
+\par
+\f0\lang1049\'e1\'e5\'e7\'ee\'ef\'e0\'f1\'ed\'e0\'ff \'f1\'e5\'f1\'f1\'e8\'ff\par
+\par
+\'f2\'ee\'ea\'e5\'ed\'fb / cookie strategy\par
+\par
+refresh/access model, \'e5\'f1\'eb\'e8 \'f3\'ec\'e5\'f1\'f2\'ed\'ee\par
+\par
+\'e7\'e0\'f9\'e8\'f2\'f3 \'ee\'f2 \'ed\'e5\'f1\'e0\'ed\'ea\'f6\'e8\'ee\'ed\'e8\'f0\'ee\'e2\'e0\'ed\'ed\'ee\'e3\'ee \'e4\'ee\'f1\'f2\'f3\'ef\'e0\par
+\par
+\'c2\'e0\'e6\'ed\'ee:\par
+\par
+\'ef\'ee\'eb\'fc\'e7\'ee\'e2\'e0\'f2\'e5\'eb\'fc \'e8\'e7 \'f7\'e0\'f2\'e0 \'e8 \'ef\'ee\'eb\'fc\'e7\'ee\'e2\'e0\'f2\'e5\'eb\'fc \'e2 web UI \'e4\'ee\'eb\'e6\'ed\'fb \'e1\'fb\'f2\'fc \'ee\'e4\'ed\'ee\'e7\'ed\'e0\'f7\'ed\'ee \'f1\'e2\'ff\'e7\'e0\'ed\'fb\par
+\par
+\'e4\'e5\'e9\'f1\'f2\'e2\'e8\'ff, \'f1\'ee\'e7\'e4\'e0\'ed\'ed\'fb\'e5 \'e8\'e7 Telegram, \'e4\'ee\'eb\'e6\'ed\'fb \'ef\'f0\'e8\'ed\'e0\'e4\'eb\'e5\'e6\'e0\'f2\'fc \'ea\'ee\'f0\'f0\'e5\'ea\'f2\'ed\'ee\'ec\'f3 \'ef\'ee\'eb\'fc\'e7\'ee\'e2\'e0\'f2\'e5\'eb\'fe / workspace\par
+\par
+\'ed\'e5 \'e4\'ee\'eb\'e6\'ed\'ee \'e1\'fb\'f2\'fc \'f1\'e8\'f2\'f3\'e0\'f6\'e8\'e8, \'e3\'e4\'e5 \'ee\'e4\'e8\'ed \'ef\'ee\'eb\'fc\'e7\'ee\'e2\'e0\'f2\'e5\'eb\'fc \'e2\'e8\'e4\'e8\'f2 \'f0\'e5\'e7\'f3\'eb\'fc\'f2\'e0\'f2\'fb \'e4\'f0\'f3\'e3\'ee\'e3\'ee \'ef\'f0\'ee\'f1\'f2\'ee \'ef\'ee ID \'e8\'eb\'e8 URL\par
+\par
+2. \'c0\'e2\'f2\'ee\'f0\'e8\'e7\'e0\'f6\'e8\'ff \'e8 \'f0\'e0\'e7\'e3\'f0\'e0\'ed\'e8\'f7\'e5\'ed\'e8\'e5 \'e4\'ee\'f1\'f2\'f3\'ef\'e0\par
+\par
+\'cd\'f3\'e6\'ed\'e0 \'ed\'ee\'f0\'ec\'e0\'eb\'fc\'ed\'e0\'ff \'f1\'e8\'f1\'f2\'e5\'ec\'e0 \'ef\'f0\'e0\'e2, \'e0 \'ed\'e5 \'ef\'f0\'ee\'f1\'f2\'ee \'ef\'ee\'eb\'e5 user_id.\par
+\par
+\'cf\'f0\'ee\'e4\'f3\'ec\'e0\'e9 \'ec\'ee\'e4\'e5\'eb\'fc \'e4\'ee\'f1\'f2\'f3\'ef\'e0 \'ec\'e8\'ed\'e8\'ec\'f3\'ec \'ed\'e0 \'f1\'eb\'e5\'e4\'f3\'fe\'f9\'e8\'f5 \'f3\'f0\'ee\'e2\'ed\'ff\'f5:\par
+\par
+\'ef\'ee\'eb\'fc\'e7\'ee\'e2\'e0\'f2\'e5\'eb\'fc\par
+\par
+\'f0\'ee\'eb\'fc\par
+\par
+workspace / team / organization\par
+\par
+\'e2\'eb\'e0\'e4\'e5\'ed\'e8\'e5 \'ee\'e1\'fa\'e5\'ea\'f2\'ee\'ec\par
+\par
+shared/team access \'ef\'f0\'e8 \'ed\'e5\'ee\'e1\'f5\'ee\'e4\'e8\'ec\'ee\'f1\'f2\'e8\par
+\par
+billing scope\par
+\par
+subscription scope\par
+\par
+\'cf\'f0\'e8\'ec\'e5\'f0\'fb \'f0\'ee\'eb\'e5\'e9:\par
+\par
+owner\par
+\par
+admin\par
+\par
+manager\par
+\par
+analyst\par
+\par
+viewer\par
+\par
+billing_admin\par
+\par
+\'ca\'e0\'ea\'e8\'e5 \'ef\'f0\'e0\'e2\'e0 \'ed\'f3\'e6\'ed\'ee \'ef\'f0\'e5\'e4\'f3\'f1\'ec\'ee\'f2\'f0\'e5\'f2\'fc:\par
+\par
+\'f1\'ee\'e7\'e4\'e0\'e2\'e0\'f2\'fc research jobs\par
+\par
+\'e7\'e0\'ef\'f3\'f1\'ea\'e0\'f2\'fc parsing jobs\par
+\par
+\'f1\'ec\'ee\'f2\'f0\'e5\'f2\'fc jobs\par
+\par
+\'f1\'ec\'ee\'f2\'f0\'e5\'f2\'fc \'f0\'e5\'e7\'f3\'eb\'fc\'f2\'e0\'f2\'fb\par
+\par
+\'f0\'e5\'e4\'e0\'ea\'f2\'e8\'f0\'ee\'e2\'e0\'f2\'fc job config\par
+\par
+\'f3\'e4\'e0\'eb\'ff\'f2\'fc / \'e0\'f0\'f5\'e8\'e2\'e8\'f0\'ee\'e2\'e0\'f2\'fc jobs\par
+\par
+\'ef\'e5\'f0\'e5\'e7\'e0\'ef\'f3\'f1\'ea\'e0\'f2\'fc runs\par
+\par
+\'fd\'ea\'f1\'ef\'ee\'f0\'f2\'e8\'f0\'ee\'e2\'e0\'f2\'fc \'e4\'e0\'ed\'ed\'fb\'e5\par
+\par
+\'f3\'ef\'f0\'e0\'e2\'eb\'ff\'f2\'fc \'f8\'e0\'e1\'eb\'ee\'ed\'e0\'ec\'e8\par
+\par
+\'ed\'e0\'f1\'f2\'f0\'e0\'e8\'e2\'e0\'f2\'fc providers / \'e8\'ed\'f2\'e5\'e3\'f0\'e0\'f6\'e8\'e8\par
+\par
+\'e2\'e8\'e4\'e5\'f2\'fc usage / quota / billing data\par
+\par
+\'f3\'ef\'f0\'e0\'e2\'eb\'ff\'f2\'fc \'ef\'ee\'e4\'ef\'e8\'f1\'ea\'ee\'e9 / \'f2\'e0\'f0\'e8\'f4\'ee\'ec / \'ef\'eb\'e0\'f2\'b8\'e6\'ed\'fb\'ec\'e8 \'ec\'e5\'f2\'ee\'e4\'e0\'ec\'e8\par
+\par
+\'e2\'e8\'e4\'e5\'f2\'fc audit logs\par
+\par
+\'cd\'f3\'e6\'ed\'ee \'ef\'f0\'ee\'e4\'f3\'ec\'e0\'f2\'fc:\par
+\par
+access control \'ed\'e0 \'f3\'f0\'ee\'e2\'ed\'e5 API\par
+\par
+access control \'ed\'e0 \'f3\'f0\'ee\'e2\'ed\'e5 \'c1\'c4-\'e7\'e0\'ef\'f0\'ee\'f1\'ee\'e2\par
+\par
+access control \'ed\'e0 \'f3\'f0\'ee\'e2\'ed\'e5 UI\par
+\par
+\'e7\'e0\'f9\'e8\'f2\'f3 \'ee\'f2 \'e3\'ee\'f0\'e8\'e7\'ee\'ed\'f2\'e0\'eb\'fc\'ed\'ee\'e3\'ee \'e4\'ee\'f1\'f2\'f3\'ef\'e0 \'ea \'f7\'f3\'e6\'e8\'ec \'e4\'e0\'ed\'ed\'fb\'ec\par
+\par
+\'e7\'e0\'f9\'e8\'f2\'f3 \'e4\'ee\'f1\'f2\'f3\'ef\'e0 \'ea billing-\'ee\'e1\'fa\'e5\'ea\'f2\'e0\'ec \'e8 usage-\'e4\'e0\'ed\'ed\'fb\'ec\par
+\par
+3. \'cf\'ee\'e4\'ef\'e8\'f1\'ee\'f7\'ed\'e0\'ff \'ec\'ee\'e4\'e5\'eb\'fc \'e4\'ee\'f1\'f2\'f3\'ef\'e0\par
+\par
+\'cd\'f3\'e6\'ed\'ee \'f1\'ef\'f0\'ee\'e5\'ea\'f2\'e8\'f0\'ee\'e2\'e0\'f2\'fc \'f1\'e8\'f1\'f2\'e5\'ec\'f3 \'f2\'e0\'ea, \'ea\'e0\'ea \'e4\'eb\'ff \'e2\'ed\'e5\'f8\'ed\'e5\'e3\'ee SaaS-\'ef\'f0\'ee\'e4\'f3\'ea\'f2\'e0.\par
+\par
+\'cd\'f3\'e6\'ed\'ee \'ef\'f0\'e5\'e4\'f3\'f1\'ec\'ee\'f2\'f0\'e5\'f2\'fc:\par
+\par
+\'f2\'e0\'f0\'e8\'f4\'ed\'fb\'e5 \'ef\'eb\'e0\'ed\'fb\par
+\par
+\'ef\'ee\'e4\'ef\'e8\'f1\'ea\'e8\par
+\par
+\'ef\'f0\'ee\'e1\'ed\'fb\'e9 \'ef\'e5\'f0\'e8\'ee\'e4, \'e5\'f1\'eb\'e8 \'ef\'f0\'e8\'ec\'e5\'ed\'e8\'ec\'ee\par
+\par
+\'f1\'f2\'e0\'f2\'f3\'f1 \'ef\'ee\'e4\'ef\'e8\'f1\'ea\'e8\par
+\par
+period start / period end\par
+\par
+grace period \'ef\'f0\'e8 \'ed\'e5\'f3\'f1\'ef\'e5\'f8\'ed\'ee\'e9 \'ee\'ef\'eb\'e0\'f2\'e5\par
+\par
+suspended / past_due / canceled / trial / active \'f1\'ee\'f1\'f2\'ee\'ff\'ed\'e8\'ff\par
+\par
+\'ee\'e3\'f0\'e0\'ed\'e8\'f7\'e5\'ed\'e8\'e5 \'e8\'eb\'e8 \'ee\'f2\'ea\'eb\'fe\'f7\'e5\'ed\'e8\'e5 \'f4\'f3\'ed\'ea\'f6\'e8\'e9 \'ef\'f0\'e8 \'ed\'e5\'ee\'ef\'eb\'e0\'f2\'e5\par
+\par
+\'e2\'ee\'e7\'ec\'ee\'e6\'ed\'ee\'f1\'f2\'fc \'e0\'ef\'e3\'f0\'e5\'e9\'e4\'e0 / \'e4\'e0\'f3\'ed\'e3\'f0\'e5\'e9\'e4\'e0 \'f2\'e0\'f0\'e8\'f4\'e0\par
+\par
+\'eb\'e8\'f7\'ed\'fb\'e5 \'f2\'e0\'f0\'e8\'f4\'fb \'e8 workspace/team \'f2\'e0\'f0\'e8\'f4\'fb\par
+\par
+\'c2\'e0\'e6\'ed\'ee:\par
+\par
+\'d1\'e8\'f1\'f2\'e5\'ec\'e0 \'e4\'ee\'eb\'e6\'ed\'e0 \'f3\'ec\'e5\'f2\'fc:\par
+\par
+\'ef\'f0\'ee\'e2\'e5\'f0\'ff\'f2\'fc \'e4\'ee\'f1\'f2\'f3\'ef \'ef\'e5\'f0\'e5\'e4 \'e7\'e0\'ef\'f3\'f1\'ea\'ee\'ec research jobs\par
+\par
+\'ee\'e3\'f0\'e0\'ed\'e8\'f7\'e8\'e2\'e0\'f2\'fc \'f0\'e0\'e1\'ee\'f2\'f3 \'ef\'f0\'e8 \'ee\'f2\'f1\'f3\'f2\'f1\'f2\'e2\'e8\'e8 \'e0\'ea\'f2\'e8\'e2\'ed\'ee\'e9 \'ef\'ee\'e4\'ef\'e8\'f1\'ea\'e8\par
+\par
+\'ed\'e5 \'ef\'ee\'e7\'e2\'ee\'eb\'ff\'f2\'fc \'f1\'ee\'e7\'e4\'e0\'e2\'e0\'f2\'fc \'ed\'ee\'e2\'fb\'e5 job \'e8\'eb\'e8 \'e7\'e0\'ef\'f3\'f1\'ea\'e0\'f2\'fc run, \'e5\'f1\'eb\'e8 \'ef\'ee\'e4\'ef\'e8\'f1\'ea\'e0 \'ed\'e5\'e0\'ea\'f2\'e8\'e2\'ed\'e0 \'e8\'eb\'e8 \'eb\'e8\'ec\'e8\'f2\'fb \'e8\'f1\'f7\'e5\'f0\'ef\'e0\'ed\'fb\par
+\par
+\'ea\'ee\'f0\'f0\'e5\'ea\'f2\'ed\'ee \'ee\'e1\'f0\'e0\'e1\'e0\'f2\'fb\'e2\'e0\'f2\'fc \'f3\'e6\'e5 \'f1\'ee\'f5\'f0\'e0\'ed\'b8\'ed\'ed\'fb\'e5 \'e4\'e0\'ed\'ed\'fb\'e5 \'ef\'ee\'f1\'eb\'e5 \'ee\'f2\'ea\'eb\'fe\'f7\'e5\'ed\'e8\'ff \'ef\'ee\'e4\'ef\'e8\'f1\'ea\'e8\par
+\par
+\'f0\'e0\'e7\'eb\'e8\'f7\'e0\'f2\'fc:\par
+\par
+read-only access\par
+\par
+blocked access\par
+\par
+limited access\par
+\par
+grace mode\par
+\par
+\'ce\'f2\'e4\'e5\'eb\'fc\'ed\'ee \'ef\'f0\'ee\'e4\'f3\'ec\'e0\'e9:\par
+\par
+\'f7\'f2\'ee \'ef\'f0\'ee\'e8\'f1\'f5\'ee\'e4\'e8\'f2 \'ef\'f0\'e8 \'ef\'f0\'ee\'f1\'f0\'ee\'f7\'ea\'e5 \'ee\'ef\'eb\'e0\'f2\'fb\par
+\par
+\'f7\'f2\'ee \'ef\'f0\'ee\'e8\'f1\'f5\'ee\'e4\'e8\'f2 \'ef\'f0\'e8 \'ee\'f2\'ec\'e5\'ed\'e5 \'ef\'ee\'e4\'ef\'e8\'f1\'ea\'e8\par
+\par
+\'f7\'f2\'ee \'ef\'f0\'ee\'e8\'f1\'f5\'ee\'e4\'e8\'f2 \'ef\'f0\'e8 \'e8\'f1\'f7\'e5\'f0\'ef\'e0\'ed\'e8\'e8 \'eb\'e8\'ec\'e8\'f2\'ee\'e2 \'e2\'ed\'f3\'f2\'f0\'e8 \'e0\'ea\'f2\'e8\'e2\'ed\'ee\'e3\'ee \'ef\'eb\'e0\'ed\'e0\par
+\par
+\'ea\'e0\'ea \'e2\'e5\'f1\'f2\'e8 \'f1\'e5\'e1\'ff \'ef\'f0\'e8 \'f1\'ec\'e5\'ed\'e5 \'ef\'eb\'e0\'ed\'e0\par
+\par
+4. \'c1\'e8\'eb\'eb\'e8\'ed\'e3\par
+\par
+\'cd\'f3\'e6\'ed\'ee \'e7\'e0\'f0\'e0\'ed\'e5\'e5 \'e7\'e0\'eb\'ee\'e6\'e8\'f2\'fc billing architecture.\par
+\par
+\'cf\'f0\'ee\'e4\'f3\'ec\'e0\'e9:\par
+\par
+\'f1\'f3\'f9\'ed\'ee\'f1\'f2\'e8 \'ef\'eb\'e0\'ed\'e0 / \'ef\'ee\'e4\'ef\'e8\'f1\'ea\'e8 / \'ef\'eb\'e0\'f2\'e5\'e6\'e5\'e9 / invoice / usage records\par
+\par
+lifecycle \'ef\'ee\'e4\'ef\'e8\'f1\'ea\'e8\par
+\par
+webhook/event handling \'ee\'f2 \'ef\'eb\'e0\'f2\'b8\'e6\'ed\'ee\'e3\'ee \'ef\'f0\'ee\'e2\'e0\'e9\'e4\'e5\'f0\'e0\par
+\par
+billing events\par
+\par
+payment status transitions\par
+\par
+retry / dunning logic \'ed\'e0 \'e2\'fb\'f1\'ee\'ea\'ee\'ec \'f3\'f0\'ee\'e2\'ed\'e5\par
+\par
+\'ee\'e3\'f0\'e0\'ed\'e8\'f7\'e5\'ed\'e8\'ff \'e4\'ee\'f1\'f2\'f3\'ef\'e0 \'e2 \'e7\'e0\'e2\'e8\'f1\'e8\'ec\'ee\'f1\'f2\'e8 \'ee\'f2 billing state\par
+\par
+\'c2\'e0\'e6\'ed\'ee:\par
+\par
+\'cd\'e5 \'ed\'f3\'e6\'ed\'ee \'ef\'f0\'e8\'e2\'ff\'e7\'fb\'e2\'e0\'f2\'fc\'f1\'ff \'e6\'b8\'f1\'f2\'ea\'ee \'ea \'ee\'e4\'ed\'ee\'ec\'f3 \'ef\'f0\'ee\'e2\'e0\'e9\'e4\'e5\'f0\'f3 \'ee\'ef\'eb\'e0\'f2\'fb, \'e5\'f1\'eb\'e8 \'fd\'f2\'ee \'ed\'e5 \'f2\'f0\'e5\'e1\'f3\'e5\'f2\'f1\'ff.\par
+\'cd\'f3\'e6\'e5\'ed abstraction layer, \'f7\'f2\'ee\'e1\'fb \'ef\'ee\'f2\'ee\'ec \'ec\'ee\'e6\'ed\'ee \'e1\'fb\'eb\'ee \'ef\'ee\'e4\'ea\'eb\'fe\'f7\'e8\'f2\'fc \'ed\'f3\'e6\'ed\'fb\'e9 billing provider.\par
+\par
+\'cd\'f3\'e6\'ed\'ee \'ef\'f0\'e5\'e4\'f3\'f1\'ec\'ee\'f2\'f0\'e5\'f2\'fc:\par
+\par
+billing account \'ed\'e0 user \'e8\'eb\'e8 workspace \'f3\'f0\'ee\'e2\'ed\'e5\par
+\par
+plan features\par
+\par
+quotas\par
+\par
+included usage\par
+\par
+overage logic \'e2 \'e1\'f3\'e4\'f3\'f9\'e5\'ec\par
+\par
+suspension policy\par
+\par
+audit trail \'e4\'eb\'ff billing changes\par
+\par
+5. \'d3\'f7\'b8\'f2 \'f2\'ee\'ea\'e5\'ed\'ee\'e2 \'e8 usage accounting\par
+\par
+\'dd\'f2\'ee \'ea\'f0\'e8\'f2\'e8\'f7\'ed\'ee. \'cd\'f3\'e6\'ed\'ee \'e7\'e0\'f0\'e0\'ed\'e5\'e5 \'ef\'f0\'ee\'e4\'f3\'ec\'e0\'f2\'fc \'f1\'e8\'f1\'f2\'e5\'ec\'f3 \'f3\'f7\'b8\'f2\'e0 \'f2\'ee\'ea\'e5\'ed\'ee\'e2, usage \'e8 \'f1\'e5\'e1\'e5\'f1\'f2\'ee\'e8\'ec\'ee\'f1\'f2\'e8.\par
+\par
+\'cf\'ee\'e4 \'f2\'ee\'ea\'e5\'ed\'e0\'ec\'e8 \'e7\'e4\'e5\'f1\'fc \'ed\'f3\'e6\'ed\'ee \'f3\'f7\'e8\'f2\'fb\'e2\'e0\'f2\'fc \'ed\'e5 \'f2\'ee\'eb\'fc\'ea\'ee LLM input/output tokens, \'ed\'ee \'e8 \'e1\'ee\'eb\'e5\'e5 \'f8\'e8\'f0\'ee\'ea\'ee\'e5 usage accounting:\par
+\par
+\'d7\'f2\'ee \'ed\'f3\'e6\'ed\'ee \'f3\'f7\'e8\'f2\'fb\'e2\'e0\'f2\'fc:\par
+\par
+LLM input tokens\par
+\par
+LLM output tokens\par
+\par
+embeddings usage, \'e5\'f1\'eb\'e8 \'ef\'ee\'ff\'e2\'e8\'f2\'f1\'ff\par
+\par
+Firecrawl usage / crawl units / scrape units / request count / pages count\par
+\par
+\'ea\'ee\'eb\'e8\'f7\'e5\'f1\'f2\'e2\'ee job runs\par
+\par
+\'ea\'ee\'eb\'e8\'f7\'e5\'f1\'f2\'e2\'ee \'ed\'e0\'e9\'e4\'e5\'ed\'ed\'fb\'f5/\'ee\'e1\'f0\'e0\'e1\'ee\'f2\'e0\'ed\'ed\'fb\'f5 URL\par
+\par
+storage usage\par
+\par
+export usage\par
+\par
+API usage\par
+\par
+\'f4\'ee\'ed\'ee\'e2\'fb\'e5 \'ee\'ef\'e5\'f0\'e0\'f6\'e8\'e8\par
+\par
+potentially provider-specific metering units\par
+\par
+\'cd\'f3\'e6\'ed\'e0 \'ec\'ee\'e4\'e5\'eb\'fc:\par
+\par
+usage ledger / token ledger\par
+\par
+usage events\par
+\par
+per-user usage\par
+\par
+per-workspace usage\par
+\par
+per-job usage\par
+\par
+per-run usage\par
+\par
+per-provider usage\par
+\par
+per-billing-period usage\par
+\par
+\'cd\'f3\'e6\'ed\'ee \'e7\'e0\'f0\'e0\'ed\'e5\'e5 \'ef\'f0\'ee\'e4\'f3\'ec\'e0\'f2\'fc:\par
+\par
+\'ea\'e0\'ea usage \'e1\'f3\'e4\'e5\'f2 \'e0\'e3\'f0\'e5\'e3\'e8\'f0\'ee\'e2\'e0\'f2\'fc\'f1\'ff\par
+\par
+\'ea\'e0\'ea quota \'e1\'f3\'e4\'e5\'f2 \'ef\'f0\'ee\'e2\'e5\'f0\'ff\'f2\'fc\'f1\'ff \'e4\'ee \'e7\'e0\'ef\'f3\'f1\'ea\'e0 job\par
+\par
+\'ea\'e0\'ea usage \'e1\'f3\'e4\'e5\'f2 \'f1\'ef\'e8\'f1\'fb\'e2\'e0\'f2\'fc\'f1\'ff \'e2\'ee \'e2\'f0\'e5\'ec\'ff \'e2\'fb\'ef\'ee\'eb\'ed\'e5\'ed\'e8\'ff\par
+\par
+\'ea\'e0\'ea \'ee\'e1\'f0\'e0\'e1\'e0\'f2\'fb\'e2\'e0\'f2\'fc \'f7\'e0\'f1\'f2\'e8\'f7\'ed\'fb\'e9 \'ef\'e5\'f0\'e5\'f0\'e0\'f1\'f5\'ee\'e4\par
+\par
+\'ea\'e0\'ea \'e4\'e5\'eb\'e0\'f2\'fc soft/hard limits\par
+\par
+\'ea\'e0\'ea \'ef\'ee\'ea\'e0\'e7\'fb\'e2\'e0\'f2\'fc \'ef\'ee\'eb\'fc\'e7\'ee\'e2\'e0\'f2\'e5\'eb\'fe \'ee\'f1\'f2\'e0\'f2\'ee\'ea \'eb\'e8\'ec\'e8\'f2\'ee\'e2\par
+\par
+\'ea\'e0\'ea \'f1\'f2\'f0\'ee\'e8\'f2\'fc usage dashboard\par
+\par
+\'ce\'f7\'e5\'ed\'fc \'e2\'e0\'e6\'ed\'ee:\par
+\par
+\'d1\'e8\'f1\'f2\'e5\'ec\'e0 \'e4\'ee\'eb\'e6\'ed\'e0 \'e1\'fb\'f2\'fc \'e3\'ee\'f2\'ee\'e2\'e0 \'ea \'f1\'f6\'e5\'ed\'e0\'f0\'e8\'ff\'ec:\par
+\par
+\'eb\'e8\'ec\'e8\'f2 \'f2\'ee\'ea\'e5\'ed\'ee\'e2 \'ed\'e0 \'ec\'e5\'f1\'ff\'f6\par
+\par
+\'eb\'e8\'ec\'e8\'f2 research jobs \'ed\'e0 \'ec\'e5\'f1\'ff\'f6\par
+\par
+\'eb\'e8\'ec\'e8\'f2 crawl pages / scrape operations\par
+\par
+\'eb\'e8\'ec\'e8\'f2 exports\par
+\par
+\'eb\'e8\'ec\'e8\'f2 \'ef\'ee storage\par
+\par
+\'f2\'e0\'f0\'e8\'f4\'e8\'ea\'e0\'f6\'e8\'ff \'ef\'ee \'ef\'e0\'ea\'e5\'f2\'e0\'ec \'e8\'eb\'e8 \'ef\'ee \'e2\'ea\'eb\'fe\'f7\'b8\'ed\'ed\'fb\'ec \'ea\'e2\'ee\'f2\'e0\'ec\par
+\par
+\'e2 \'e1\'f3\'e4\'f3\'f9\'e5\'ec \f1\emdash  overage billing \f0\'e8\'eb\'e8 top-up credits\par
+\par
+6. \'c4\'ee\'f1\'f2\'f3\'ef \'ef\'f0\'e8 \'ed\'e5\'ee\'ef\'eb\'e0\'f2\'e5 \'e8 \'ef\'f0\'e8 \'ef\'f0\'e5\'e2\'fb\'f8\'e5\'ed\'e8\'e8 \'eb\'e8\'ec\'e8\'f2\'ee\'e2\par
+\par
+\'cd\'f3\'e6\'ed\'ee \'e7\'e0\'f0\'e0\'ed\'e5\'e5 \'ef\'f0\'ee\'e4\'f3\'ec\'e0\'f2\'fc \'ea\'ee\'ed\'ea\'f0\'e5\'f2\'ed\'f3\'fe \'e1\'e8\'e7\'ed\'e5\'f1-\'eb\'ee\'e3\'e8\'ea\'f3 \'ee\'e3\'f0\'e0\'ed\'e8\'f7\'e5\'ed\'e8\'e9.\par
+\par
+\'ce\'f2\'e4\'e5\'eb\'fc\'ed\'ee \'ee\'ef\'e8\'f8\'e8:\par
+\par
+\'f7\'f2\'ee \'ec\'ee\'e6\'ed\'ee \'e4\'e5\'eb\'e0\'f2\'fc \'ef\'f0\'e8 active\par
+\par
+\'f7\'f2\'ee \'ec\'ee\'e6\'ed\'ee \'e4\'e5\'eb\'e0\'f2\'fc \'ef\'f0\'e8 trial\par
+\par
+\'f7\'f2\'ee \'ec\'ee\'e6\'ed\'ee \'e4\'e5\'eb\'e0\'f2\'fc \'ef\'f0\'e8 past_due\par
+\par
+\'f7\'f2\'ee \'ec\'ee\'e6\'ed\'ee \'e4\'e5\'eb\'e0\'f2\'fc \'ef\'f0\'e8 grace_period\par
+\par
+\'f7\'f2\'ee \'ec\'ee\'e6\'ed\'ee \'e4\'e5\'eb\'e0\'f2\'fc \'ef\'f0\'e8 suspended\par
+\par
+\'f7\'f2\'ee \'ec\'ee\'e6\'ed\'ee \'e4\'e5\'eb\'e0\'f2\'fc \'ef\'f0\'e8 canceled\par
+\par
+\'f7\'f2\'ee \'ec\'ee\'e6\'ed\'ee \'e4\'e5\'eb\'e0\'f2\'fc \'ef\'f0\'e8 quota_exceeded\par
+\par
+\'cd\'e0\'ef\'f0\'e8\'ec\'e5\'f0 \'ed\'f3\'e6\'ed\'ee \'ef\'f0\'ee\'e4\'f3\'ec\'e0\'f2\'fc:\par
+\par
+\'ec\'ee\'e6\'ed\'ee \'eb\'e8 \'f1\'ec\'ee\'f2\'f0\'e5\'f2\'fc \'f1\'f2\'e0\'f0\'fb\'e5 \'f0\'e5\'e7\'f3\'eb\'fc\'f2\'e0\'f2\'fb\par
+\par
+\'ec\'ee\'e6\'ed\'ee \'eb\'e8 \'fd\'ea\'f1\'ef\'ee\'f0\'f2\'e8\'f0\'ee\'e2\'e0\'f2\'fc\par
+\par
+\'ec\'ee\'e6\'ed\'ee \'eb\'e8 \'f1\'ee\'e7\'e4\'e0\'e2\'e0\'f2\'fc \'ed\'ee\'e2\'fb\'e5 jobs\par
+\par
+\'ec\'ee\'e6\'ed\'ee \'eb\'e8 \'e7\'e0\'ef\'f3\'f1\'ea\'e0\'f2\'fc rerun\par
+\par
+\'ec\'ee\'e6\'ed\'ee \'eb\'e8 \'ef\'ee\'eb\'fc\'e7\'ee\'e2\'e0\'f2\'fc\'f1\'ff \'f7\'e0\'f2\'ee\'e2\'fb\'ec \'e7\'e0\'ef\'f3\'f1\'ea\'ee\'ec \'e7\'e0\'e4\'e0\'f7\par
+\par
+\'e4\'ee\'eb\'e6\'e5\'ed \'eb\'e8 \'e1\'ee\'f2 \'e2 Telegram \'ee\'e1\'fa\'ff\'f1\'ed\'ff\'f2\'fc, \'f7\'f2\'ee \'eb\'e8\'ec\'e8\'f2/\'ef\'ee\'e4\'ef\'e8\'f1\'ea\'e0 \'e7\'e0\'ea\'ee\'ed\'f7\'e8\'eb\'e8\'f1\'fc\par
+\par
+\'ea\'e0\'ea \'ef\'ee\'eb\'fc\'e7\'ee\'e2\'e0\'f2\'e5\'eb\'fc \'f3\'e7\'ed\'e0\'e5\'f2, \'f7\'f2\'ee \'e4\'ee\'f1\'f2\'f3\'ef \'ee\'e3\'f0\'e0\'ed\'e8\'f7\'e5\'ed\par
+\par
+\'c2\'e0\'e6\'ed\'ee:\par
+\par
+\'dd\'f2\'e0 \'eb\'ee\'e3\'e8\'ea\'e0 \'e4\'ee\'eb\'e6\'ed\'e0 \'e1\'fb\'f2\'fc:\par
+\par
+\'ef\'f0\'ee\'e7\'f0\'e0\'f7\'ed\'ee\'e9\par
+\par
+\'e1\'e5\'e7\'ee\'ef\'e0\'f1\'ed\'ee\'e9\par
+\par
+\'e5\'e4\'e8\'ed\'ee\'ee\'e1\'f0\'e0\'e7\'ed\'ee\'e9 \'ec\'e5\'e6\'e4\'f3 chat \'e8 web\par
+\par
+\'f6\'e5\'ed\'f2\'f0\'e0\'eb\'e8\'e7\'ee\'e2\'e0\'ed\'ed\'ee\'e9, \'e0 \'ed\'e5 \'f0\'e0\'e7\'ec\'e0\'e7\'e0\'ed\'ed\'ee\'e9 \'ef\'ee \'ea\'ee\'e4\'f3\par
+\par
+7. \'c8\'e7\'ee\'eb\'ff\'f6\'e8\'ff \'e4\'e0\'ed\'ed\'fb\'f5\par
+\par
+\'c2\'f1\'e5 \'e4\'e0\'ed\'ed\'fb\'e5 research-\'e4\'ee\'ec\'e5\'ed\'e0 \'e4\'ee\'eb\'e6\'ed\'fb \'e1\'fb\'f2\'fc \'e8\'e7\'ee\'eb\'e8\'f0\'ee\'e2\'e0\'ed\'fb \'ef\'ee \'ef\'ee\'eb\'fc\'e7\'ee\'e2\'e0\'f2\'e5\'eb\'fe / workspace / tenant.\par
+\par
+\'cd\'f3\'e6\'ed\'ee \'ef\'f0\'ee\'e4\'f3\'ec\'e0\'f2\'fc \'e8 \'ee\'ef\'e8\'f1\'e0\'f2\'fc:\par
+\par
+\'ea\'e0\'ea \'e2\'f1\'e5 \'f1\'f3\'f9\'ed\'ee\'f1\'f2\'e8 \'e1\'f3\'e4\'f3\'f2 \'f1\'e2\'ff\'e7\'fb\'e2\'e0\'f2\'fc\'f1\'ff \'f1 owner / workspace / tenant / subscription scope\par
+\par
+\'ea\'e0\'ea \'f0\'e5\'e0\'eb\'e8\'e7\'ee\'e2\'e0\'f2\'fc \'e1\'e5\'e7\'ee\'ef\'e0\'f1\'ed\'fb\'e5 \'f4\'e8\'eb\'fc\'f2\'f0\'fb \'e2\'ee \'e2\'f1\'e5\'f5 \'e7\'e0\'ef\'f0\'ee\'f1\'e0\'f5\par
+\par
+\'ea\'e0\'ea \'e8\'f1\'ea\'eb\'fe\'f7\'e8\'f2\'fc \'f3\'f2\'e5\'f7\'ea\'f3 \'e4\'e0\'ed\'ed\'fb\'f5 \'f7\'e5\'f0\'e5\'e7 list/get/export endpoints\par
+\par
+\'ea\'e0\'ea \'ee\'e1\'f0\'e0\'e1\'e0\'f2\'fb\'e2\'e0\'f2\'fc shared objects, \'e5\'f1\'eb\'e8 \'ee\'ed\'e8 \'ef\'ee\'ff\'e2\'ff\'f2\'f1\'ff \'ef\'ee\'e7\'e6\'e5\par
+\par
+\'ea\'e0\'ea \'ef\'ee\'e4\'e3\'ee\'f2\'ee\'e2\'e8\'f2\'fc \'e0\'f0\'f5\'e8\'f2\'e5\'ea\'f2\'f3\'f0\'f3 \'ea multi-tenant \'f0\'e5\'e6\'e8\'ec\'f3\par
+\par
+\'c2\'e0\'e6\'ed\'ee:\par
+\par
+\'cd\'e5\'eb\'fc\'e7\'ff \'e4\'e5\'eb\'e0\'f2\'fc \'f1\'e8\'f1\'f2\'e5\'ec\'f3, \'e3\'e4\'e5:\par
+\par
+\'e2 API \'ec\'ee\'e6\'ed\'ee \'ef\'ee\'eb\'f3\'f7\'e8\'f2\'fc \'f7\'f3\'e6\'f3\'fe job \'ef\'ee ID\par
+\par
+\'f0\'e5\'e7\'f3\'eb\'fc\'f2\'e0\'f2\'fb \'e4\'ee\'f1\'f2\'f3\'ef\'ed\'fb \'e1\'e5\'e7 \'ef\'f0\'ee\'e2\'e5\'f0\'ea\'e8 \'ef\'f0\'e0\'e2\par
+\par
+web UI \'f4\'e8\'eb\'fc\'f2\'f0\'f3\'e5\'f2 \'f2\'ee\'eb\'fc\'ea\'ee \'ed\'e0 \'f4\'f0\'ee\'ed\'f2\'e5\par
+\par
+Telegram \'ea\'ee\'ec\'e0\'ed\'e4\'fb \'ec\'ee\'e3\'f3\'f2 \'ee\'e1\'f0\'e0\'f9\'e0\'f2\'fc\'f1\'ff \'ea \'f7\'f3\'e6\'e8\'ec job\par
+\par
+provider metadata \'e8\'eb\'e8 artifacts \'f3\'f2\'e5\'ea\'f3\'f2 \'ec\'e5\'e6\'e4\'f3 \'ef\'ee\'eb\'fc\'e7\'ee\'e2\'e0\'f2\'e5\'eb\'ff\'ec\'e8\par
+\par
+usage/billing \'e4\'e0\'ed\'ed\'fb\'e5 \'ee\'e4\'ed\'ee\'e3\'ee workspace \'e2\'e8\'e4\'ed\'fb \'e4\'f0\'f3\'e3\'ee\'ec\'f3\par
+\par
+8. \'c1\'e5\'e7\'ee\'ef\'e0\'f1\'ed\'ee\'e5 \'f5\'f0\'e0\'ed\'e5\'ed\'e8\'e5\par
+\par
+\'cd\'f3\'e6\'ed\'ee \'ef\'f0\'ee\'e4\'f3\'ec\'e0\'f2\'fc security-first storage model.\par
+\par
+\'ce\'e1\'ff\'e7\'e0\'f2\'e5\'eb\'fc\'ed\'ee \'f3\'f7\'e5\'f1\'f2\'fc:\par
+\par
+\'f5\'f0\'e0\'ed\'e5\'ed\'e8\'e5 raw scraped data\par
+\par
+\'f5\'f0\'e0\'ed\'e5\'ed\'e8\'e5 extracted data\par
+\par
+provider metadata\par
+\par
+user prompts / original requests\par
+\par
+job logs\par
+\par
+audit logs\par
+\par
+billing logs\par
+\par
+usage logs\par
+\par
+errors\par
+\par
+credentials / API keys / provider config\par
+\par
+payment/provider identifiers\par
+\par
+\'ce\'f1\'ee\'e1\'ee \'e2\'e0\'e6\'ed\'ee:\par
+\par
+\'ed\'e5 \'f5\'f0\'e0\'ed\'e8\'f2\'fc \'f7\'f3\'e2\'f1\'f2\'e2\'e8\'f2\'e5\'eb\'fc\'ed\'fb\'e5 \'ea\'eb\'fe\'f7\'e8 \'e2 \'ee\'f2\'ea\'f0\'fb\'f2\'ee\'ec \'e2\'e8\'e4\'e5\par
+\par
+\'ee\'f2\'e4\'e5\'eb\'e8\'f2\'fc user data \'ee\'f2 provider secrets\par
+\par
+\'ee\'f2\'e4\'e5\'eb\'e8\'f2\'fc billing-sensitive \'e4\'e0\'ed\'ed\'fb\'e5\par
+\par
+\'ef\'f0\'ee\'e4\'f3\'ec\'e0\'f2\'fc secure config storage\par
+\par
+\'ef\'f0\'e5\'e4\'f3\'f1\'ec\'ee\'f2\'f0\'e5\'f2\'fc redaction / masking\par
+\par
+\'ed\'e5 \'eb\'ee\'e3\'e8\'f0\'ee\'e2\'e0\'f2\'fc \'eb\'e8\'f8\'ed\'e8\'e5 \'f7\'f3\'e2\'f1\'f2\'e2\'e8\'f2\'e5\'eb\'fc\'ed\'fb\'e5 \'e4\'e0\'ed\'ed\'fb\'e5 \'e2 \'ee\'f2\'ea\'f0\'fb\'f2\'ee\'ec \'e2\'e8\'e4\'e5\par
+\par
+9. \'c0\'f3\'e4\'e8\'f2 \'e8 \'e6\'f3\'f0\'ed\'e0\'eb\'e8\'f0\'ee\'e2\'e0\'ed\'e8\'e5\par
+\par
+\'cd\'f3\'e6\'e5\'ed audit trail.\par
+\par
+\'ce\'e1\'ff\'e7\'e0\'f2\'e5\'eb\'fc\'ed\'ee \'eb\'ee\'e3\'e8\'f0\'ee\'e2\'e0\'f2\'fc:\par
+\par
+\'ea\'f2\'ee \'f1\'ee\'e7\'e4\'e0\'eb job\par
+\par
+\'ea\'f2\'ee \'e8\'e7\'ec\'e5\'ed\'e8\'eb job\par
+\par
+\'ea\'f2\'ee \'e7\'e0\'ef\'f3\'f1\'f2\'e8\'eb job\par
+\par
+\'ea\'f2\'ee \'ee\'f2\'ec\'e5\'ed\'e8\'eb job\par
+\par
+\'ea\'f2\'ee \'fd\'ea\'f1\'ef\'ee\'f0\'f2\'e8\'f0\'ee\'e2\'e0\'eb \'f0\'e5\'e7\'f3\'eb\'fc\'f2\'e0\'f2\'fb\par
+\par
+\'ea\'f2\'ee \'e8\'e7\'ec\'e5\'ed\'e8\'eb \'f8\'e0\'e1\'eb\'ee\'ed\par
+\par
+\'ea\'f2\'ee \'e8\'e7\'ec\'e5\'ed\'e8\'eb provider settings\par
+\par
+\'ea\'f2\'ee \'e8\'e7\'ec\'e5\'ed\'e8\'eb billing/subscription settings\par
+\par
+\'ea\'f2\'ee \'ef\'f0\'ee\'f1\'ec\'e0\'f2\'f0\'e8\'e2\'e0\'eb \'f7\'f3\'e2\'f1\'f2\'e2\'e8\'f2\'e5\'eb\'fc\'ed\'fb\'e5 \'e4\'e0\'ed\'ed\'fb\'e5, \'e5\'f1\'eb\'e8 \'fd\'f2\'ee \'f3\'ec\'e5\'f1\'f2\'ed\'ee\par
+\par
+\'ee\'f2\'ea\'f3\'e4\'e0 \'ef\'f0\'e8\'f8\'eb\'ee \'e4\'e5\'e9\'f1\'f2\'e2\'e8\'e5: chat / web / system\par
+\par
+usage events\par
+\par
+quota enforcement events\par
+\par
+billing enforcement events\par
+\par
+access-denied events\par
+\par
+\'cd\'f3\'e6\'ed\'fb \'f1\'f3\'f9\'ed\'ee\'f1\'f2\'e8/\'ec\'e5\'f5\'e0\'ed\'e8\'e7\'ec\'fb \'e4\'eb\'ff:\par
+\par
+audit events\par
+\par
+security events\par
+\par
+billing events\par
+\par
+usage events\par
+\par
+job lifecycle events\par
+\par
+failed auth / suspicious usage\par
+\par
+10. Security-first API design\par
+\par
+\'c2\'f1\'e5 API endpoints \'ed\'ee\'e2\'ee\'e3\'ee \'e4\'ee\'ec\'e5\'ed\'e0 \'ed\'f3\'e6\'ed\'ee \'f1\'ef\'f0\'ee\'e5\'ea\'f2\'e8\'f0\'ee\'e2\'e0\'f2\'fc \'f1 \'f3\'f7\'b8\'f2\'ee\'ec:\par
+\par
+auth required by default\par
+\par
+role-based authorization\par
+\par
+workspace/team scoping\par
+\par
+billing/subscription checks\par
+\par
+quota checks\par
+\par
+pagination and safe filtering\par
+\par
+validation\par
+\par
+rate limiting considerations\par
+\par
+export protection\par
+\par
+safe error messages\par
+\par
+no leakage of internal/provider details\par
+\par
+\'cd\'e5 \'e4\'ee\'ef\'f3\'f1\'ea\'e0\'e5\'f2\'f1\'ff:\par
+\par
+\'ee\'f2\'ea\'f0\'fb\'f2\'fb\'e5 \'ed\'e5\'e1\'e5\'e7\'ee\'ef\'e0\'f1\'ed\'fb\'e5 endpoints\par
+\par
+\'e4\'ee\'f1\'f2\'f3\'ef \'ef\'ee guessable id \'e1\'e5\'e7 authz\par
+\par
+\'e4\'ee\'e2\'e5\'f0\'e8\'e5 \'f4\'f0\'ee\'ed\'f2\'f3 \'e2 \'e2\'ee\'ef\'f0\'ee\'f1\'e0\'f5 permissions\par
+\par
+\'f1\'ec\'e5\'f8\'e8\'e2\'e0\'ed\'e8\'e5 \'e4\'e0\'ed\'ed\'fb\'f5 \'f0\'e0\'e7\'ed\'fb\'f5 \'ef\'ee\'eb\'fc\'e7\'ee\'e2\'e0\'f2\'e5\'eb\'e5\'e9 \'e2 \'ee\'e4\'ed\'ee\'ec \'f0\'e5\'e7\'f3\'eb\'fc\'f2\'e0\'f2\'e5\par
+\par
+\'ee\'f2\'f1\'f3\'f2\'f1\'f2\'e2\'e8\'e5 \'ef\'f0\'ee\'e2\'e5\'f0\'ea\'e8 \'ef\'f0\'e0\'e2 \'ed\'e0 rerun/export/delete\par
+\par
+\'ee\'f2\'f1\'f3\'f2\'f1\'f2\'e2\'e8\'e5 subscription/usage enforcement \'e2 \'ea\'f0\'e8\'f2\'e8\'f7\'ed\'fb\'f5 endpoints\par
+\par
+11. Security-first web UI\par
+\par
+UI \'e4\'ee\'eb\'e6\'e5\'ed \'e1\'fb\'f2\'fc \'f1\'ef\'f0\'ee\'e5\'ea\'f2\'e8\'f0\'ee\'e2\'e0\'ed \'ed\'e5 \'f2\'ee\'eb\'fc\'ea\'ee \'f3\'e4\'ee\'e1\'ed\'ee, \'ed\'ee \'e8 \'e1\'e5\'e7\'ee\'ef\'e0\'f1\'ed\'ee.\par
+\par
+\'cd\'f3\'e6\'ed\'ee \'f3\'f7\'e5\'f1\'f2\'fc:\par
+\par
+login / auth flow\par
+\par
+session expiration / re-auth\par
+\par
+role-based visibility\par
+\par
+subscription state visibility\par
+\par
+usage dashboard\par
+\par
+quota indicators\par
+\par
+\'f1\'ea\'f0\'fb\'f2\'e8\'e5 \'e7\'e0\'ef\'f0\'e5\'f9\'b8\'ed\'ed\'fb\'f5 actions\par
+\par
+\'e7\'e0\'ef\'f0\'e5\'f2 \'ed\'e0 \'ef\'f0\'ee\'f1\'ec\'ee\'f2\'f0 \'f7\'f3\'e6\'e8\'f5 jobs/results\par
+\par
+\'e7\'e0\'f9\'e8\'f2\'e0 billing/admin \'f0\'e0\'e7\'e4\'e5\'eb\'ee\'e2\par
+\par
+\'e1\'e5\'e7\'ee\'ef\'e0\'f1\'ed\'e0\'ff \'f0\'e0\'e1\'ee\'f2\'e0 \'f1 exports\par
+\par
+audit-sensitive actions\par
+\par
+12. Telegram + web identity model\par
+\par
+\'ce\'f7\'e5\'ed\'fc \'e2\'e0\'e6\'ed\'ee \'ef\'f0\'ee\'e4\'f3\'ec\'e0\'f2\'fc, \'ea\'e0\'ea \'ef\'ee\'eb\'fc\'e7\'ee\'e2\'e0\'f2\'e5\'eb\'fc \'e2 Telegram \'f1\'e2\'ff\'e7\'e0\'ed \'f1 \'ef\'ee\'eb\'fc\'e7\'ee\'e2\'e0\'f2\'e5\'eb\'e5\'ec \'e2 \'e2\'e5\'e1\'e5.\par
+\par
+\'cd\'f3\'e6\'ed\'ee \'ef\'f0\'e5\'e4\'eb\'ee\'e6\'e8\'f2\'fc \'e8 \'ee\'ef\'e8\'f1\'e0\'f2\'fc:\par
+\par
+user model\par
+\par
+external identity model\par
+\par
+Telegram identity binding\par
+\par
+account linking flow\par
+\par
+\'ea\'e0\'ea \'ee\'e1\'e5\'f1\'ef\'e5\'f7\'e8\'f2\'fc, \'f7\'f2\'ee Telegram-\'e7\'e0\'e4\'e0\'f7\'e0 \'ef\'ee\'ef\'e0\'e4\'b8\'f2 \'e2 \'ef\'f0\'e0\'e2\'e8\'eb\'fc\'ed\'fb\'e9 account/workspace\par
+\par
+\'ea\'e0\'ea \'ef\'ee\'eb\'fc\'e7\'ee\'e2\'e0\'f2\'e5\'eb\'fc \'e8\'e7 \'f7\'e0\'f2\'e0 \'ee\'f2\'ea\'f0\'ee\'e5\'f2 \'f0\'e5\'e7\'f3\'eb\'fc\'f2\'e0\'f2\'fb \'e2 \'e2\'e5\'e1\'e5 \'e1\'e5\'e7\'ee\'ef\'e0\'f1\'ed\'ee\par
+\par
+\'ea\'e0\'ea \'ed\'e5 \'e4\'e0\'f2\'fc \'e4\'f0\'f3\'e3\'ee\'ec\'f3 \'ef\'ee\'eb\'fc\'e7\'ee\'e2\'e0\'f2\'e5\'eb\'fe \'ee\'f2\'ea\'f0\'fb\'f2\'fc \'f7\'f3\'e6\'f3\'fe research job \'f7\'e5\'f0\'e5\'e7 \'f1\'f1\'fb\'eb\'ea\'f3\par
+\par
+\'ea\'e0\'ea \'ef\'f0\'e8\'ec\'e5\'ed\'ff\'f2\'fc subscription/quota checks \'ea \'e4\'e5\'e9\'f1\'f2\'e2\'e8\'ff\'ec \'e8\'e7 Telegram\par
+\par
+13. \'cf\'ee\'e4\'e3\'ee\'f2\'ee\'e2\'ea\'e0 \'ea \'ea\'ee\'ec\'ec\'e5\'f0\'f7\'e5\'f1\'ea\'ee\'e9 \'ec\'ee\'e4\'e5\'eb\'e8\par
+\par
+\'c0\'f0\'f5\'e8\'f2\'e5\'ea\'f2\'f3\'f0\'e0 \'e4\'ee\'eb\'e6\'ed\'e0 \'e1\'fb\'f2\'fc \'e3\'ee\'f2\'ee\'e2\'e0 \'ea \'f1\'f6\'e5\'ed\'e0\'f0\'e8\'fe, \'e3\'e4\'e5 \'fd\'f2\'ee \'ef\'f0\'ee\'e4\'e0\'b8\'f2\'f1\'ff \'ea\'e0\'ea \'ef\'f0\'ee\'e4\'f3\'ea\'f2.\par
+\par
+\'cd\'f3\'e6\'ed\'ee \'ef\'f0\'e5\'e4\'f3\'f1\'ec\'ee\'f2\'f0\'e5\'f2\'fc:\par
+\par
+personal plans\par
+\par
+team/workspace plans\par
+\par
+different quotas by plan\par
+\par
+premium features\par
+\par
+add-ons / credits \'e2 \'e1\'f3\'e4\'f3\'f9\'e5\'ec\par
+\par
+usage dashboards\par
+\par
+billing admin functions\par
+\par
+future top-ups / overages\par
+\par
+future enterprise tier\par
+\par
+\'c4\'e0\'e6\'e5 \'e5\'f1\'eb\'e8 \'fd\'f2\'ee \'ed\'e5 \'e2\'f1\'b8 \'f0\'e5\'e0\'eb\'e8\'e7\'f3\'e5\'f2\'f1\'ff \'f1\'f0\'e0\'e7\'f3, \'ed\'f3\'e6\'ed\'ee \'e7\'e0\'eb\'ee\'e6\'e8\'f2\'fc \'fd\'f2\'ee \'e2 \'ec\'ee\'e4\'e5\'eb\'fc.\par
+\par
+\'d7\'f2\'ee \'ed\'f3\'e6\'ed\'ee \'f1\'ef\'f0\'ee\'e5\'ea\'f2\'e8\'f0\'ee\'e2\'e0\'f2\'fc \'e8/\'e8\'eb\'e8 \'f0\'e5\'e0\'eb\'e8\'e7\'ee\'e2\'e0\'f2\'fc\par
+1. \'cd\'ee\'e2\'fb\'e9 \'e4\'ee\'ec\'e5\'ed \'e2 \'e0\'f0\'f5\'e8\'f2\'e5\'ea\'f2\'f3\'f0\'e5\par
+\par
+\'c4\'ee\'e1\'e0\'e2\'fc \'ed\'ee\'e2\'fb\'e9 \'e4\'ee\'ec\'e5\'ed \'e2 \'f1\'e8\'f1\'f2\'e5\'ec\'f3.\par
+\par
+\'d0\'e0\'e1\'ee\'f7\'e8\'e5 \'ed\'e0\'e7\'e2\'e0\'ed\'e8\'ff:\par
+\par
+research\par
+\par
+intel\par
+\par
+collection\par
+\par
+parser\par
+\par
+\'c2\'fb\'e1\'e5\'f0\'e8 \'eb\'f3\'f7\'f8\'e5\'e5 \'e8 \'ef\'f0\'e8\'e4\'e5\'f0\'e6\'e8\'e2\'e0\'e9\'f1\'ff \'e5\'e4\'e8\'ed\'ee\'e3\'ee \'ed\'e5\'e9\'ec\'e8\'ed\'e3\'e0 \'ef\'ee \'ef\'f0\'ee\'e5\'ea\'f2\'f3.\par
+\par
+\'cd\'f3\'e6\'ed\'ee:\par
+\par
+\'e2\'f1\'f2\'f0\'ee\'e8\'f2\'fc \'ed\'ee\'e2\'fb\'e9 \'e4\'ee\'ec\'e5\'ed \'e2 supervisor routing\par
+\par
+\'e4\'ee\'e1\'e0\'e2\'e8\'f2\'fc agent/domain handler\par
+\par
+\'ee\'ef\'f0\'e5\'e4\'e5\'eb\'e8\'f2\'fc, \'ea\'e0\'ea \'ee\'ed \'e1\'f3\'e4\'e5\'f2 \'e2\'fb\'e7\'fb\'e2\'e0\'f2\'fc\'f1\'ff \'e8\'e7 \'f7\'e0\'f2\'e0\par
+\par
+\'ef\'f0\'ee\'e4\'f3\'ec\'e0\'f2\'fc, \'ea\'e0\'ea \'ee\'ed \'e1\'f3\'e4\'e5\'f2 \'e2\'e7\'e0\'e8\'ec\'ee\'e4\'e5\'e9\'f1\'f2\'e2\'ee\'e2\'e0\'f2\'fc \'f1 \'e2\'e5\'e1-\'f7\'e0\'f1\'f2\'fc\'fe\par
+\par
+\'f1\'f0\'e0\'e7\'f3 \'e2\'f1\'f2\'f0\'ee\'e8\'f2\'fc user/workspace/subscription awareness\par
+\par
+\'c2\'e0\'e6\'ed\'ee:\par
+\'ed\'ee\'e2\'fb\'e9 \'e4\'ee\'ec\'e5\'ed \'e4\'ee\'eb\'e6\'e5\'ed \'e1\'fb\'f2\'fc \'f0\'e0\'f1\'f8\'e8\'f0\'ff\'e5\'ec\'fb\'ec, \'ed\'e5 \'e7\'e0\'f2\'ee\'f7\'e5\'ed\'ed\'fb\'ec \'f2\'ee\'eb\'fc\'ea\'ee \'ef\'ee\'e4 Firecrawl.\par
+\par
+2. Chat-first \'f1\'f6\'e5\'ed\'e0\'f0\'e8\'e9 \'f0\'e0\'e1\'ee\'f2\'fb \'e0\'e3\'e5\'ed\'f2\'e0\par
+\par
+\'cd\'f3\'e6\'ed\'ee \'f0\'e5\'e0\'eb\'e8\'e7\'ee\'e2\'e0\'f2\'fc/\'f1\'ef\'f0\'ee\'e5\'ea\'f2\'e8\'f0\'ee\'e2\'e0\'f2\'fc conversation flow:\par
+\par
+\'dd\'f2\'e0\'ef 1. \'cf\'ee\'eb\'f3\'f7\'e5\'ed\'e8\'e5 \'e7\'e0\'e4\'e0\'f7\'e8\par
+\par
+\'cf\'ee\'eb\'fc\'e7\'ee\'e2\'e0\'f2\'e5\'eb\'fc \'ef\'e8\'f8\'e5\'f2 \'e7\'e0\'e4\'e0\'f7\'f3 \'f1\'e2\'ee\'e1\'ee\'e4\'ed\'fb\'ec \'f2\'e5\'ea\'f1\'f2\'ee\'ec.\par
+\par
+\'c0\'e3\'e5\'ed\'f2 \'e4\'ee\'eb\'e6\'e5\'ed \'f3\'ec\'e5\'f2\'fc \'e8\'e7\'e2\'eb\'e5\'ea\'e0\'f2\'fc:\par
+\par
+\'f6\'e5\'eb\'fc \'e7\'e0\'e4\'e0\'f7\'e8\par
+\par
+\'f7\'f2\'ee \'e8\'ec\'e5\'ed\'ed\'ee \'e8\'f1\'ea\'e0\'f2\'fc\par
+\par
+\'ea\'e0\'ea\'e8\'e5 \'f1\'f3\'f9\'ed\'ee\'f1\'f2\'e8 \'f1\'ee\'e1\'e8\'f0\'e0\'f2\'fc\par
+\par
+\'ea\'e0\'ea\'e8\'e5 \'ef\'ee\'eb\'ff \'ed\'f3\'e6\'ed\'fb\par
+\par
+\'ee\'e3\'f0\'e0\'ed\'e8\'f7\'e5\'ed\'e8\'ff \'ef\'ee \'f0\'e5\'e3\'e8\'ee\'ed\'f3 / \'ff\'e7\'fb\'ea\'f3 / \'ea\'ee\'eb\'e8\'f7\'e5\'f1\'f2\'e2\'f3\par
+\par
+\'ed\'f3\'e6\'ed\'fb \'eb\'e8 \'ea\'ee\'ed\'f2\'e0\'ea\'f2\'fb / \'f6\'e5\'ed\'fb / \'ea\'e0\'f2\'e5\'e3\'ee\'f0\'e8\'e8 / \'f1\'f2\'f0\'e0\'ed\'e8\'f6\'fb / \'ea\'ee\'ed\'f2\'e5\'ed\'f2\par
+\par
+\'f4\'ee\'f0\'ec\'e0\'f2 \'f0\'e5\'e7\'f3\'eb\'fc\'f2\'e0\'f2\'e0\par
+\par
+\'ef\'f0\'e8\'ee\'f0\'e8\'f2\'e5\'f2 / \'e3\'eb\'f3\'e1\'e8\'ed\'e0\par
+\par
+\'dd\'f2\'e0\'ef 2. \'cf\'f0\'ee\'e2\'e5\'f0\'ea\'e0 \'ea\'ee\'ed\'f2\'e5\'ea\'f1\'f2\'e0 \'ef\'ee\'eb\'fc\'e7\'ee\'e2\'e0\'f2\'e5\'eb\'ff, \'ef\'eb\'e0\'ed\'e0 \'e8 \'e4\'ee\'f1\'f2\'f3\'ef\'e0\par
+\par
+\'c4\'ee \'e7\'e0\'ef\'f3\'f1\'ea\'e0 job \'f1\'e8\'f1\'f2\'e5\'ec\'e0 \'e4\'ee\'eb\'e6\'ed\'e0 \'ef\'ee\'ed\'e8\'ec\'e0\'f2\'fc:\par
+\par
+\'ea\'f2\'ee \'e8\'ed\'e8\'f6\'e8\'e0\'f2\'ee\'f0\par
+\par
+\'e2 \'ea\'e0\'ea\'ee\'ec workspace \'ee\'ed \'ed\'e0\'f5\'ee\'e4\'e8\'f2\'f1\'ff\par
+\par
+\'e8\'ec\'e5\'e5\'f2 \'eb\'e8 \'ef\'f0\'e0\'e2\'ee \'f1\'ee\'e7\'e4\'e0\'e2\'e0\'f2\'fc/\'e7\'e0\'ef\'f3\'f1\'ea\'e0\'f2\'fc research jobs\par
+\par
+\'e0\'ea\'f2\'e8\'e2\'ed\'e0 \'eb\'e8 \'ef\'ee\'e4\'ef\'e8\'f1\'ea\'e0\par
+\par
+\'f5\'e2\'e0\'f2\'e0\'e5\'f2 \'eb\'e8 \'eb\'e8\'ec\'e8\'f2\'ee\'e2 / \'ea\'e2\'ee\'f2 / \'f2\'ee\'ea\'e5\'ed\'ee\'e2\par
+\par
+\'eb\'e8\'f7\'ed\'e0\'ff \'fd\'f2\'ee \'e7\'e0\'e4\'e0\'f7\'e0 \'e8\'eb\'e8 \'ea\'ee\'ec\'e0\'ed\'e4\'ed\'e0\'ff\par
+\par
+\'dd\'f2\'e0\'ef 3. \'d3\'f2\'ee\'f7\'ed\'e5\'ed\'e8\'ff\par
+\par
+\'c5\'f1\'eb\'e8 \'e7\'e0\'e4\'e0\'f7\'e0 \'ed\'e5\'ef\'ee\'eb\'ed\'e0\'ff, \'e0\'e3\'e5\'ed\'f2 \'e7\'e0\'e4\'e0\'b8\'f2 \'f3\'f2\'ee\'f7\'ed\'ff\'fe\'f9\'e8\'e5 \'e2\'ee\'ef\'f0\'ee\'f1\'fb.\par
+\par
+\'cf\'f0\'e8\'ec\'e5\'f0\'fb:\par
+\par
+\'f1\'ea\'ee\'eb\'fc\'ea\'ee \'f0\'e5\'e7\'f3\'eb\'fc\'f2\'e0\'f2\'ee\'e2 \'ed\'f3\'e6\'ed\'ee?\par
+\par
+\'ef\'ee \'ea\'e0\'ea\'e8\'ec \'e8\'f1\'f2\'ee\'f7\'ed\'e8\'ea\'e0\'ec \'e8\'f1\'ea\'e0\'f2\'fc?\par
+\par
+\'ed\'f3\'e6\'ed\'fb \'f2\'ee\'eb\'fc\'ea\'ee \'f1\'e0\'e9\'f2\'fb \'e8\'eb\'e8 \'e5\'f9\'b8 \'ea\'ee\'ed\'f2\'e0\'ea\'f2\'fb?\par
+\par
+\'ed\'f3\'e6\'ed\'ee \'eb\'e8 \'e8\'f1\'ea\'eb\'fe\'f7\'e0\'f2\'fc \'ec\'e0\'f0\'ea\'e5\'f2\'ef\'eb\'e5\'e9\'f1\'fb / \'e0\'e3\'f0\'e5\'e3\'e0\'f2\'ee\'f0\'fb?\par
+\par
+\'ed\'f3\'e6\'ed\'ee \'eb\'e8 \'e4\'e5\'e4\'f3\'ef\'eb\'e8\'f6\'e8\'f0\'ee\'e2\'e0\'f2\'fc?\par
+\par
+\'e2 \'ea\'e0\'ea\'ee\'ec \'e2\'e8\'e4\'e5 \'e2\'e5\'f0\'ed\'f3\'f2\'fc: \'f2\'e0\'e1\'eb\'e8\'f6\'e0, \'ea\'e0\'f0\'f2\'ee\'f7\'ea\'e8, summary, raw dataset?\par
+\par
+\'c2\'e0\'e6\'ed\'ee:\par
+\'f3\'f2\'ee\'f7\'ed\'e5\'ed\'e8\'ff \'e4\'ee\'eb\'e6\'ed\'fb \'e1\'fb\'f2\'fc \'ec\'e8\'ed\'e8\'ec\'e0\'eb\'fc\'ed\'ee \'f0\'e0\'e7\'e4\'f0\'e0\'e6\'e0\'fe\'f9\'e8\'ec\'e8.\par
+\'c5\'f1\'eb\'e8 \'e4\'e0\'ed\'ed\'fb\'f5 \'f3\'e6\'e5 \'e4\'ee\'f1\'f2\'e0\'f2\'ee\'f7\'ed\'ee \'e4\'eb\'ff \'f1\'f2\'e0\'f0\'f2\'e0 \f1\emdash  \f0\'e0\'e3\'e5\'ed\'f2 \'e4\'ee\'eb\'e6\'e5\'ed \'f1\'f2\'e0\'f0\'f2\'ee\'e2\'e0\'f2\'fc.\par
+\par
+\'dd\'f2\'e0\'ef 4. \'cf\'ee\'e4\'f2\'e2\'e5\'f0\'e6\'e4\'e5\'ed\'e8\'e5 \'e2\'ed\'f3\'f2\'f0\'e5\'ed\'ed\'e5\'e3\'ee task spec\par
+\par
+\'cf\'ee\'f1\'eb\'e5 \'f3\'f2\'ee\'f7\'ed\'e5\'ed\'e8\'e9 \'e8\'eb\'e8 \'f1\'f0\'e0\'e7\'f3, \'e5\'f1\'eb\'e8 \'e2\'f1\'b8 \'ef\'ee\'ed\'ff\'f2\'ed\'ee, \'e0\'e3\'e5\'ed\'f2 \'f4\'ee\'f0\'ec\'e8\'f0\'f3\'e5\'f2 structured internal spec:\par
+\par
+job title\par
+\par
+task objective\par
+\par
+collection type\par
+\par
+target entities\par
+\par
+filters\par
+\par
+fields to extract\par
+\par
+sources\par
+\par
+crawl depth / limits\par
+\par
+expected output format\par
+\par
+owner / workspace scope\par
+\par
+visibility / sharing mode\par
+\par
+billing/usage estimate if \'f3\'ec\'e5\'f1\'f2\'ed\'ee\par
+\par
+expected quota impact\par
+\par
+\'dd\'f2\'e0\'ef 5. Preflight check\par
+\par
+\'cf\'e5\'f0\'e5\'e4 \'e7\'e0\'ef\'f3\'f1\'ea\'ee\'ec \'ed\'f3\'e6\'ed\'ee \'f1\'e4\'e5\'eb\'e0\'f2\'fc:\par
+\par
+auth check\par
+\par
+permissions check\par
+\par
+subscription check\par
+\par
+quota/token check\par
+\par
+provider availability check\par
+\par
+safety/limit validation\par
+\par
+\'dd\'f2\'e0\'ef 6. \'c7\'e0\'ef\'f3\'f1\'ea job\par
+\par
+\'cf\'ee\'f1\'eb\'e5 preflight \'f1\'ee\'e7\'e4\'e0\'b8\'f2\'f1\'ff job \'e8 run.\par
+\par
+\'dd\'f2\'e0\'ef 7. \'ce\'f2\'f7\'b8\'f2\'ed\'ee\'f1\'f2\'fc \'e2 \'f7\'e0\'f2\par
+\par
+\'c0\'e3\'e5\'ed\'f2 \'e4\'ee\'eb\'e6\'e5\'ed \'f3\'ec\'e5\'f2\'fc:\par
+\par
+\'f1\'ee\'ee\'e1\'f9\'e8\'f2\'fc, \'f7\'f2\'ee \'e7\'e0\'e4\'e0\'f7\'e0 \'ef\'f0\'e8\'ed\'ff\'f2\'e0\par
+\par
+\'f1\'ee\'ee\'e1\'f9\'e8\'f2\'fc, \'f7\'f2\'ee \'e8\'e4\'b8\'f2 \'f1\'e1\'ee\'f0\par
+\par
+\'f1\'ee\'ee\'e1\'f9\'e8\'f2\'fc, \'e5\'f1\'eb\'e8 \'e5\'f1\'f2\'fc \'ee\'f8\'e8\'e1\'ea\'e8 / \'f7\'e0\'f1\'f2\'e8\'f7\'ed\'fb\'e9 \'f0\'e5\'e7\'f3\'eb\'fc\'f2\'e0\'f2\par
+\par
+\'f1\'ee\'ee\'e1\'f9\'e8\'f2\'fc \'e8\'f2\'ee\'e3:\par
+\par
+\'f1\'ea\'ee\'eb\'fc\'ea\'ee \'ed\'e0\'e9\'e4\'e5\'ed\'ee\par
+\par
+\'e3\'e4\'e5 \'ef\'ee\'f1\'ec\'ee\'f2\'f0\'e5\'f2\'fc\par
+\par
+\'f7\'f2\'ee \'f3\'e4\'e0\'eb\'ee\'f1\'fc / \'f7\'f2\'ee \'ed\'e5 \'f3\'e4\'e0\'eb\'ee\'f1\'fc\par
+\par
+\'e5\'f1\'eb\'e8 \'ef\'ee\'e4\'ef\'e8\'f1\'ea\'e0/\'eb\'e8\'ec\'e8\'f2 \'ed\'e5 \'ef\'ee\'e7\'e2\'ee\'eb\'ff\'fe\'f2 \'e7\'e0\'ef\'f3\'f1\'ea \f1\emdash  \f0\'ea\'ee\'f0\'f0\'e5\'ea\'f2\'ed\'ee \'ee\'e1\'fa\'ff\'f1\'ed\'e8\'f2\'fc \'ef\'f0\'e8\'f7\'e8\'ed\'f3 \'e8 \'f7\'f2\'ee \'e4\'e5\'eb\'e0\'f2\'fc \'e4\'e0\'eb\'fc\'f8\'e5\par
+\par
+\'c2\'e0\'e6\'ed\'ee:\par
+\'e2 \'f7\'e0\'f2 \'ed\'e5 \'e4\'ee\'eb\'e6\'ed\'fb \'f3\'f2\'e5\'ea\'e0\'f2\'fc \'f7\'f3\'e6\'e8\'e5 \'e4\'e0\'ed\'ed\'fb\'e5 \'e8\'eb\'e8 \'ed\'e5\'e1\'e5\'e7\'ee\'ef\'e0\'f1\'ed\'fb\'e5 \'f1\'f1\'fb\'eb\'ea\'e8.\par
+\par
+3. Web-\'e8\'ed\'f2\'e5\'f0\'f4\'e5\'e9\'f1 / \'f1\'e0\'e9\'f2 / \'ef\'e0\'ed\'e5\'eb\'fc \'f3\'ef\'f0\'e0\'e2\'eb\'e5\'ed\'e8\'ff\par
+\par
+\'cd\'f3\'e6\'ed\'ee \'f1\'ef\'f0\'ee\'e5\'ea\'f2\'e8\'f0\'ee\'e2\'e0\'f2\'fc \'ef\'ee\'eb\'ed\'ee\'f6\'e5\'ed\'ed\'f3\'fe \'e2\'e5\'e1-\'ef\'e0\'ed\'e5\'eb\'fc \'e4\'eb\'ff \'ed\'ee\'e2\'ee\'e3\'ee \'e4\'ee\'ec\'e5\'ed\'e0.\par
+\par
+\'dd\'f2\'ee \'ed\'e5 \'ef\'f0\'ee\'f1\'f2\'ee \ldblquote\'f1\'f2\'f0\'e0\'ed\'e8\'f6\'e0 \'f0\'e5\'e7\'f3\'eb\'fc\'f2\'e0\'f2\'e0\rdblquote , \'e0 \'f0\'e0\'f1\'f8\'e8\'f0\'ff\'e5\'ec\'fb\'e9 research SaaS workspace \'f1 \'f3\'f7\'b8\'f2\'ee\'ec \'f0\'ee\'eb\'e5\'e9, \'ef\'f0\'e0\'e2, billing \'e8 \'f0\'e0\'e7\'e4\'e5\'eb\'e5\'ed\'e8\'ff \'e4\'e0\'ed\'ed\'fb\'f5.\par
+\par
+\'ce\'f1\'ed\'ee\'e2\'ed\'fb\'e5 \'f0\'e0\'e7\'e4\'e5\'eb\'fb \'e8\'ed\'f2\'e5\'f0\'f4\'e5\'e9\'f1\'e0\par
+A. Auth / Access\par
+\par
+login / account linking\par
+\par
+session handling\par
+\par
+workspace switcher\par
+\par
+profile / security / active sessions\par
+\par
+role/permission aware navigation\par
+\par
+B. Dashboard\par
+\par
+\'ee\'e1\'f9\'e5\'e5 \'ea\'ee\'eb\'e8\'f7\'e5\'f1\'f2\'e2\'ee \'e7\'e0\'e4\'e0\'f7\par
+\par
+\'e0\'ea\'f2\'e8\'e2\'ed\'fb\'e5 \'e7\'e0\'e4\'e0\'f7\'e8\par
+\par
+\'e7\'e0\'e2\'e5\'f0\'f8\'b8\'ed\'ed\'fb\'e5\par
+\par
+\'ee\'f8\'e8\'e1\'ea\'e8\par
+\par
+\'ef\'ee\'f1\'eb\'e5\'e4\'ed\'e8\'e5 \'f0\'e5\'e7\'f3\'eb\'fc\'f2\'e0\'f2\'fb\par
+\par
+\'e1\'fb\'f1\'f2\'f0\'fb\'e9 \'e7\'e0\'ef\'f3\'f1\'ea \'ed\'ee\'e2\'ee\'e9 \'e7\'e0\'e4\'e0\'f7\'e8\par
+\par
+\'f1\'f2\'e0\'f2\'e8\'f1\'f2\'e8\'ea\'e0 \'ef\'ee \'e8\'f1\'f2\'ee\'f7\'ed\'e8\'ea\'e0\'ec / \'e4\'ee\'ec\'e5\'ed\'e0\'ec / \'ed\'e0\'e9\'e4\'e5\'ed\'ed\'fb\'ec \'e4\'e0\'ed\'ed\'fb\'ec\par
+\par
+usage summary\par
+\par
+remaining quota / tokens\par
+\par
+subscription status\par
+\par
+next billing date / plan info\par
+\par
+C. Jobs / Tasks list\par
+\par
+\'d1\'ef\'e8\'f1\'ee\'ea \'e2\'f1\'e5\'f5 research jobs \'f1:\par
+\par
+\'ed\'e0\'e7\'e2\'e0\'ed\'e8\'e5\'ec\par
+\par
+\'f1\'f2\'e0\'f2\'f3\'f1\'ee\'ec\par
+\par
+\'f2\'e8\'ef\'ee\'ec \'e7\'e0\'e4\'e0\'f7\'e8\par
+\par
+\'e4\'e0\'f2\'ee\'e9 \'f1\'ee\'e7\'e4\'e0\'ed\'e8\'ff\par
+\par
+\'e8\'f1\'f2\'ee\'f7\'ed\'e8\'ea\'e0\'ec\'e8\par
+\par
+\'ea\'ee\'eb\'e8\'f7\'e5\'f1\'f2\'e2\'ee\'ec \'ed\'e0\'e9\'e4\'e5\'ed\'ed\'fb\'f5 \'f0\'e5\'e7\'f3\'eb\'fc\'f2\'e0\'f2\'ee\'e2\par
+\par
+\'ef\'f0\'ee\'e3\'f0\'e5\'f1\'f1\'ee\'ec\par
+\par
+\'ef\'ee\'f1\'eb\'e5\'e4\'ed\'e8\'ec \'ee\'e1\'ed\'ee\'e2\'eb\'e5\'ed\'e8\'e5\'ec\par
+\par
+\'e8\'ed\'e8\'f6\'e8\'e0\'f2\'ee\'f0\'ee\'ec\par
+\par
+scope/visibility\par
+\par
+usage footprint if relevant\par
+\par
+\'c4\'ee\'eb\'e6\'ed\'fb \'e1\'fb\'f2\'fc:\par
+\par
+\'ef\'ee\'e8\'f1\'ea\par
+\par
+\'f4\'e8\'eb\'fc\'f2\'f0\'fb\par
+\par
+\'f1\'ee\'f0\'f2\'e8\'f0\'ee\'e2\'ea\'e0\par
+\par
+\'ef\'e0\'e3\'e8\'ed\'e0\'f6\'e8\'ff\par
+\par
+\'f2\'e5\'e3\'e8 / \'ea\'e0\'f2\'e5\'e3\'ee\'f0\'e8\'e8\par
+\par
+\'e4\'f3\'e1\'eb\'e8\'f0\'ee\'e2\'e0\'ed\'e8\'e5 job\par
+\par
+\'e0\'f0\'f5\'e8\'e2\'e8\'f0\'ee\'e2\'e0\'ed\'e8\'e5\par
+\par
+D. Job detail page\par
+\par
+\'ca\'e0\'f0\'f2\'ee\'f7\'ea\'e0 \'ea\'ee\'ed\'ea\'f0\'e5\'f2\'ed\'ee\'e9 \'e7\'e0\'e4\'e0\'f7\'e8:\par
+\par
+\'e8\'f1\'f5\'ee\'e4\'ed\'ee\'e5 \'ee\'ef\'e8\'f1\'e0\'ed\'e8\'e5 \'e8\'e7 \'f7\'e0\'f2\'e0 / UI\par
+\par
+\'ed\'ee\'f0\'ec\'e0\'eb\'e8\'e7\'ee\'e2\'e0\'ed\'ed\'fb\'e9 task spec\par
+\par
+\'f1\'f2\'e0\'f2\'f3\'f1\'fb \'ef\'e0\'e9\'ef\'eb\'e0\'e9\'ed\'e0\par
+\par
+\'f8\'e0\'e3\'e8 \'e2\'fb\'ef\'ee\'eb\'ed\'e5\'ed\'e8\'ff\par
+\par
+\'eb\'ee\'e3 \'e2\'fb\'ef\'ee\'eb\'ed\'e5\'ed\'e8\'ff\par
+\par
+\'f1\'ef\'e8\'f1\'ee\'ea \'e8\'f1\'f2\'ee\'f7\'ed\'e8\'ea\'ee\'e2\par
+\par
+\'ed\'e0\'e9\'e4\'e5\'ed\'ed\'fb\'e5 URL\par
+\par
+extracted data\par
+\par
+\'ee\'f8\'e8\'e1\'ea\'e8/\'ef\'f0\'e5\'e4\'f3\'ef\'f0\'e5\'e6\'e4\'e5\'ed\'e8\'ff\par
+\par
+summary \'f0\'e5\'e7\'f3\'eb\'fc\'f2\'e0\'f2\'e0\par
+\par
+usage consumed\par
+\par
+actions: rerun / stop / retry / duplicate / export\par
+\par
+E. Results explorer\par
+\par
+\'f2\'e0\'e1\'eb\'e8\'f6\'e0 \'f0\'e5\'e7\'f3\'eb\'fc\'f2\'e0\'f2\'ee\'e2\par
+\par
+\'ea\'e0\'f0\'f2\'ee\'f7\'ea\'e8 \'f1\'f3\'f9\'ed\'ee\'f1\'f2\'e5\'e9\par
+\par
+raw content / markdown / text\par
+\par
+extracted structured fields\par
+\par
+\'f4\'e8\'eb\'fc\'f2\'f0\'e0\'f6\'e8\'ff\par
+\par
+\'e4\'e5\'e4\'f3\'ef\'eb\'e8\'ea\'e0\'f6\'e8\'ff\par
+\par
+\'fd\'ea\'f1\'ef\'ee\'f0\'f2\par
+\par
+F. Sources / Connectors / Config\par
+\par
+\'f3\'ef\'f0\'e0\'e2\'eb\'e5\'ed\'e8\'e5 Firecrawl settings\par
+\par
+\'eb\'e8\'ec\'e8\'f2\'fb\par
+\par
+extraction profiles\par
+\par
+\'e1\'f3\'e4\'f3\'f9\'e8\'e5 \'ef\'f0\'ee\'e2\'e0\'e9\'e4\'e5\'f0\'fb\par
+\par
+G. Templates / Recipes\par
+\par
+personal templates\par
+\par
+workspace templates\par
+\par
+plan-aware / role-aware access\par
+\par
+H. Billing / Subscription / Usage\par
+\par
+\'ce\'f2\'e4\'e5\'eb\'fc\'ed\'fb\'e9 \'f0\'e0\'e7\'e4\'e5\'eb:\par
+\par
+\'f2\'e5\'ea\'f3\'f9\'e8\'e9 \'ef\'eb\'e0\'ed\par
+\par
+\'f1\'f2\'e0\'f2\'f3\'f1 \'ef\'ee\'e4\'ef\'e8\'f1\'ea\'e8\par
+\par
+billing history\par
+\par
+usage charts\par
+\par
+token consumption\par
+\par
+quotas and limits\par
+\par
+over-limit warnings\par
+\par
+upgrade/downgrade actions\par
+\par
+invoices/payments overview\par
+\par
+billing admin actions\par
+\par
+I. Admin / Audit / Security\par
+\par
+audit events\par
+\par
+security events\par
+\par
+access history\par
+\par
+role management\par
+\par
+provider settings\par
+\par
+billing-related admin controls\par
+\par
+4. \'d5\'f0\'e0\'ed\'e5\'ed\'e8\'e5 \'e4\'e0\'ed\'ed\'fb\'f5\par
+\par
+\'cd\'f3\'e6\'ed\'ee \'f1\'ef\'f0\'ee\'e5\'ea\'f2\'e8\'f0\'ee\'e2\'e0\'f2\'fc \'ed\'ee\'f0\'ec\'e0\'eb\'fc\'ed\'f3\'fe \'ec\'ee\'e4\'e5\'eb\'fc \'f5\'f0\'e0\'ed\'e5\'ed\'e8\'ff.\par
+\par
+Core entities\par
+\par
+User\par
+\par
+Workspace\par
+\par
+Membership\par
+\par
+Role\par
+\par
+Permission \'e8\'eb\'e8 role policy\par
+\par
+ExternalIdentity\par
+\par
+AuthSession\par
+\par
+Plan\par
+\par
+Subscription\par
+\par
+SubscriptionItem if needed\par
+\par
+BillingAccount\par
+\par
+Invoice\par
+\par
+Payment\par
+\par
+BillingEvent\par
+\par
+UsageLedger\par
+\par
+UsageEvent\par
+\par
+QuotaPolicy\par
+\par
+TokenBalance / UsageBalance abstraction if needed\par
+\par
+ResearchJob\par
+\par
+ResearchJobRun\par
+\par
+ResearchTaskSpec\par
+\par
+ResearchSource\par
+\par
+ResearchResultItem\par
+\par
+ResearchExtractedEntity\par
+\par
+ResearchArtifact\par
+\par
+ResearchMessageLog\par
+\par
+ResearchStatusEvent\par
+\par
+ResearchTemplate\par
+\par
+ResearchTag\par
+\par
+AuditEvent\par
+\par
+SecurityEvent\par
+\par
+ProviderCredential\par
+\par
+\'d7\'f2\'ee \'ed\'f3\'e6\'ed\'ee \'f5\'f0\'e0\'ed\'e8\'f2\'fc\par
+\'c4\'eb\'ff \'ef\'ee\'eb\'fc\'e7\'ee\'e2\'e0\'f2\'e5\'eb\'ff:\par
+\par
+id\par
+\par
+identities\par
+\par
+telegram binding\par
+\par
+email/login if used\par
+\par
+status\par
+\par
+security metadata\par
+\par
+\'c4\'eb\'ff workspace:\par
+\par
+id\par
+\par
+name\par
+\par
+owner\par
+\par
+settings\par
+\par
+plan linkage / billing account\par
+\par
+\'c4\'eb\'ff membership:\par
+\par
+user_id\par
+\par
+workspace_id\par
+\par
+role\par
+\par
+status\par
+\par
+\'c4\'eb\'ff \'ef\'eb\'e0\'ed\'e0:\par
+\par
+id\par
+\par
+name\par
+\par
+features\par
+\par
+included quotas\par
+\par
+token limits\par
+\par
+run limits\par
+\par
+export limits\par
+\par
+provider limits\par
+\par
+storage limits\par
+\par
+seat limits if needed\par
+\par
+\'c4\'eb\'ff \'ef\'ee\'e4\'ef\'e8\'f1\'ea\'e8:\par
+\par
+id\par
+\par
+billing account\par
+\par
+workspace_id or user_id\par
+\par
+plan_id\par
+\par
+status\par
+\par
+period_start\par
+\par
+period_end\par
+\par
+grace_end\par
+\par
+cancel_at\par
+\par
+canceled_at\par
+\par
+suspension flags\par
+\par
+\'c4\'eb\'ff usage ledger:\par
+\par
+period\par
+\par
+subject scope\par
+\par
+metric type\par
+\par
+consumed\par
+\par
+remaining\par
+\par
+reserved if applicable\par
+\par
+\'c4\'eb\'ff usage event:\par
+\par
+actor\par
+\par
+scope\par
+\par
+metric\par
+\par
+amount\par
+\par
+source job/run/provider\par
+\par
+timestamp\par
+\par
+cost metadata if applicable\par
+\par
+\'c4\'eb\'ff job:\par
+\par
+id\par
+\par
+title\par
+\par
+original request\par
+\par
+normalized spec\par
+\par
+status\par
+\par
+created_by\par
+\par
+workspace_id\par
+\par
+visibility\par
+\par
+owner_user_id\par
+\par
+origin\par
+\par
+provider\par
+\par
+config\par
+\par
+usage estimate\par
+\par
+last_run_at\par
+\par
+\'c4\'eb\'ff run:\par
+\par
+run id\par
+\par
+job id\par
+\par
+status\par
+\par
+started_at\par
+\par
+finished_at\par
+\par
+provider metadata\par
+\par
+error details\par
+\par
+metrics\par
+\par
+actual usage\par
+\par
+token usage\par
+\par
+crawl usage\par
+\par
+\'c4\'eb\'ff result item:\par
+\par
+source url\par
+\par
+domain\par
+\par
+title\par
+\par
+raw markdown/text/html excerpt\par
+\par
+extracted fields\par
+\par
+dedupe hash\par
+\par
+ownership metadata\par
+\par
+\'c4\'eb\'ff credentials/config:\par
+\par
+provider type\par
+\par
+owner scope\par
+\par
+encrypted secret reference\par
+\par
+metadata\par
+\par
+\'cd\'f3\'e6\'ed\'ee, \'f7\'f2\'ee\'e1\'fb \'e0\'f0\'f5\'e8\'f2\'e5\'ea\'f2\'f3\'f0\'e0 \'f5\'f0\'e0\'ed\'e8\'eb\'e8\'f9\'e0 \'ef\'ee\'e7\'e2\'ee\'eb\'ff\'eb\'e0:\par
+\par
+\'f5\'f0\'e0\'ed\'e8\'f2\'fc raw \'e8 normalized \'e4\'e0\'ed\'ed\'fb\'e5\par
+\par
+\'ee\'f2\'f1\'eb\'e5\'e6\'e8\'e2\'e0\'f2\'fc usage \'e8 \'f1\'f2\'ee\'e8\'ec\'ee\'f1\'f2\'fc\par
+\par
+\'e1\'e5\'e7\'ee\'ef\'e0\'f1\'ed\'ee \'f0\'e0\'e7\'e4\'e5\'eb\'ff\'f2\'fc \'e4\'e0\'ed\'ed\'fb\'e5 \'ec\'e5\'e6\'e4\'f3 \'ef\'ee\'eb\'fc\'e7\'ee\'e2\'e0\'f2\'e5\'eb\'ff\'ec\'e8/workspace\par
+\par
+\'ef\'ee\'e4\'e4\'e5\'f0\'e6\'e8\'e2\'e0\'f2\'fc \'ef\'ee\'e4\'ef\'e8\'f1\'ea\'e8, \'f2\'e0\'f0\'e8\'f4\'fb \'e8 \'eb\'e8\'ec\'e8\'f2\'fb\par
+\par
+\'e1\'fb\'f2\'fc \'e3\'ee\'f2\'ee\'e2\'ee\'e9 \'ea overage / top-up / credits later\par
+\par
+5. \'cf\'e0\'e9\'ef\'eb\'e0\'e9\'ed \'e2\'fb\'ef\'ee\'eb\'ed\'e5\'ed\'e8\'ff\par
+\par
+\'cd\'f3\'e6\'ed\'ee \'f1\'ef\'f0\'ee\'e5\'ea\'f2\'e8\'f0\'ee\'e2\'e0\'f2\'fc execution flow \'e4\'eb\'ff research jobs.\par
+\par
+\'c1\'e0\'e7\'ee\'e2\'fb\'e9 pipeline\par
+\par
+auth / actor resolution\par
+\par
+intake\par
+\par
+clarify if needed\par
+\par
+normalize task\par
+\par
+permission check\par
+\par
+subscription check\par
+\par
+quota/token check\par
+\par
+plan execution\par
+\par
+choose provider / Firecrawl mode\par
+\par
+reserve usage if needed\par
+\par
+run collection\par
+\par
+process raw results\par
+\par
+extract structured data\par
+\par
+dedupe / normalize\par
+\par
+persist with ownership/scope\par
+\par
+record usage actuals\par
+\par
+summarize\par
+\par
+notify user\par
+\par
+expose results in web UI\par
+\par
+emit audit / billing / usage events\par
+\par
+\'c2\'e0\'e6\'ed\'ee\par
+\par
+\'cf\'e0\'e9\'ef\'eb\'e0\'e9\'ed \'e4\'ee\'eb\'e6\'e5\'ed \'e1\'fb\'f2\'fc \'f0\'e0\'f1\'f8\'e8\'f0\'ff\'e5\'ec\'fb\'ec:\par
+\par
+search phase\par
+\par
+enrichment\par
+\par
+recurring jobs\par
+\par
+cost estimation\par
+\par
+overage handling\par
+\par
+plan-aware execution policies\par
+\par
+6. \'d0\'e5\'e6\'e8\'ec\'fb \'e7\'e0\'ef\'f3\'f1\'ea\'e0\par
+\par
+\'cd\'f3\'e6\'ed\'ee \'ef\'f0\'e5\'e4\'f3\'f1\'ec\'ee\'f2\'f0\'e5\'f2\'fc \'ec\'e8\'ed\'e8\'ec\'f3\'ec 3 \'f0\'e5\'e6\'e8\'ec\'e0:\par
+\par
+A. Ad-hoc research\par
+\par
+\'d0\'e0\'e7\'ee\'e2\'e0\'ff \'e7\'e0\'e4\'e0\'f7\'e0 \'e8\'e7 \'f7\'e0\'f2\'e0 \'e8\'eb\'e8 \'e2\'e5\'e1\'e0\par
+\par
+B. Saved job\par
+\par
+\'c7\'e0\'e4\'e0\'f7\'e0 \'f5\'f0\'e0\'ed\'e8\'f2\'f1\'ff \'e8 \'ec\'ee\'e6\'e5\'f2 \'ef\'e5\'f0\'e5\'e7\'e0\'ef\'f3\'f1\'ea\'e0\'f2\'fc\'f1\'ff\par
+\par
+C. Recurring / monitor mode\par
+\par
+\'c2 \'e1\'f3\'e4\'f3\'f9\'e5\'ec \'ec\'ee\'e6\'ed\'ee \'ef\'e5\'f0\'e8\'ee\'e4\'e8\'f7\'e5\'f1\'ea\'e8 \'e7\'e0\'ef\'f3\'f1\'ea\'e0\'f2\'fc \'ec\'ee\'ed\'e8\'f2\'ee\'f0\'e8\'ed\'e3\par
+\par
+\'ce\'e1\'ff\'e7\'e0\'f2\'e5\'eb\'fc\'ed\'ee:\par
+\par
+\'e2\'f1\'e5 \'f0\'e5\'e6\'e8\'ec\'fb \'e4\'ee\'eb\'e6\'ed\'fb \'e1\'fb\'f2\'fc \'f1\'ee\'e2\'ec\'e5\'f1\'f2\'e8\'ec\'fb \'f1:\par
+\par
+multi-user access model\par
+\par
+subscription checks\par
+\par
+quota enforcement\par
+\par
+token accounting\par
+\par
+billing events\par
+\par
+7. Supervisor / routing / multi-agent behavior\par
+\par
+\'cd\'f3\'e6\'ed\'ee \'ef\'f0\'ee\'e4\'f3\'ec\'e0\'f2\'fc, \'ea\'e0\'ea \'ed\'ee\'e2\'fb\'e9 \'e4\'ee\'ec\'e5\'ed \'e1\'f3\'e4\'e5\'f2 \'f0\'e0\'e1\'ee\'f2\'e0\'f2\'fc \'e2\'ed\'f3\'f2\'f0\'e8 \'f1\'f3\'f9\'e5\'f1\'f2\'e2\'f3\'fe\'f9\'e5\'e3\'ee AI-\'f1\'eb\'ee\'ff.\par
+\par
+\'cd\'f3\'e6\'ed\'ee:\par
+\par
+\'e4\'ee\'e1\'e0\'e2\'e8\'f2\'fc \'ed\'ee\'e2\'fb\'e9 \'e4\'ee\'ec\'e5\'ed \'e2 rule-based / supervisor routing\par
+\par
+\'ef\'f0\'ee\'e4\'f3\'ec\'e0\'f2\'fc strong / normal \'ec\'e0\'f0\'ea\'e5\'f0\'fb\par
+\par
+\'f1\'e4\'e5\'eb\'e0\'f2\'fc \'f2\'e0\'ea, \'f7\'f2\'ee\'e1\'fb \'e7\'e0\'ef\'f0\'ee\'f1\'fb \'ed\'e0 \'ef\'ee\'e8\'f1\'ea / \'f1\'e1\'ee\'f0 / \'ef\'e0\'f0\'f1\'e8\'ed\'e3 / \'e0\'ed\'e0\'eb\'e8\'e7 \'f1\'e0\'e9\'f2\'ee\'e2 \'ec\'e0\'f0\'f8\'f0\'f3\'f2\'e8\'e7\'e8\'f0\'ee\'e2\'e0\'eb\'e8\'f1\'fc \'e2 research domain\par
+\par
+\'f3\'f7\'e8\'f2\'fb\'e2\'e0\'f2\'fc user context / workspace scope / subscription state\par
+\par
+\'cf\'f0\'e8\'ec\'e5\'f0\'fb \'e7\'e0\'ef\'f0\'ee\'f1\'ee\'e2:\par
+\par
+\ldblquote\'f1\'ee\'e1\'e5\'f0\'e8 \'f1\'e0\'e9\'f2\'fb \'ef\'ee\'f1\'f2\'e0\'e2\'f9\'e8\'ea\'ee\'e2\'85\rdblquote\par
+\par
+\ldblquote\'ed\'e0\'e9\'e4\'e8 \'ea\'ee\'ec\'ef\'e0\'ed\'e8\'e8\'85\rdblquote\par
+\par
+\ldblquote\'f1\'ef\'e0\'f0\'f1\'e8 \'f1\'f2\'f0\'e0\'ed\'e8\'f6\'fb\'85\rdblquote\par
+\par
+\ldblquote\'e2\'fb\'f2\'e0\'f9\'e8 \'ea\'ee\'ed\'f2\'e0\'ea\'f2\'fb\'85\rdblquote\par
+\par
+\ldblquote\'f1\'ee\'e1\'e5\'f0\'e8 \'e8\'ed\'f4\'ee\'f0\'ec\'e0\'f6\'e8\'fe\'85\rdblquote\par
+\par
+\ldblquote\'ef\'f0\'ee\'e0\'ed\'e0\'eb\'e8\'e7\'e8\'f0\'f3\'e9 \'f1\'e0\'e9\'f2\'fb\'85\rdblquote\par
+\par
+\ldblquote\'ee\'e1\'ee\'e9\'e4\'e8 \'f1\'e0\'e9\'f2 \'e8 \'f1\'ee\'e1\'e5\'f0\'e8 \'f1\'f2\'f0\'e0\'ed\'e8\'f6\'fb\'85\rdblquote\par
+\par
+\'c0\'e3\'e5\'ed\'f2 \'e4\'ee\'eb\'e6\'e5\'ed \'f3\'ec\'e5\'f2\'fc:\par
+\par
+\'f3\'f2\'ee\'f7\'ed\'ff\'f2\'fc \'e7\'e0\'e4\'e0\'f7\'f3\par
+\par
+\'e7\'e0\'ef\'f3\'f1\'ea\'e0\'f2\'fc job\par
+\par
+\'ef\'f0\'ee\'e2\'e5\'f0\'ff\'f2\'fc \'f1\'f2\'e0\'f2\'f3\'f1\par
+\par
+summarise \'f0\'e5\'e7\'f3\'eb\'fc\'f2\'e0\'f2\'fb\par
+\par
+\'ee\'f2\'ef\'f0\'e0\'e2\'eb\'ff\'f2\'fc \'f1\'ec\'ee\'f2\'f0\'e5\'f2\'fc \'e4\'e5\'f2\'e0\'eb\'e8 \'e2 web UI\par
+\par
+\'f1\'ee\'ee\'e1\'f9\'e0\'f2\'fc \'ee \'ef\'f0\'ee\'e1\'eb\'e5\'ec\'e0\'f5 \'f1 \'eb\'e8\'ec\'e8\'f2\'e0\'ec\'e8/\'f2\'e0\'f0\'e8\'f4\'ee\'ec/\'e4\'ee\'f1\'f2\'f3\'ef\'ee\'ec\par
+\par
+8. Firecrawl integration design\par
+\par
+\'cd\'f3\'e6\'ed\'ee \'f1\'ef\'f0\'ee\'e5\'ea\'f2\'e8\'f0\'ee\'e2\'e0\'f2\'fc \'ee\'f2\'e4\'e5\'eb\'fc\'ed\'fb\'e9 \'f1\'eb\'ee\'e9 \'e8\'ed\'f2\'e5\'e3\'f0\'e0\'f6\'e8\'e8.\par
+\par
+\'cf\'f0\'e5\'e4\'ef\'ee\'f7\'f2\'e8\'f2\'e5\'eb\'fc\'ed\'e0\'ff \'f1\'f2\'f0\'f3\'ea\'f2\'f3\'f0\'e0\par
+\par
+\'cd\'e0\'ef\'f0\'e8\'ec\'e5\'f0:\par
+\par
+integrations/firecrawl/\par
+\par
+services/research/firecrawl_provider.py\par
+\par
+services/research/collection_engine.py\par
+\par
+services/research/extraction_pipeline.py\par
+\par
+\'cd\'e5\'ee\'e1\'f5\'ee\'e4\'e8\'ec\'ee:\par
+\par
+\'ed\'e5 \'f0\'e0\'e7\'e1\'f0\'e0\'f1\'fb\'e2\'e0\'f2\'fc \'e2\'fb\'e7\'ee\'e2\'fb Firecrawl \'ef\'ee \'ef\'f0\'ee\'e5\'ea\'f2\'f3\par
+\par
+\'f1\'e4\'e5\'eb\'e0\'f2\'fc \'e5\'e4\'e8\'ed\'fb\'e9 provider interface\par
+\par
+\'e8\'ed\'ea\'e0\'ef\'f1\'f3\'eb\'e8\'f0\'ee\'e2\'e0\'f2\'fc \'ed\'e0\'f1\'f2\'f0\'ee\'e9\'ea\'e8 \'e8 API-\'e2\'fb\'e7\'ee\'e2\'fb\par
+\par
+\'f5\'f0\'e0\'ed\'e8\'f2\'fc provider metadata\par
+\par
+\'f3\'f7\'e8\'f2\'fb\'e2\'e0\'f2\'fc owner/workspace/provider credential scope\par
+\par
+\'f3\'f7\'e8\'f2\'fb\'e2\'e0\'f2\'fc usage/cost metering\par
+\par
+\'d2\'e0\'ea\'e6\'e5 \'ed\'f3\'e6\'ed\'ee \'ef\'f0\'ee\'e4\'f3\'ec\'e0\'f2\'fc:\par
+\par
+\'ea\'e0\'ea \'e2\'fb\'e1\'e8\'f0\'e0\'f2\'fc \'f0\'e5\'e6\'e8\'ec Firecrawl \'ef\'ee\'e4 \'e7\'e0\'e4\'e0\'f7\'f3\par
+\par
+\'ea\'e0\'ea \'ec\'e0\'ef\'ef\'e8\'f2\'fc \'f2\'e8\'ef \'e7\'e0\'e4\'e0\'f7\'e8 \'ed\'e0 workflow\par
+\par
+\'ea\'e0\'ea \'eb\'ee\'e3\'e8\'f0\'ee\'e2\'e0\'f2\'fc usage \'e8 provider cost units\par
+\par
+\'ea\'e0\'ea \'e1\'e5\'e7\'ee\'ef\'e0\'f1\'ed\'ee \'f5\'f0\'e0\'ed\'e8\'f2\'fc credentials/provider config\par
+\par
+9. UX \'ef\'ee\'e2\'e5\'e4\'e5\'ed\'e8\'ff \'e0\'e3\'e5\'ed\'f2\'e0 \'e2 \'f7\'e0\'f2\'e5\par
+\par
+\'c2\'e0\'e6\'ed\'ee \'f1\'e4\'e5\'eb\'e0\'f2\'fc \'f3\'e4\'ee\'e1\'ed\'f3\'fe \'eb\'ee\'e3\'e8\'ea\'f3 \'ee\'e1\'f9\'e5\'ed\'e8\'ff.\par
+\par
+\'c0\'e3\'e5\'ed\'f2 \'e4\'ee\'eb\'e6\'e5\'ed:\par
+\par
+\'ef\'ee\'ed\'e8\'ec\'e0\'f2\'fc \'e5\'f1\'f2\'e5\'f1\'f2\'e2\'e5\'ed\'ed\'fb\'e9 \'ff\'e7\'fb\'ea\par
+\par
+\'f4\'ee\'f0\'ec\'e8\'f0\'ee\'e2\'e0\'f2\'fc task summary \'ef\'e5\'f0\'e5\'e4 \'f1\'f2\'e0\'f0\'f2\'ee\'ec\par
+\par
+\'e7\'e0\'e4\'e0\'e2\'e0\'f2\'fc \'f2\'ee\'eb\'fc\'ea\'ee \'ed\'f3\'e6\'ed\'fb\'e5 \'f3\'f2\'ee\'f7\'ed\'e5\'ed\'e8\'ff\par
+\par
+\'ed\'e5 \'e7\'e0\'f1\'f2\'e0\'e2\'eb\'ff\'f2\'fc \'ef\'ee\'eb\'fc\'e7\'ee\'e2\'e0\'f2\'e5\'eb\'ff \'ef\'e8\'f1\'e0\'f2\'fc JSON\par
+\par
+\'ef\'ee\'f1\'eb\'e5 \'e7\'e0\'ef\'f3\'f1\'ea\'e0 \'f1\'ee\'ee\'e1\'f9\'e0\'f2\'fc:\par
+\par
+\'e7\'e0\'e4\'e0\'f7\'e0 \'ef\'f0\'e8\'ed\'ff\'f2\'e0\par
+\par
+\'ea\'e0\'ea\'ee\'e9 \'f2\'e8\'ef \'f1\'e1\'ee\'f0\'e0 \'e7\'e0\'ef\'f3\'f9\'e5\'ed\par
+\par
+\'f7\'f2\'ee \'e1\'f3\'e4\'e5\'f2 \'f1\'ee\'e1\'e8\'f0\'e0\'f2\'fc\'f1\'ff\par
+\par
+\'e3\'e4\'e5 \'ef\'ee\'ff\'e2\'ff\'f2\'f1\'ff \'f0\'e5\'e7\'f3\'eb\'fc\'f2\'e0\'f2\'fb\par
+\par
+\'ef\'ee \'e7\'e0\'e2\'e5\'f0\'f8\'e5\'ed\'e8\'e8 \'f1\'ee\'ee\'e1\'f9\'e0\'f2\'fc:\par
+\par
+\'f1\'ea\'ee\'eb\'fc\'ea\'ee \'e4\'e0\'ed\'ed\'fb\'f5 \'f1\'ee\'e1\'f0\'e0\'ed\'ee\par
+\par
+\'ea\'f0\'e0\'f2\'ea\'e8\'e9 summary\par
+\par
+\'e5\'f1\'f2\'fc \'eb\'e8 \'ef\'f0\'ee\'e1\'eb\'e5\'ec\'fb\par
+\par
+\'ea\'f3\'e4\'e0 \'ef\'e5\'f0\'e5\'e9\'f2\'e8 \'e2 \'e2\'e5\'e1-\'e8\'ed\'f2\'e5\'f0\'f4\'e5\'e9\'f1\'e5\par
+\par
+\'ef\'f0\'e8 \'ee\'f2\'f1\'f3\'f2\'f1\'f2\'e2\'e8\'e8 \'ef\'ee\'e4\'ef\'e8\'f1\'ea\'e8/\'eb\'e8\'ec\'e8\'f2\'ee\'e2 \'f1\'ee\'ee\'e1\'f9\'e0\'f2\'fc:\par
+\par
+\'ef\'ee\'f7\'e5\'ec\'f3 \'e7\'e0\'e4\'e0\'f7\'e0 \'ed\'e5 \'ec\'ee\'e6\'e5\'f2 \'e1\'fb\'f2\'fc \'e7\'e0\'ef\'f3\'f9\'e5\'ed\'e0\par
+\par
+\'f7\'f2\'ee \'e8\'ec\'e5\'ed\'ed\'ee \'ee\'e3\'f0\'e0\'ed\'e8\'f7\'e5\'ed\'ee\par
+\par
+\'f7\'f2\'ee \'e4\'e5\'eb\'e0\'f2\'fc: \'ef\'ee\'ef\'ee\'eb\'ed\'e8\'f2\'fc, \'e0\'ef\'e3\'f0\'e5\'e9\'e4\'e8\'f2\'fc, \'ee\'ef\'eb\'e0\'f2\'e8\'f2\'fc, \'e4\'ee\'e6\'e4\'e0\'f2\'fc\'f1\'ff \'ef\'e5\'f0\'e8\'ee\'e4\'e0 \'e8 \'f2.\'e4.\par
+\par
+\'cf\'f0\'e8\'ec\'e5\'f0 \'ef\'ee\'e2\'e5\'e4\'e5\'ed\'e8\'ff\par
+\par
+User:\par
+\ldblquote\'cd\'e0\'e9\'e4\'e8 100 \'ea\'ee\'ec\'ef\'e0\'ed\'e8\'e9 \'e2 \'cc\'ee\'f1\'ea\'e2\'e5, \'ea\'ee\'f2\'ee\'f0\'fb\'e5 \'ef\'f0\'ee\'e4\'e0\'fe\'f2 \'f1\'e5\'f0\'e2\'e5\'f0\'ed\'ee\'e5 \'ee\'e1\'ee\'f0\'f3\'e4\'ee\'e2\'e0\'ed\'e8\'e5, \'e8 \'f1\'ee\'e1\'e5\'f0\'e8 \'f1\'e0\'e9\'f2, \'f2\'e5\'eb\'e5\'f4\'ee\'ed, email, \'e3\'ee\'f0\'ee\'e4, \'f7\'e5\'ec \'e7\'e0\'ed\'e8\'ec\'e0\'fe\'f2\'f1\'ff\rdblquote\par
+\par
+Agent:\par
+\par
+\'f3\'f2\'ee\'f7\'ed\'ff\'e5\'f2 \'f2\'ee\'eb\'fc\'ea\'ee \'e5\'f1\'eb\'e8 \'ed\'e5 \'f5\'e2\'e0\'f2\'e0\'e5\'f2 \'ea\'f0\'e8\'f2\'e8\'f7\'ed\'fb\'f5 \'ef\'e0\'f0\'e0\'ec\'e5\'f2\'f0\'ee\'e2\par
+\par
+\'f4\'ee\'f0\'ec\'e8\'f0\'f3\'e5\'f2 internal task\par
+\par
+\'ef\'f0\'ee\'e2\'e5\'f0\'ff\'e5\'f2 \'e4\'ee\'f1\'f2\'f3\'ef, \'ef\'ee\'e4\'ef\'e8\'f1\'ea\'f3 \'e8 \'eb\'e8\'ec\'e8\'f2\'fb\par
+\par
+\'e7\'e0\'ef\'f3\'f1\'ea\'e0\'e5\'f2 job\par
+\par
+\'ef\'e8\'f8\'e5\'f2: \ldblquote\'cf\'f0\'e8\'ed\'ff\'eb. \'c7\'e0\'ef\'f3\'f1\'ea\'e0\'fe \'f1\'e1\'ee\'f0 \'ea\'ee\'ec\'ef\'e0\'ed\'e8\'e9 \'ef\'ee \'cc\'ee\'f1\'ea\'e2\'e5. \'c1\'f3\'e4\'f3 \'e8\'f1\'ea\'e0\'f2\'fc \'f1\'e0\'e9\'f2\'fb, \'f2\'e5\'eb\'e5\'f4\'ee\'ed, email, \'e3\'ee\'f0\'ee\'e4 \'e8 \'ee\'ef\'e8\'f1\'e0\'ed\'e8\'e5 \'e4\'e5\'ff\'f2\'e5\'eb\'fc\'ed\'ee\'f1\'f2\'e8. \'d0\'e5\'e7\'f3\'eb\'fc\'f2\'e0\'f2\'fb \'ef\'ee\'ff\'e2\'ff\'f2\'f1\'ff \'e2 \'e2\'e0\'f8\'e5\'ec \'f0\'e0\'e7\'e4\'e5\'eb\'e5 Research \f4\u8594?\f3  Jobs.\rdblquote\par
+\par
+\f0\lang1049\'ef\'ee \'e7\'e0\'e2\'e5\'f0\'f8\'e5\'ed\'e8\'e8: \ldblquote\'d1\'e1\'ee\'f0 \'e7\'e0\'e2\'e5\'f0\'f8\'b8\'ed: \'ed\'e0\'e9\'e4\'e5\'ed\'ee 86 \'ea\'ee\'ec\'ef\'e0\'ed\'e8\'e9, \'f3 54 \'e5\'f1\'f2\'fc email, \'f3 63 \f1\emdash  \f0\'f2\'e5\'eb\'e5\'f4\'ee\'ed. \'cf\'ee\'eb\'ed\'fb\'e9 \'f1\'ef\'e8\'f1\'ee\'ea \'e4\'ee\'f1\'f2\'f3\'ef\'e5\'ed \'e2 \'e2\'e0\'f8\'e5\'ec \'f0\'e0\'e1\'ee\'f7\'e5\'ec \'ef\'f0\'ee\'f1\'f2\'f0\'e0\'ed\'f1\'f2\'e2\'e5 \'e2 \'f0\'e0\'e7\'e4\'e5\'eb\'e5 Research \f4\u8594?\f3  Jobs.\rdblquote\par
+\par
+\f0\lang1049\'e5\'f1\'eb\'e8 \'eb\'e8\'ec\'e8\'f2 \'ea\'ee\'ed\'f7\'e8\'eb\'f1\'ff: \ldblquote\'d1\'e5\'e9\'f7\'e0\'f1 \'ed\'e5 \'ec\'ee\'e3\'f3 \'e7\'e0\'ef\'f3\'f1\'f2\'e8\'f2\'fc \'e7\'e0\'e4\'e0\'f7\'f3: \'e8\'f1\'f7\'e5\'f0\'ef\'e0\'ed \'eb\'e8\'ec\'e8\'f2 \'ed\'e0 \'f1\'e1\'ee\'f0 \'e2 \'f2\'e5\'ea\'f3\'f9\'e5\'ec \'ef\'e5\'f0\'e8\'ee\'e4\'e5. \'cf\'f0\'ee\'e2\'e5\'f0\'fc\'f2\'e5 \'f0\'e0\'e7\'e4\'e5\'eb Billing / Usage.\rdblquote\par
+\par
+10. \'c0\'f0\'f5\'e8\'f2\'e5\'ea\'f2\'f3\'f0\'e0 \'f1 \'f0\'e0\'f1\'f7\'b8\'f2\'ee\'ec \'ed\'e0 \'ec\'e0\'f1\'f8\'f2\'e0\'e1\'e8\'f0\'ee\'e2\'e0\'ed\'e8\'e5\par
+\par
+\'cd\'f3\'e6\'ed\'ee \'e4\'f3\'ec\'e0\'f2\'fc \'f2\'e0\'ea, \'e1\'f3\'e4\'f2\'ee \'ef\'ee\'e7\'e6\'e5 \'e1\'f3\'e4\'f3\'f2:\par
+\par
+\'ed\'ee\'e2\'fb\'e5 scraping engines\par
+\par
+search providers\par
+\par
+proxy layers\par
+\par
+enrichment providers\par
+\par
+recurring monitoring\par
+\par
+team collaboration\par
+\par
+manual review\par
+\par
+exports / API / webhooks\par
+\par
+multi-tenant support\par
+\par
+org-level roles\par
+\par
+billing tiers\par
+\par
+seat-based plans\par
+\par
+usage overage / credits\par
+\par
+\'cf\'ee\'fd\'f2\'ee\'ec\'f3 \'ed\'f3\'e6\'ed\'ee:\par
+\par
+\'f0\'e0\'e7\'e4\'e5\'eb\'e8\'f2\'fc domain layer / service layer / provider layer / execution layer / authz layer / billing layer / UI layer\par
+\par
+\'ed\'e5 \'e6\'b8\'f1\'f2\'ea\'ee \'f8\'e8\'f2\'fc Firecrawl \'e2 \'e0\'e3\'e5\'ed\'f2\'ed\'f3\'fe \'eb\'ee\'e3\'e8\'ea\'f3\par
+\par
+\'ed\'e5 \'e4\'e5\'eb\'e0\'f2\'fc giant god-object\par
+\par
+\'ef\'f0\'ee\'e4\'f3\'ec\'e0\'f2\'fc \'f0\'e0\'f1\'f8\'e8\'f0\'ff\'e5\'ec\'f3\'fe \'f1\'f5\'e5\'ec\'f3 \'c1\'c4\par
+\par
+\'ef\'f0\'e5\'e4\'f3\'f1\'ec\'ee\'f2\'f0\'e5\'f2\'fc event/status/audit/usage/billing model\par
+\par
+11. Web UI / frontend \'f2\'f0\'e5\'e1\'ee\'e2\'e0\'ed\'e8\'ff\par
+\par
+\'cd\'f3\'e6\'ed\'ee \'ef\'f0\'e5\'e4\'eb\'ee\'e6\'e8\'f2\'fc \'f1\'f2\'f0\'f3\'ea\'f2\'f3\'f0\'f3 \'e8\'ed\'f2\'e5\'f0\'f4\'e5\'e9\'f1\'e0 \'e8 \'ea\'ee\'ec\'ef\'ee\'ed\'e5\'ed\'f2\'ee\'e2.\par
+\par
+\'cd\'f3\'e6\'ed\'ee \'ef\'f0\'ee\'e4\'f3\'ec\'e0\'f2\'fc:\par
+\par
+\'f1\'f2\'f0\'e0\'ed\'e8\'f6\'fb\par
+\par
+\'f0\'ee\'f3\'f2\'fb\par
+\par
+layout\par
+\par
+navigation\par
+\par
+tables / filters / cards\par
+\par
+result explorer\par
+\par
+logs panel\par
+\par
+loading/error states\par
+\par
+auth-aware navigation\par
+\par
+role-aware controls\par
+\par
+billing-aware UX\par
+\par
+quota indicators\par
+\par
+plan restrictions UI\par
+\par
+\'cf\'f0\'e8\'ee\'f0\'e8\'f2\'e5\'f2 \'e8\'ed\'f2\'e5\'f0\'f4\'e5\'e9\'f1\'e0:\par
+\par
+\'f3\'e4\'ee\'e1\'ed\'ee \'e7\'e0\'ef\'f3\'f1\'ea\'e0\'f2\'fc \'e8 \'f1\'ec\'ee\'f2\'f0\'e5\'f2\'fc jobs\par
+\par
+\'f3\'e4\'ee\'e1\'ed\'ee \'ee\'f2\'ea\'f0\'fb\'e2\'e0\'f2\'fc \'f0\'e5\'e7\'f3\'eb\'fc\'f2\'e0\'f2\'fb\par
+\par
+\'f3\'e4\'ee\'e1\'ed\'ee \'ef\'ee\'ed\'e8\'ec\'e0\'f2\'fc, \'f7\'f2\'ee \'ef\'f0\'ee\'e8\'e7\'ee\'f8\'eb\'ee\par
+\par
+\'f3\'e4\'ee\'e1\'ed\'ee \'e2\'e8\'e4\'e5\'f2\'fc usage / \'eb\'e8\'ec\'e8\'f2\'fb / \'ef\'ee\'e4\'ef\'e8\'f1\'ea\'f3\par
+\par
+\'e1\'e5\'e7\'ee\'ef\'e0\'f1\'ed\'ee \'f1\'ea\'f0\'fb\'e2\'e0\'f2\'fc \'f2\'ee, \'f7\'f2\'ee \'ef\'ee\'eb\'fc\'e7\'ee\'e2\'e0\'f2\'e5\'eb\'fc \'ed\'e5 \'e4\'ee\'eb\'e6\'e5\'ed \'e2\'e8\'e4\'e5\'f2\'fc\par
+\par
+12. API design\par
+\par
+\'cd\'f3\'e6\'ed\'ee \'f1\'ef\'f0\'ee\'e5\'ea\'f2\'e8\'f0\'ee\'e2\'e0\'f2\'fc API endpoints \'e4\'eb\'ff \'ed\'ee\'e2\'ee\'e3\'ee \'e4\'ee\'ec\'e5\'ed\'e0.\par
+\par
+\'cc\'e8\'ed\'e8\'ec\'f3\'ec:\par
+\par
+create job\par
+\par
+list jobs\par
+\par
+get job\par
+\par
+update job\par
+\par
+rerun job\par
+\par
+cancel job\par
+\par
+list results\par
+\par
+get result item\par
+\par
+list sources\par
+\par
+list runs\par
+\par
+get run logs\par
+\par
+templates CRUD\par
+\par
+auth/session/account-link endpoints if needed\par
+\par
+workspace membership endpoints if applicable\par
+\par
+billing/subscription endpoints\par
+\par
+usage endpoints\par
+\par
+audit/security endpoints for privileged roles\par
+\par
+\'c4\'eb\'ff \'ea\'e0\'e6\'e4\'ee\'e3\'ee endpoint \'ef\'f0\'ee\'e4\'f3\'ec\'e0\'e9:\par
+\par
+\'ea\'f2\'ee \'ec\'ee\'e6\'e5\'f2 \'e2\'fb\'e7\'fb\'e2\'e0\'f2\'fc\par
+\par
+\'e2 \'ea\'e0\'ea\'ee\'ec scope\par
+\par
+\'ea\'e0\'ea \'ef\'f0\'ee\'e2\'e5\'f0\'ff\'e5\'f2\'f1\'ff ownership / role\par
+\par
+\'ea\'e0\'ea \'ef\'f0\'ee\'e2\'e5\'f0\'ff\'e5\'f2\'f1\'ff subscription state\par
+\par
+\'ea\'e0\'ea \'ef\'f0\'ee\'e2\'e5\'f0\'ff\'e5\'f2\'f1\'ff quota\par
+\par
+\'ea\'e0\'ea\'e8\'e5 \'ef\'ee\'eb\'ff \'f1\'ea\'f0\'fb\'e2\'e0\'fe\'f2\'f1\'ff\par
+\par
+\'ea\'e0\'ea \'e7\'e0\'f9\'e8\'f9\'b8\'ed export/download\par
+\par
+13. Execution / background processing\par
+\par
+\'cd\'f3\'e6\'ed\'ee \'ef\'f0\'ee\'e4\'f3\'ec\'e0\'f2\'fc, \'ea\'e0\'ea job \'e2\'fb\'ef\'ee\'eb\'ed\'ff\'e5\'f2\'f1\'ff \'e0\'f1\'e8\'ed\'f5\'f0\'ee\'ed\'ed\'ee.\par
+\par
+\'c2\'e0\'e6\'ed\'ee:\par
+\par
+\'e7\'e0\'ef\'f3\'f1\'ea job \'ed\'e5 \'e4\'ee\'eb\'e6\'e5\'ed \'e1\'eb\'ee\'ea\'e8\'f0\'ee\'e2\'e0\'f2\'fc \'f7\'e0\'f2\par
+\par
+\'ef\'ee\'eb\'fc\'e7\'ee\'e2\'e0\'f2\'e5\'eb\'fc \'e4\'ee\'eb\'e6\'e5\'ed \'ef\'ee\'eb\'f3\'f7\'e0\'f2\'fc \'e1\'fb\'f1\'f2\'f0\'fb\'e9 ack\par
+\par
+\'f1\'e1\'ee\'f0 \'e4\'ee\'eb\'e6\'e5\'ed \'e2\'fb\'ef\'ee\'eb\'ed\'ff\'f2\'fc\'f1\'ff \'f4\'ee\'ed\'ee\'ec\par
+\par
+\'f1\'f2\'e0\'f2\'f3\'f1\'fb \'e4\'ee\'eb\'e6\'ed\'fb \'ee\'e1\'ed\'ee\'e2\'eb\'ff\'f2\'fc\'f1\'ff\par
+\par
+ownership/scope \'e4\'ee\'eb\'e6\'ed\'fb \'f1\'ee\'f5\'f0\'e0\'ed\'ff\'f2\'fc\'f1\'ff \'ed\'e0 \'e2\'f1\'b8\'ec \'ef\'f3\'f2\'e8\par
+\par
+usage \'e4\'ee\'eb\'e6\'ed\'ee \'ea\'ee\'f0\'f0\'e5\'ea\'f2\'ed\'ee \'f1\'ef\'e8\'f1\'fb\'e2\'e0\'f2\'fc\'f1\'ff\par
+\par
+\'f4\'ee\'ed\'ee\'e2\'fb\'e5 \'ef\'f0\'ee\'f6\'e5\'f1\'f1\'fb \'ed\'e5 \'e4\'ee\'eb\'e6\'ed\'fb \'ef\'f3\'f2\'e0\'f2\'fc \'e4\'e0\'ed\'ed\'fb\'e5 \'f0\'e0\'e7\'ed\'fb\'f5 \'ef\'ee\'eb\'fc\'e7\'ee\'e2\'e0\'f2\'e5\'eb\'e5\'e9/jobs\par
+\par
+\'e4\'ee\'eb\'e6\'ed\'e0 \'e1\'fb\'f2\'fc \'f1\'f2\'f0\'e0\'f2\'e5\'e3\'e8\'ff partial usage accounting \'e8 failure handling\par
+\par
+14. \'d7\'f2\'ee \'ed\'f3\'e6\'ed\'ee \'e2\'fb\'e4\'e0\'f2\'fc \'e2 \'f0\'e5\'e7\'f3\'eb\'fc\'f2\'e0\'f2\'e5\par
+\par
+\'cd\'f3\'e6\'ed\'ee \'e2\'fb\'e4\'e0\'f2\'fc \'ef\'f0\'e0\'ea\'f2\'e8\'f7\'e5\'f1\'ea\'e8\'e9 \'ef\'eb\'e0\'ed \'e2\'ed\'e5\'e4\'f0\'e5\'ed\'e8\'ff.\par
+\par
+\'df \'f5\'ee\'f7\'f3 \'ef\'ee\'eb\'f3\'f7\'e8\'f2\'fc:\par
+\par
+\'e0\'f0\'f5\'e8\'f2\'e5\'ea\'f2\'f3\'f0\'ed\'ee\'e5 \'f0\'e5\'f8\'e5\'ed\'e8\'e5 \'ef\'ee \'ed\'ee\'e2\'ee\'ec\'f3 \'e4\'ee\'ec\'e5\'ed\'f3\par
+\par
+\'f1\'f5\'e5\'ec\'f3 \'ec\'ee\'e4\'f3\'eb\'e5\'e9 / \'ef\'e0\'ef\'ee\'ea / \'f1\'eb\'ee\'b8\'e2\par
+\par
+\'e4\'ee\'ec\'e5\'ed\'ed\'f3\'fe \'ec\'ee\'e4\'e5\'eb\'fc / \'f2\'e0\'e1\'eb\'e8\'f6\'fb / \'f1\'f3\'f9\'ed\'ee\'f1\'f2\'e8\par
+\par
+auth + authorization model\par
+\par
+tenant/workspace/user isolation model\par
+\par
+subscription + billing model\par
+\par
+usage/token accounting model\par
+\par
+flow \'f0\'e0\'e1\'ee\'f2\'fb \'e8\'e7 \'f7\'e0\'f2\'e0\par
+\par
+flow \'f0\'e0\'e1\'ee\'f2\'fb \'f7\'e5\'f0\'e5\'e7 web UI\par
+\par
+\'f1\'ef\'e8\'f1\'ee\'ea API endpoints\par
+\par
+\'e8\'ed\'f2\'e5\'e3\'f0\'e0\'f6\'e8\'ee\'ed\'ed\'f3\'fe \'f1\'f5\'e5\'ec\'f3 Firecrawl\par
+\par
+supervisor / agent routing changes\par
+\par
+\'fd\'ea\'f0\'e0\'ed\'ed\'f3\'fe \'ea\'e0\'f0\'f2\'f3 \'e8\'ed\'f2\'e5\'f0\'f4\'e5\'e9\'f1\'e0 / \'f1\'f2\'f0\'e0\'ed\'e8\'f6\par
+\par
+\'ef\'ee\'fd\'f2\'e0\'ef\'ed\'fb\'e9 \'ef\'eb\'e0\'ed \'f0\'e5\'e0\'eb\'e8\'e7\'e0\'f6\'e8\'e8\par
+\par
+\'f1\'ef\'e8\'f1\'ee\'ea \'f4\'e0\'e9\'eb\'ee\'e2, \'ea\'ee\'f2\'ee\'f0\'fb\'e5 \'ed\'f3\'e6\'ed\'ee \'f1\'ee\'e7\'e4\'e0\'f2\'fc / \'e8\'e7\'ec\'e5\'ed\'e8\'f2\'fc\par
+\par
+\'f0\'e5\'ea\'ee\'ec\'e5\'ed\'e4\'e0\'f6\'e8\'e8 \'ef\'ee \'ec\'e0\'f1\'f8\'f2\'e0\'e1\'e8\'f0\'f3\'e5\'ec\'ee\'f1\'f2\'e8\par
+\par
+\'f0\'e5\'ea\'ee\'ec\'e5\'ed\'e4\'e0\'f6\'e8\'e8 \'ef\'ee \'e1\'e5\'e7\'ee\'ef\'e0\'f1\'ed\'ee\'f1\'f2\'e8\par
+\par
+\'f0\'e8\'f1\'ea\'e8 \'e8 \'f3\'e7\'ea\'e8\'e5 \'ec\'e5\'f1\'f2\'e0\par
+\par
+\'ce\'e3\'f0\'e0\'ed\'e8\'f7\'e5\'ed\'e8\'ff\par
+\par
+\'cd\'e5 \'e4\'e5\'eb\'e0\'f2\'fc \'f5\'e0\'ee\'f2\'e8\'f7\'ed\'f3\'fe \ldblquote\'ec\'e0\'e3\'e8\'f7\'e5\'f1\'ea\'f3\'fe\rdblquote  \'e0\'f0\'f5\'e8\'f2\'e5\'ea\'f2\'f3\'f0\'f3\par
+\par
+\'cd\'e5 \'ef\'f0\'e8\'e2\'ff\'e7\'fb\'e2\'e0\'f2\'fc \'e2\'f1\'b8 \'e6\'b8\'f1\'f2\'ea\'ee \'ea \'ee\'e4\'ed\'ee\'ec\'f3 use-case\par
+\par
+\'cd\'e5 \'e4\'e5\'eb\'e0\'f2\'fc Firecrawl \'e2\'fb\'e7\'ee\'e2\'fb \'f0\'e0\'e7\'ec\'e0\'e7\'e0\'ed\'ed\'fb\'ec\'e8 \'ef\'ee \'ef\'f0\'ee\'e5\'ea\'f2\'f3\par
+\par
+\'cd\'e5 \'f1\'f2\'f0\'ee\'e8\'f2\'fc \'e2\'f1\'b8 \'ea\'e0\'ea \'ee\'e4\'ed\'ee\'f0\'e0\'e7\'ee\'e2\'fb\'e9 \'f1\'ea\'f0\'e8\'ef\'f2\par
+\par
+\'cd\'e5 \'eb\'ee\'ec\'e0\'f2\'fc \'f1\'f3\'f9\'e5\'f1\'f2\'e2\'f3\'fe\'f9\'e8\'e5 \'e4\'ee\'ec\'e5\'ed\'fb\par
+\par
+\'cd\'e5 \'eb\'e5\'ef\'e8\'f2\'fc giant god-object agent\par
+\par
+\'cd\'e5 \'e4\'e5\'eb\'e0\'f2\'fc UI \'f2\'ee\'eb\'fc\'ea\'ee \'ef\'ee\'e4 \'ee\'e4\'e8\'ed \'f1\'f6\'e5\'ed\'e0\'f0\'e8\'e9\par
+\par
+\'cd\'e5 \'e8\'e3\'ed\'ee\'f0\'e8\'f0\'ee\'e2\'e0\'f2\'fc raw + structured data\par
+\par
+\'cd\'e5 \'ee\'f2\'ea\'eb\'e0\'e4\'fb\'e2\'e0\'f2\'fc auth/billing/quota \ldblquote\'ed\'e0 \'ef\'ee\'f2\'ee\'ec\rdblquote\par
+\par
+\'cd\'e5 \'e4\'e5\'eb\'e0\'f2\'fc \'e1\'e5\'e7\'ee\'ef\'e0\'f1\'ed\'ee\'f1\'f2\'fc \'f2\'ee\'eb\'fc\'ea\'ee \'ed\'e0 \'f4\'f0\'ee\'ed\'f2\'e5\par
+\par
+\'cd\'e5 \'ef\'f0\'ee\'e5\'ea\'f2\'e8\'f0\'ee\'e2\'e0\'f2\'fc \'f1\'e8\'f1\'f2\'e5\'ec\'f3 \'ea\'e0\'ea \'e4\'eb\'ff \'ee\'e4\'ed\'ee\'e3\'ee \'ef\'ee\'eb\'fc\'e7\'ee\'e2\'e0\'f2\'e5\'eb\'ff\par
+\par
+\'cd\'e5 \'e7\'e0\'e1\'fb\'e2\'e0\'f2\'fc \'ef\'f0\'ee \'ea\'ee\'ec\'ec\'e5\'f0\'f7\'e5\'f1\'ea\'f3\'fe \'ec\'ee\'e4\'e5\'eb\'fc \'e8 \'ea\'ee\'ed\'f2\'f0\'ee\'eb\'e8\'f0\'f3\'e5\'ec\'fb\'e9 \'e4\'ee\'f1\'f2\'f3\'ef\par
+\par
+\'d7\'f2\'ee \'ed\'f3\'e6\'ed\'ee \'f3\'f7\'e8\'f2\'fb\'e2\'e0\'f2\'fc \'ee\'e1\'ff\'e7\'e0\'f2\'e5\'eb\'fc\'ed\'ee\par
+\'cd\'ee\'e2\'fb\'e9 \'e4\'ee\'ec\'e5\'ed \'e4\'ee\'eb\'e6\'e5\'ed \'f3\'ec\'e5\'f2\'fc:\par
+\par
+\'e7\'e0\'ef\'f3\'f1\'ea\'e0\'f2\'fc\'f1\'ff \'e8\'e7 \'f7\'e0\'f2\'e0\par
+\par
+\'f0\'e0\'e1\'ee\'f2\'e0\'f2\'fc \'f7\'e5\'f0\'e5\'e7 web UI\par
+\par
+\'f5\'f0\'e0\'ed\'e8\'f2\'fc \'e7\'e0\'e4\'e0\'f7\'e8 \'e8 \'f0\'e5\'e7\'f3\'eb\'fc\'f2\'e0\'f2\'fb\par
+\par
+\'ee\'f2\'ee\'e1\'f0\'e0\'e6\'e0\'f2\'fc \'e8\'f1\'f2\'ee\'f0\'e8\'fe\par
+\par
+\'e1\'fb\'f2\'fc \'f0\'e0\'f1\'f8\'e8\'f0\'ff\'e5\'ec\'fb\'ec\par
+\par
+\'e8\'f1\'ef\'ee\'eb\'fc\'e7\'ee\'e2\'e0\'f2\'fc Firecrawl \'ea\'e0\'ea \'ee\'f1\'ed\'ee\'e2\'ed\'ee\'e9 provider\par
+\par
+\'e7\'e0\'e4\'e0\'e2\'e0\'f2\'fc \'f3\'f2\'ee\'f7\'ed\'ff\'fe\'f9\'e8\'e5 \'e2\'ee\'ef\'f0\'ee\'f1\'fb\par
+\par
+\'ee\'f2\'f7\'e8\'f2\'fb\'e2\'e0\'f2\'fc\'f1\'ff \'e2 \'f7\'e0\'f2 \'ee \'f0\'e5\'e7\'f3\'eb\'fc\'f2\'e0\'f2\'e0\'f5\par
+\par
+\'f0\'e0\'e1\'ee\'f2\'e0\'f2\'fc \'e2 \'ec\'ed\'ee\'e3\'ee\'ef\'ee\'eb\'fc\'e7\'ee\'e2\'e0\'f2\'e5\'eb\'fc\'f1\'ea\'ee\'e9 \'ec\'ee\'e4\'e5\'eb\'e8\par
+\par
+\'f0\'e0\'e7\'e3\'f0\'e0\'ed\'e8\'f7\'e8\'e2\'e0\'f2\'fc \'e4\'ee\'f1\'f2\'f3\'ef\par
+\par
+\'e1\'e5\'e7\'ee\'ef\'e0\'f1\'ed\'ee \'f5\'f0\'e0\'ed\'e8\'f2\'fc \'e8 \'ef\'ee\'ea\'e0\'e7\'fb\'e2\'e0\'f2\'fc \'e4\'e0\'ed\'ed\'fb\'e5\par
+\par
+\'e1\'fb\'f2\'fc \'e3\'ee\'f2\'ee\'e2\'fb\'ec \'ea team/workspace/tenant architecture\par
+\par
+\'f0\'e0\'e1\'ee\'f2\'e0\'f2\'fc \'ef\'ee \'ef\'ee\'e4\'ef\'e8\'f1\'ea\'e5\par
+\par
+\'f3\'f7\'e8\'f2\'fb\'e2\'e0\'f2\'fc usage, \'f2\'ee\'ea\'e5\'ed\'fb, \'ea\'e2\'ee\'f2\'fb \'e8 \'eb\'e8\'ec\'e8\'f2\'fb\par
+\par
+\'ee\'f2\'ea\'eb\'fe\'f7\'e0\'f2\'fc \'e8\'eb\'e8 \'ee\'e3\'f0\'e0\'ed\'e8\'f7\'e8\'e2\'e0\'f2\'fc \'e4\'ee\'f1\'f2\'f3\'ef \'ef\'f0\'e8 \'ed\'e5\'ee\'ef\'eb\'e0\'f2\'e5 \'e8\'eb\'e8 \'e8\'f1\'f7\'e5\'f0\'ef\'e0\'ed\'e8\'e8 \'eb\'e8\'ec\'e8\'f2\'ee\'e2\par
+\par
+\'cf\'f0\'e5\'e4\'ef\'ee\'f7\'f2\'e8\'f2\'e5\'eb\'fc\'ed\'fb\'e9 \'f4\'ee\'f0\'ec\'e0\'f2 \'ee\'f2\'e2\'e5\'f2\'e0\par
+\par
+\'ca\'ee\'e3\'e4\'e0 \'e7\'e0\'ea\'ee\'ed\'f7\'e8\'f8\'fc, \'e2\'fb\'e4\'e0\'e9 \'f0\'e5\'e7\'f3\'eb\'fc\'f2\'e0\'f2 \'e2 \'f1\'eb\'e5\'e4\'f3\'fe\'f9\'e5\'ec \'e2\'e8\'e4\'e5:\par
+\par
+1. High-level architecture\par
+\par
+\'ea\'e0\'ea \'ed\'ee\'e2\'fb\'e9 \'e4\'ee\'ec\'e5\'ed \'e2\'f1\'f2\'f0\'ee\'e8\'f2\'f1\'ff \'e2 \'ef\'f0\'ee\'e5\'ea\'f2\par
+\par
+2. Identity, auth and authorization model\par
+\par
+user/workspace/role/access design\par
+\par
+3. Subscription, billing and usage model\par
+\par
+\'ef\'eb\'e0\'ed\'fb, \'ef\'ee\'e4\'ef\'e8\'f1\'ea\'e8, \'eb\'e8\'ec\'e8\'f2\'fb, usage, \'f2\'ee\'ea\'e5\'ed\'fb, enforcement\par
+\par
+4. Domain design\par
+\par
+\'f1\'f3\'f9\'ed\'ee\'f1\'f2\'e8, \'ec\'ee\'e4\'e5\'eb\'e8, \'f2\'e0\'e1\'eb\'e8\'f6\'fb\par
+\par
+5. Backend structure\par
+\par
+\'ea\'e0\'ea\'e8\'e5 \'ec\'ee\'e4\'f3\'eb\'e8 / \'f1\'e5\'f0\'e2\'e8\'f1\'fb / \'e0\'e3\'e5\'ed\'f2\'fb / \'f0\'ee\'f3\'f2\'e5\'f0\'fb / providers \'f1\'ee\'e7\'e4\'e0\'f2\'fc\par
+\par
+6. Firecrawl integration plan\par
+\par
+\'ea\'e0\'ea \'e8\'ec\'e5\'ed\'ed\'ee \'e2\'f1\'f2\'f0\'ee\'e8\'f2\'fc Firecrawl\par
+\par
+7. Chat interaction flow\par
+\par
+intake \f4\u8594?\f3  clarify \f4\u8594?\f3  auth/scope/subscription/quota \f4\u8594?\f3  launch \f4\u8594?\f3  status \f4\u8594?\f3  result\par
+\par
+8. Web UI architecture\par
+\par
+\f0\lang1049\'f1\'f2\'f0\'e0\'ed\'e8\'f6\'fb, \'f0\'e0\'e7\'e4\'e5\'eb\'fb, UX, auth-aware + billing-aware navigation\par
+\par
+9. API surface\par
+\par
+endpoints, permissions, payload ideas\par
+\par
+10. Security architecture\par
+\par
+data isolation, audit, secrets, safe execution, export protection\par
+\par
+11. Phased implementation roadmap\par
+\par
+MVP \f4\u8594?\f3  secure paid SaaS V2 \f4\u8594?\f3  scale\par
+\par
+12. Files to create / modify\par
+\par
+\f0\lang1049\'ea\'ee\'ed\'ea\'f0\'e5\'f2\'ed\'fb\'e9 \'f1\'ef\'e8\'f1\'ee\'ea\par
+\par
+13. Risks / tradeoffs\par
+\par
+\'ea\'ee\'ed\'ea\'f0\'e5\'f2\'ed\'ee \'e8 \'e1\'e5\'e7 \'e2\'ee\'e4\'fb\par
+\par
+\'c4\'ee\'ef\'ee\'eb\'ed\'e8\'f2\'e5\'eb\'fc\'ed\'ee\'e5 \'f2\'f0\'e5\'e1\'ee\'e2\'e0\'ed\'e8\'e5\par
+\par
+\'c5\'f1\'eb\'e8 \'e2 \'ef\'f0\'ee\'e5\'ea\'f2\'e5 \'f3\'e6\'e5 \'e5\'f1\'f2\'fc \'ef\'e0\'f2\'f2\'e5\'f0\'ed\'fb \'e4\'eb\'ff:\par
+\par
+\'e4\'ee\'ec\'e5\'ed\'ee\'e2\par
+\par
+supervisor routing\par
+\par
+background jobs\par
+\par
+API routers\par
+\par
+DB models\par
+\par
+frontend pages\par
+\par
+auth/session handling\par
+\par
+role checks\par
+\par
+\'f2\'ee \'ec\'e0\'ea\'f1\'e8\'ec\'e0\'eb\'fc\'ed\'ee \'e0\'e4\'e0\'ef\'f2\'e8\'f0\'f3\'e9 \'f0\'e5\'f8\'e5\'ed\'e8\'e5 \'ef\'ee\'e4 \'f1\'f3\'f9\'e5\'f1\'f2\'e2\'f3\'fe\'f9\'f3\'fe \'e0\'f0\'f5\'e8\'f2\'e5\'ea\'f2\'f3\'f0\'f3, \'e0 \'ed\'e5 \'ef\'f0\'e8\'e4\'f3\'ec\'fb\'e2\'e0\'e9 \'ed\'ee\'e2\'f3\'fe \'f1 \'ed\'f3\'eb\'ff.\par
+\par
+\'c5\'f1\'eb\'e8 \'f1\'f2\'f0\'f3\'ea\'f2\'f3\'f0\'e0 \'ef\'f0\'ee\'e5\'ea\'f2\'e0 \'ee\'f2\'eb\'e8\'f7\'e0\'e5\'f2\'f1\'ff \'ee\'f2 \'ee\'e6\'e8\'e4\'e0\'e5\'ec\'ee\'e9, \'ef\'ee\'e4\'f1\'f2\'f0\'ee\'e9\'f1\'ff \'ef\'ee\'e4 \'f0\'e5\'e0\'eb\'fc\'ed\'fb\'e9 \'ea\'ee\'e4, \'ed\'ee \'f1\'ee\'f5\'f0\'e0\'ed\'e8 \'f1\'ec\'fb\'f1\'eb \'f0\'e5\'f8\'e5\'ed\'e8\'ff.\par
+\par
+\'c8 \'e5\'f9\'b8:\par
+\par
+\'e2\'e5\'e7\'e4\'e5, \'e3\'e4\'e5 \'f1\'ee\'e7\'e4\'e0\'fe\'f2\'f1\'ff \'ec\'ee\'e4\'e5\'eb\'e8, API, queries \'e8\'eb\'e8 UI lists, \'e4\'f3\'ec\'e0\'e9 \'e2 \'eb\'ee\'e3\'e8\'ea\'e5 security by default\par
+\par
+\'e2\'e5\'e7\'e4\'e5, \'e3\'e4\'e5 \'e5\'f1\'f2\'fc list/get/export/retry/delete/config actions, \'e4\'f3\'ec\'e0\'e9 \'e2 \'eb\'ee\'e3\'e8\'ea\'e5 permission checks\par
+\par
+\'e2\'e5\'e7\'e4\'e5, \'e3\'e4\'e5 \'e5\'f1\'f2\'fc \'e7\'e0\'ef\'f3\'f1\'ea jobs, \'e4\'f3\'ec\'e0\'e9 \'e2 \'eb\'ee\'e3\'e8\'ea\'e5 subscription + quota + usage enforcement\par
+\par
+\'e2\'e5\'e7\'e4\'e5, \'e3\'e4\'e5 \'e5\'f1\'f2\'fc \'f1\'ee\'f5\'f0\'e0\'ed\'e5\'ed\'e8\'e5 \'f0\'e5\'e7\'f3\'eb\'fc\'f2\'e0\'f2\'ee\'e2, \'e4\'f3\'ec\'e0\'e9 \'e2 \'eb\'ee\'e3\'e8\'ea\'e5 ownership + workspace scope + auditability\par
+\par
+\'e2\'e5\'e7\'e4\'e5, \'e3\'e4\'e5 \'e5\'f1\'f2\'fc provider calls, \'e4\'f3\'ec\'e0\'e9 \'e2 \'eb\'ee\'e3\'e8\'ea\'e5 metering + cost awareness\par
+\par
+\'e2\'e5\'e7\'e4\'e5, \'e3\'e4\'e5 \'e5\'f1\'f2\'fc user-facing product flow, \'e4\'f3\'ec\'e0\'e9 \'e2 \'eb\'ee\'e3\'e8\'ea\'e5 paid SaaS lifecycle\f3\lang9\par
+}
+ 

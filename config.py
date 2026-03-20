@@ -78,3 +78,15 @@ MINIAPP_URL: str = os.getenv("MINIAPP_URL", "")
 
 _raw_origins: str = os.getenv("ALLOWED_ORIGINS", MINIAPP_URL)
 ALLOWED_ORIGINS: list[str] = [o.strip() for o in _raw_origins.split(",") if o.strip()] or ["*"]
+
+# ── Firecrawl (Research домен) ────────────────────────────────────────────────
+# Платформенный API-ключ Firecrawl — добавляется оператором в .env
+FIRECRAWL_API_KEY: str = os.getenv("FIRECRAWL_API_KEY", "")
+
+# ── Research конфигурация ─────────────────────────────────────────────────────
+# Максимальное количество страниц на одну задачу сбора
+RESEARCH_MAX_PAGES_PER_JOB: int = int(os.getenv("RESEARCH_MAX_PAGES_PER_JOB", "100"))
+# Таймаут выполнения задачи в секундах
+RESEARCH_DEFAULT_TIMEOUT: int = int(os.getenv("RESEARCH_DEFAULT_TIMEOUT", "300"))
+# Максимальное количество одновременно выполняемых задач
+RESEARCH_MAX_CONCURRENT_JOBS: int = int(os.getenv("RESEARCH_MAX_CONCURRENT_JOBS", "3"))

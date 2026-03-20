@@ -63,6 +63,29 @@ _NUTRITION_NORMAL = {
     "воды", "воду", "водичк",
 }
 
+
+# ── Research (сбор данных из интернета) ───────────────────────────────────────
+
+_RESEARCH_STRONG = {
+    "собери сайты", "найди компании", "спарси", "вытащи контакты",
+    "собери информацию", "проанализируй сайт", "обойди сайт",
+    "найди конкурентов", "собери данные", "extraction", "crawl",
+    "scrape", "парсинг", "research", "собери контакты",
+    "найди поставщиков", "собери базу",
+}
+
+_RESEARCH_NORMAL = {
+    "найди сайты", "собери", "список компаний", "контакты",
+    "поставщики", "конкуренты", "производители",
+    "найди email", "найди телефон",
+}
+
+_RESEARCH_ANTI = {
+    # Исключаем ложные срабатывания с другими доменами
+    "напомни", "запиши", "задач", "встреч", "тренировк",
+    "калори", "съел", "выпил", "привычк", "цел",
+}
+
 _FITNESS_STRONG = {
     # Кардио/бег — пробелы защищают от ложных срабатываний (бегемот, пресса)
     "бег ", "бегал", "пробежал", "пробежк", "пробежа",
@@ -204,6 +227,11 @@ def classify_by_rules(text: str) -> str | None:
     coach_strong = _count_matches(low, _COACHING_STRONG)
     coach_normal = _count_matches(low, _COACHING_NORMAL)
     coach_anti = _count_matches(low, _COACHING_ANTI)
+
+    # Research-счётчики
+    res_strong = _count_matches(low, _RESEARCH_STRONG)
+    res_normal = _count_matches(low, _RESEARCH_NORMAL)
+    res_anti = _count_matches(low, _RESEARCH_ANTI)
     
     # Приоритет 1: сильные маркеры без антимаркеров
     if nutr_strong > 0 and nutr_anti == 0:
@@ -221,6 +249,10 @@ def classify_by_rules(text: str) -> str | None:
     if coach_strong > 0 and coach_anti == 0:
         logger.info("PRE-CLASSIFY → coaching (strong=%d)", coach_strong)
         return "coaching"
+
+    if res_strong > 0 and res_anti == 0:
+        logger.info("PRE-CLASSIFY → research (strong=%d)", res_strong)
+        return "research"
     
     # Приоритет 2: >= 2 обычных маркера без конфликтов
     if nutr_normal >= 2 and nutr_anti == 0 and rem_strong == 0 and fit_strong == 0:
@@ -234,6 +266,10 @@ def classify_by_rules(text: str) -> str | None:
     if coach_normal >= 2 and coach_anti == 0 and fit_strong == 0 and nutr_strong == 0 and rem_strong == 0:
         logger.info("PRE-CLASSIFY → coaching (normal=%d)", coach_normal)
         return "coaching"
+
+    if res_normal >= 2 and res_anti == 0 and fit_strong == 0 and nutr_strong == 0 and rem_strong == 0:
+        logger.info("PRE-CLASSIFY → research (normal=%d)", res_normal)
+        return "research"
     
     # Приоритет 3: один сильный маркер с антимаркерами — конфликт, отдаём LLM
     logger.debug(
@@ -274,6 +310,9 @@ def has_any_signal(text: str, exclude_domain: str) -> str | None:
     if exclude_domain != "coaching":
         if _count_matches(low, _COACHING_STRONG) > 0:
             return "coaching"
+    if exclude_domain != "research":
+        if _count_matches(low, _RESEARCH_STRONG) > 0:
+            return "research"
 
     # Проверяем normal маркеры (>= 1) при условии что у sticky домена 0 маркеров
     sticky_signal = 0
