@@ -367,3 +367,6 @@
 ## [af8363e] — 2026-03-20 11:01 (МСК)
 📦 Fix: напоминания для повторяющихся задач. regenerate_occurrences теперь ищет offset из reminders таблицы (fallback) и user_settings (дефолт), а не только из task.remind_at. Бэкфилл: 56 напоминаний создано для существующих экземпляров.
 
+## [b69ed0c] — 2026-03-20 14:52 (МСК)
+📦 Research домен Phase 1 MVP: модели БД, CRUD, Firecrawl provider, service layer, agent, tools, supervisor routing, FastAPI endpoints, webapp scaffold (research.thalors.ai)
+

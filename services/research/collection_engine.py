@@ -62,12 +62,24 @@ async def collect(job_type: str, provider_name: str, normalized_spec: dict | Non
         return {"items": items, "metrics": {"pages_crawled": len(target_urls), "items_extracted": len(items)}, "provider_metadata": {}}
 
     elif job_type == "search":
-        # Поиск: пока scrape первых URL (search API в будущем)
+        # Поиск через Firecrawl Search API
+        import asyncio
+        from integrations.firecrawl.client import FirecrawlClient
+        client = FirecrawlClient()
+        query = spec.get("query", spec.get("objective", ""))
+        search_limit = config.get("search_limit", 10)
+        if not query:
+            return {"error": "Не указан поисковый запрос", "items": []}
+        raw_results = await asyncio.to_thread(client.search_query, query, limit=search_limit)
         items = []
-        for url in target_urls[:config.get("search_limit", 10)]:
-            result = await provider.scrape(url, config=config)
-            items.append({"source_url": url, "title": result.metadata.get("title", ""), "raw_content": result.markdown, "metadata": result.metadata})
-        return {"items": items, "metrics": {"pages_crawled": len(items)}, "provider_metadata": {}}
+        for r in raw_results:
+            items.append({
+                "source_url": r.get("url", ""),
+                "title": r.get("title", ""),
+                "raw_content": r.get("markdown", r.get("content", r.get("description", ""))),
+                "metadata": {k: v for k, v in r.items() if k not in ("url", "title", "markdown", "content")},
+            })
+        return {"items": items, "metrics": {"pages_crawled": len(items), "search_results": len(raw_results)}, "provider_metadata": {}}
 
     else:
         # multi_step и прочие - пока как crawl

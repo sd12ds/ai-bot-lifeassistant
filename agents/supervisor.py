@@ -62,7 +62,7 @@ _classifier_llm = ChatOpenAI(
 )
 
 _CLASSIFY_PROMPT = """Определи тип агента для обработки запроса пользователя.
-Ответь ОДНИМ словом из списка: reminder, nutrition, fitness, coaching, crm, team, assistant
+Ответь ОДНИМ словом из списка: reminder, nutrition, fitness, coaching, research, crm, team, assistant
 
 КОНТЕКСТ СЕССИИ:
 Предыдущий агент: {last_agent}
@@ -338,15 +338,10 @@ def build_supervisor(
         return await _run_agent(agent, state)
 
     
-    async def run_research(state: SupervisorState) -> SupervisorState:
-        """Узел графа для Research агента."""
-        user_id = state["user_id"]
-        graph = build_research_agent(checkpointer=checkpointer, user_id=user_id)
-        result = await graph.ainvoke(
-            {"messages": state["messages"]},
-            config={"configurable": {"thread_id": str(user_id)}},
-        )
-        return {"response": result["messages"][-1].content}
+    async def run_research(state):
+        # Динамически создаём research-агента под user_id
+        agent = build_research_agent(checkpointer=get_checkpointer(), user_id=state["user_id"])
+        return await _run_agent(agent, state)
 
     async def run_assistant(state):
         return await _run_agent(assistant_agent, state)
@@ -356,6 +351,7 @@ def build_supervisor(
     builder.add_node("nutrition", run_nutrition)
     builder.add_node("fitness", run_fitness)
     builder.add_node("coaching", run_coaching)
+    builder.add_node("research", run_research)
     builder.add_node("assistant", run_assistant)
 
     # Бизнес-агенты (если переданы — используем, иначе маршрутируем в assistant)
@@ -387,10 +383,11 @@ def build_supervisor(
             "crm": "crm",
             "team": "team",
             "assistant": "assistant",
+            "research": "research",
         },
     )
     # Все агенты завершаются
-    for node in ["calendar", "reminder", "nutrition", "fitness", "coaching", "crm", "team", "assistant"]:
+    for node in ["calendar", "reminder", "nutrition", "fitness", "coaching", "crm", "team", "assistant", "research"]:
         builder.add_edge(node, END)
 
     return builder

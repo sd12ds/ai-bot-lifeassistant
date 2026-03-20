@@ -122,3 +122,37 @@ class FirecrawlClient:
             elapsed = time.time() - start
             logger.error("Firecrawl extract FAIL: %s (%.1fs) - %s", url, elapsed, e)
             raise
+
+    @retry(
+        stop=stop_after_attempt(3),
+        wait=wait_exponential(multiplier=1, min=2, max=30),
+        retry=retry_if_exception_type(Exception),
+        reraise=True,
+    )
+    def search_query(self, query: str, limit: int = 10, **kwargs) -> list[dict]:
+        """Поиск в интернете по запросу через Firecrawl Search API."""
+        start = time.time()
+        logger.info("Firecrawl search: %s (limit=%d)", query, limit)
+        try:
+            result = self._client.search(query, limit=limit)
+            elapsed = time.time() - start
+            # SDK возвращает SearchData с атрибутом .web (список SearchResultWeb)
+            items = []
+            if hasattr(result, "web") and result.web:
+                for r in result.web:
+                    items.append({
+                        "url": getattr(r, "url", ""),
+                        "title": getattr(r, "title", ""),
+                        "description": getattr(r, "description", ""),
+                    })
+            elif isinstance(result, dict):
+                items = result.get("data", result.get("results", []))
+            elif isinstance(result, list):
+                items = result
+            logger.info("Firecrawl search OK: %s - %d results (%.1fs)", query, len(items), elapsed)
+            return items
+        except Exception as e:
+            elapsed = time.time() - start
+            logger.error("Firecrawl search FAIL: %s (%.1fs) - %s", query, elapsed, e)
+            raise
+
