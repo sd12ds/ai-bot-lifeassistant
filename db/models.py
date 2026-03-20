@@ -15,6 +15,9 @@ from sqlalchemy import (
 from sqlalchemy.dialects.postgresql import JSONB
 from sqlalchemy.orm import DeclarativeBase, Mapped, mapped_column, relationship
 
+import uuid
+from sqlalchemy.dialects.postgresql import UUID as PG_UUID
+
 
 class Base(DeclarativeBase):
     """Базовый класс для всех моделей."""
@@ -33,10 +36,14 @@ class User(Base):
     mode: Mapped[str] = mapped_column(String(20), default="personal")          # personal | business
     timezone: Mapped[str] = mapped_column(String(50), default="Europe/Moscow")
     notification_offset_min: Mapped[int] = mapped_column(Integer, default=15)
+    email: Mapped[Optional[str]] = mapped_column(String(255), nullable=True, unique=True)
+    auth_provider: Mapped[str] = mapped_column(String(20), server_default="telegram")
     created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now())
 
     # Связи
     profile: Mapped[Optional["UserProfile"]] = relationship(back_populates="user", uselist=False)
+    memberships: Mapped[List["Membership"]] = relationship(back_populates="user")
+    external_identities: Mapped[List["ExternalIdentity"]] = relationship(back_populates="user")
     tasks: Mapped[List["Task"]] = relationship(back_populates="user")
     reminders: Mapped[List["Reminder"]] = relationship(back_populates="user")
     calendars: Mapped[List["Calendar"]] = relationship(back_populates="user")
@@ -1012,12 +1019,61 @@ class CoachingOrchestrationAction(Base):
 
 
 
+
+
+# ==============================================================================
+# Auth / Multi-user - Workspace, Membership, ExternalIdentity
+# ==============================================================================
+
+class Workspace(Base):
+    """Рабочее пространство - изолированное пространство для данных."""
+    __tablename__ = "workspaces"
+
+    id: Mapped[str] = mapped_column(PG_UUID(as_uuid=False), primary_key=True, default=lambda: str(uuid.uuid4()))
+    name: Mapped[str] = mapped_column(String(255))
+    owner_user_id: Mapped[int] = mapped_column(BigInteger, ForeignKey("users.telegram_id"))
+    settings: Mapped[Optional[dict]] = mapped_column(JSONB, nullable=True)
+    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now())
+
+    memberships: Mapped[List["Membership"]] = relationship(back_populates="workspace")
+
+
+class Membership(Base):
+    """Членство пользователя в workspace с ролью."""
+    __tablename__ = "memberships"
+
+    id: Mapped[str] = mapped_column(PG_UUID(as_uuid=False), primary_key=True, default=lambda: str(uuid.uuid4()))
+    user_id: Mapped[int] = mapped_column(BigInteger, ForeignKey("users.telegram_id"), index=True)
+    workspace_id: Mapped[str] = mapped_column(PG_UUID(as_uuid=False), ForeignKey("workspaces.id"), index=True)
+    role: Mapped[str] = mapped_column(String(20), default="viewer")
+    status: Mapped[str] = mapped_column(String(20), default="active")
+    invited_at: Mapped[Optional[datetime]] = mapped_column(DateTime(timezone=True), nullable=True)
+    joined_at: Mapped[Optional[datetime]] = mapped_column(DateTime(timezone=True), nullable=True)
+
+    user: Mapped["User"] = relationship(back_populates="memberships")
+    workspace: Mapped["Workspace"] = relationship(back_populates="memberships")
+
+    __table_args__ = (UniqueConstraint("user_id", "workspace_id", name="uq_membership_user_workspace"),)
+
+
+class ExternalIdentity(Base):
+    """Внешняя идентичность - связь Telegram/email/google с пользователем."""
+    __tablename__ = "external_identities"
+
+    id: Mapped[str] = mapped_column(PG_UUID(as_uuid=False), primary_key=True, default=lambda: str(uuid.uuid4()))
+    user_id: Mapped[int] = mapped_column(BigInteger, ForeignKey("users.telegram_id"), index=True)
+    provider: Mapped[str] = mapped_column(String(20))
+    provider_id: Mapped[str] = mapped_column(String(255))
+    extra_metadata: Mapped[Optional[dict]] = mapped_column(JSONB, nullable=True)
+
+    user: Mapped["User"] = relationship(back_populates="external_identities")
+
+    __table_args__ = (UniqueConstraint("provider", "provider_id", name="uq_external_identity"),)
+
 # ==============================================================================
 # Research домен - сбор, парсинг и анализ данных из интернета
 # ==============================================================================
 
-import uuid
-from sqlalchemy.dialects.postgresql import UUID as PG_UUID
 
 
 class ResearchJob(Base):
