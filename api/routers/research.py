@@ -326,15 +326,49 @@ async def export_results(
 # ── Templates CRUD ────────────────────────────────────────────────────────────
 
 @router.get("/templates")
-async def list_templates(user=Depends(get_current_user)):
-    """Список шаблонов (заглушка для Phase 1)."""
-    return {"items": [], "total": 0, "message": "Templates will be available in Phase 5"}
+async def list_templates_endpoint(user=Depends(get_current_user), session: AsyncSession = Depends(get_session)):
+    """Список шаблонов."""
+    templates = await storage.list_templates(session, user.telegram_id)
+    return [{"id": t.id, "name": t.name, "description": t.description, "is_public": t.is_public,
+             "spec_template": t.spec_template, "created_at": t.created_at.isoformat() if t.created_at else None} for t in templates]
 
+
+class TemplateCreate(BaseModel):
+    name: str
+    description: str | None = None
+    spec_template: dict | None = None
+    is_public: bool = False
 
 @router.post("/templates")
-async def create_template(user=Depends(get_current_user)):
-    """Создание шаблона (заглушка для Phase 1)."""
-    raise HTTPException(501, "Templates not implemented yet. Coming in Phase 5.")
+async def create_template_endpoint(data: TemplateCreate, user=Depends(get_current_user), session: AsyncSession = Depends(get_session)):
+    """Создание шаблона."""
+    t = await storage.create_template(session, created_by=user.telegram_id, name=data.name,
+                                       description=data.description, spec_template=data.spec_template, is_public=data.is_public)
+    await session.commit()
+    return {"id": t.id, "name": t.name}
+
+
+@router.delete("/templates/{template_id}")
+async def delete_template_endpoint(template_id: str, user=Depends(get_current_user), session: AsyncSession = Depends(get_session)):
+    """Удаление шаблона."""
+    ok = await storage.delete_template(session, template_id)
+    if not ok:
+        raise HTTPException(404, "Template not found")
+    await session.commit()
+    return {"status": "deleted"}
+
+
+@router.post("/templates/{template_id}/use")
+async def use_template(template_id: str, user=Depends(get_current_user), session: AsyncSession = Depends(get_session)):
+    """Создать job из шаблона."""
+    t = await storage.get_template(session, template_id)
+    if not t:
+        raise HTTPException(404, "Template not found")
+    job = await storage.create_job(session, created_by=user.telegram_id, title=f"Из шаблона: {t.name}",
+                                    job_type=t.spec_template.get("job_type", "search") if t.spec_template else "search",
+                                    description=t.description, normalized_spec=t.spec_template, origin="web")
+    await session.commit()
+    return _job_response(job)
 
 
 # ── Usage / Stats ─────────────────────────────────────────────────────────────

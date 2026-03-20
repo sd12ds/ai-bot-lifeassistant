@@ -12,6 +12,7 @@ from sqlalchemy import select, func, and_
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from db.models import (
+    ResearchTemplate,
     ResearchJob,
     ResearchJobRun,
     ResearchResultItem,
@@ -341,3 +342,38 @@ async def _add_status_event(
     session.add(event)
     await session.flush()
     return event
+
+
+# ==============================================================================
+# ResearchTemplate CRUD
+# ==============================================================================
+
+async def create_template(session: AsyncSession, created_by: int, name: str, description: str | None = None,
+                          spec_template: dict | None = None, is_public: bool = False, workspace_id: str | None = None) -> ResearchTemplate:
+    t = ResearchTemplate(id=str(uuid.uuid4()), workspace_id=workspace_id, created_by=created_by,
+                         name=name, description=description, spec_template=spec_template, is_public=is_public)
+    session.add(t)
+    await session.flush()
+    return t
+
+
+async def list_templates(session: AsyncSession, user_id: int, workspace_id: str | None = None) -> list[ResearchTemplate]:
+    from sqlalchemy import or_
+    stmt = select(ResearchTemplate).where(
+        or_(ResearchTemplate.created_by == user_id, ResearchTemplate.is_public == True)
+    ).order_by(ResearchTemplate.created_at.desc())
+    result = await session.execute(stmt)
+    return list(result.scalars().all())
+
+
+async def get_template(session: AsyncSession, template_id: str) -> ResearchTemplate | None:
+    return await session.get(ResearchTemplate, template_id)
+
+
+async def delete_template(session: AsyncSession, template_id: str) -> bool:
+    t = await session.get(ResearchTemplate, template_id)
+    if not t:
+        return False
+    await session.delete(t)
+    await session.flush()
+    return True

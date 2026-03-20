@@ -1260,6 +1260,22 @@ class PlatformProviderConfig(Base):
 
 
 
+
+
+class ResearchTemplate(Base):
+    """Шаблон задачи исследования - для быстрого создания job."""
+    __tablename__ = "research_templates"
+    id: Mapped[str] = mapped_column(PG_UUID(as_uuid=False), primary_key=True, default=lambda: str(uuid.uuid4()))
+    workspace_id: Mapped[Optional[str]] = mapped_column(PG_UUID(as_uuid=False), nullable=True, index=True)
+    created_by: Mapped[int] = mapped_column(BigInteger, ForeignKey("users.telegram_id"))
+    name: Mapped[str] = mapped_column(String(255))
+    description: Mapped[Optional[str]] = mapped_column(Text, nullable=True)
+    spec_template: Mapped[Optional[dict]] = mapped_column(JSONB, nullable=True)
+    is_public: Mapped[bool] = mapped_column(Boolean, default=False)
+    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now())
+    updated_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now(), onupdate=func.now())
+
+
 class ResearchJob(Base):
     """Задача исследования - основная сущность Research домена."""
     __tablename__ = "research_jobs"
