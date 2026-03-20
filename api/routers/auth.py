@@ -3,7 +3,7 @@
 - POST /auth/exchange — обменять magic-link токен (из бота) на сессионный JWT (24ч)
 - GET  /auth/me       — проверить текущего пользователя
 """
-from fastapi import APIRouter, Depends, HTTPException
+from fastapi import Request, APIRouter, Depends, HTTPException
 from pydantic import BaseModel
 
 from api.deps import create_jwt, verify_jwt, get_current_user
@@ -48,3 +48,24 @@ async def get_me(user: User = Depends(get_current_user)):
         mode=user.mode or "personal",
         timezone=user.timezone or "Europe/Moscow",
     )
+
+
+@router.post("/auth/refresh")
+async def refresh_token(request: Request):
+    """Обновление JWT через refresh token из cookie."""
+    from api.deps import verify_jwt, create_jwt
+    from fastapi import Request, Response
+    refresh = request.cookies.get("refresh_token")
+    if not refresh:
+        raise HTTPException(401, "No refresh token")
+    try:
+        telegram_id = verify_jwt(refresh, expected_purpose="refresh")
+    except Exception:
+        raise HTTPException(401, "Invalid refresh token")
+    # Новый access + refresh
+    access = create_jwt(telegram_id, expires_in=900, purpose="session")  # 15 min
+    new_refresh = create_jwt(telegram_id, expires_in=604800, purpose="refresh")  # 7 days
+    response = Response(content='{"status":"ok"}', media_type="application/json")
+    response.set_cookie("access_token", access, httponly=True, secure=True, samesite="lax", max_age=900)
+    response.set_cookie("refresh_token", new_refresh, httponly=True, secure=True, samesite="lax", max_age=604800)
+    return response
