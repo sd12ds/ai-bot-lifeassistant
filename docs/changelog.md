@@ -376,3 +376,6 @@
 ## [738d143] — 2026-03-20 17:08 (МСК)
 📦 Phase 2: Auth + Multi-user — Workspace, RBAC (6 ролей), Membership, Permission checker, workspace API, webapp workspace switcher
 
+## [141e81e] — 2026-03-20 17:28 (МСК)
+📦 Phase 3: Billing + Usage — 9 ORM-моделей, subscription lifecycle, quota checker, usage tracker, billing guard, 7 API endpoints, webapp BillingDashboard
+

@@ -1195,6 +1195,65 @@ class BillingEvent(Base):
     details: Mapped[Optional[dict]] = mapped_column(JSONB, nullable=True)
     created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now())
 
+
+
+# ==============================================================================
+# Audit / Security
+# ==============================================================================
+
+class AuditEvent(Base):
+    """Audit trail - лог всех действий."""
+    __tablename__ = "audit_events"
+    id: Mapped[str] = mapped_column(PG_UUID(as_uuid=False), primary_key=True, default=lambda: str(uuid.uuid4()))
+    workspace_id: Mapped[Optional[str]] = mapped_column(PG_UUID(as_uuid=False), nullable=True, index=True)
+    actor_id: Mapped[Optional[int]] = mapped_column(BigInteger, nullable=True)
+    action: Mapped[str] = mapped_column(String(50), index=True)
+    resource_type: Mapped[Optional[str]] = mapped_column(String(30), nullable=True)
+    resource_id: Mapped[Optional[str]] = mapped_column(PG_UUID(as_uuid=False), nullable=True)
+    source: Mapped[Optional[str]] = mapped_column(String(10), nullable=True)
+    ip_address: Mapped[Optional[str]] = mapped_column(String(45), nullable=True)
+    user_agent: Mapped[Optional[str]] = mapped_column(String(500), nullable=True)
+    extra_metadata: Mapped[Optional[dict]] = mapped_column(JSONB, nullable=True)
+    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now(), index=True)
+
+
+class SecurityEvent(Base):
+    """Security events - auth failures, access denied, suspicious usage."""
+    __tablename__ = "security_events"
+    id: Mapped[str] = mapped_column(PG_UUID(as_uuid=False), primary_key=True, default=lambda: str(uuid.uuid4()))
+    workspace_id: Mapped[Optional[str]] = mapped_column(PG_UUID(as_uuid=False), nullable=True)
+    actor_id: Mapped[Optional[int]] = mapped_column(BigInteger, nullable=True)
+    event_type: Mapped[str] = mapped_column(String(50), index=True)
+    ip_address: Mapped[Optional[str]] = mapped_column(String(45), nullable=True)
+    user_agent: Mapped[Optional[str]] = mapped_column(String(500), nullable=True)
+    details: Mapped[Optional[dict]] = mapped_column(JSONB, nullable=True)
+    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now(), index=True)
+
+
+class AuthSession(Base):
+    """Active sessions для просмотра и отзыва."""
+    __tablename__ = "auth_sessions"
+    id: Mapped[str] = mapped_column(PG_UUID(as_uuid=False), primary_key=True, default=lambda: str(uuid.uuid4()))
+    user_id: Mapped[int] = mapped_column(BigInteger, ForeignKey("users.telegram_id"), index=True)
+    token_hash: Mapped[str] = mapped_column(String(64))
+    ip_address: Mapped[Optional[str]] = mapped_column(String(45), nullable=True)
+    user_agent: Mapped[Optional[str]] = mapped_column(String(500), nullable=True)
+    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now())
+    expires_at: Mapped[datetime] = mapped_column(DateTime(timezone=True))
+    revoked_at: Mapped[Optional[datetime]] = mapped_column(DateTime(timezone=True), nullable=True)
+    is_active: Mapped[bool] = mapped_column(Boolean, default=True)
+
+
+class PlatformProviderConfig(Base):
+    """Конфигурация провайдеров (non-sensitive settings)."""
+    __tablename__ = "platform_provider_configs"
+    id: Mapped[str] = mapped_column(PG_UUID(as_uuid=False), primary_key=True, default=lambda: str(uuid.uuid4()))
+    provider_type: Mapped[str] = mapped_column(String(30))
+    config: Mapped[Optional[dict]] = mapped_column(JSONB, nullable=True)
+    is_active: Mapped[bool] = mapped_column(Boolean, default=True)
+    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now())
+    updated_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now(), onupdate=func.now())
+
 # ==============================================================================
 # Research домен - сбор, парсинг и анализ данных из интернета
 # ==============================================================================
