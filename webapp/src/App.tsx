@@ -8,6 +8,7 @@ import { JobsList } from './features/research/JobsList'
 import { JobDetail } from './features/research/JobDetail'
 import { NewJobForm } from './features/research/NewJobForm'
 import { TemplatesList } from './features/research/TemplatesList'
+import { BillingDashboard } from './features/billing/BillingDashboard'
 import { getToken } from './api/client'
 
 const qc = new QueryClient({ defaultOptions: { queries: { retry: 1, refetchOnWindowFocus: false } } })
@@ -31,6 +32,7 @@ export default function App() {
             <Route path="/research/jobs/new" element={<NewJobForm />} />
             <Route path="/research/jobs/:id" element={<JobDetail />} />
             <Route path="/research/templates" element={<TemplatesList />} />
+            <Route path="/billing" element={<BillingDashboard />} />
             <Route path="/settings" element={<div className="text-center py-12 text-[var(--text-muted)]">Настройки (Phase 2)</div>} />
           </Route>
           <Route path="*" element={<Navigate to="/research" replace />} />

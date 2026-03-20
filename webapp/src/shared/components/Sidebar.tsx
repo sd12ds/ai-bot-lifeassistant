@@ -1,11 +1,12 @@
 import { useLocation, useNavigate } from 'react-router-dom'
-import { LayoutDashboard, List, FileText, Settings, Search } from 'lucide-react'
+import { LayoutDashboard, List, FileText, Settings, Search, CreditCard } from 'lucide-react'
 
 const NAV = [
   { path: '/research', icon: LayoutDashboard, label: 'Dashboard' },
   { path: '/research/jobs', icon: List, label: 'Задачи' },
   { path: '/research/jobs/new', icon: Search, label: 'Новая задача' },
   { path: '/research/templates', icon: FileText, label: 'Шаблоны' },
+  { path: '/billing', icon: CreditCard, label: 'Billing' },
   { path: '/settings', icon: Settings, label: 'Настройки' },
 ]
 
