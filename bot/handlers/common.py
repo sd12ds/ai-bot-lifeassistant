@@ -172,3 +172,34 @@ async def web_handler(message: Message):
         reply_markup=keyboard,
         parse_mode="Markdown",
     )
+
+@router.message(Command("research"))
+async def research_handler(message: Message):
+    """Команда /research - magic-link для Research Platform (research.thalors.ai)."""
+    from aiogram.types import InlineKeyboardMarkup, InlineKeyboardButton
+    from api.deps import create_jwt
+
+    user_id = message.from_user.id
+    research_url = "https://research.thalors.ai"
+
+    # Magic-токен (5 мин)
+    magic_token = create_jwt(telegram_id=user_id, expires_in=300, purpose="magic")
+    link = f"{research_url}/auth?token={magic_token}"
+
+    keyboard = InlineKeyboardMarkup(inline_keyboard=[
+        [InlineKeyboardButton(text="🔬 Открыть Research Platform", url=link)]
+    ])
+
+    await message.answer(
+        "🔬 **Research Platform**\n\n"
+        "Ссылка для входа в панель управления сбором данных.\n"
+        "Действует **5 минут**.\n\n"
+        "Там вы сможете:\n"
+        "• Просматривать задачи и результаты\n"
+        "• Создавать новые задачи сбора\n"
+        "• Экспортировать данные в CSV\n\n"
+        "⚠️ Не передавайте ссылку другим людям.",
+        reply_markup=keyboard,
+        parse_mode="Markdown",
+    )
+

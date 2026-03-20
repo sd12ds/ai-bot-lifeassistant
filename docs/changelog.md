@@ -373,3 +373,6 @@
 ## [804df74] — 2026-03-20 16:04 (МСК)
 📦 Research фиксы: supervisor routing, Firecrawl Search API, action-first prompt, PostgresSaver sticky domain
 
+## [738d143] — 2026-03-20 17:08 (МСК)
+📦 Phase 2: Auth + Multi-user — Workspace, RBAC (6 ролей), Membership, Permission checker, workspace API, webapp workspace switcher
+
