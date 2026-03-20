@@ -236,6 +236,140 @@ async def get_sources(
     return [{"id": s.id, "url": s.url, "domain": s.domain, "source_type": s.source_type, "status": s.status} for s in sources]
 
 
+
+# ── Дополнительные endpoints (из RTF §12) ─────────────────────────────────────
+
+@router.get("/results/{result_id}")
+async def get_result_item(
+    result_id: str,
+    user=Depends(get_current_user),
+    session: AsyncSession = Depends(get_session),
+):
+    """Конкретный result item по ID."""
+    from sqlalchemy import select
+    from db.models import ResearchResultItem, ResearchJob
+    # Получаем result и проверяем доступ через job
+    stmt = select(ResearchResultItem).where(ResearchResultItem.id == result_id)
+    result = await session.execute(stmt)
+    item = result.scalar_one_or_none()
+    if not item:
+        raise HTTPException(404, "Result not found")
+    # Проверяем что job принадлежит пользователю
+    job = await storage.get_job(session, item.job_id, user.telegram_id)
+    if not job:
+        raise HTTPException(404, "Result not found")
+    return _result_response(item)
+
+
+@router.post("/jobs/{job_id}/duplicate")
+async def duplicate_job(
+    job_id: str,
+    user=Depends(get_current_user),
+    session: AsyncSession = Depends(get_session),
+):
+    """Дублирование задачи (создает копию с теми же параметрами)."""
+    job = await storage.get_job(session, job_id, user.telegram_id)
+    if not job:
+        raise HTTPException(404, "Job not found")
+    new_job = await storage.create_job(
+        session=session,
+        created_by=user.telegram_id,
+        title=f"{job.title} (копия)",
+        job_type=job.job_type,
+        description=job.description,
+        original_request=job.original_request,
+        normalized_spec=job.normalized_spec,
+        config=job.config,
+        visibility=job.visibility,
+        origin="web",
+        tags=job.tags,
+    )
+    await session.commit()
+    return _job_response(new_job)
+
+
+@router.post("/jobs/{job_id}/export")
+async def export_results(
+    job_id: str,
+    format: str = "json",
+    user=Depends(get_current_user),
+    session: AsyncSession = Depends(get_session),
+):
+    """Экспорт результатов задачи в JSON или CSV."""
+    from fastapi.responses import JSONResponse
+    job = await storage.get_job(session, job_id, user.telegram_id)
+    if not job:
+        raise HTTPException(404, "Job not found")
+    results = await storage.get_results(session, job_id, limit=10000)
+    if format == "csv":
+        import csv, io
+        output = io.StringIO()
+        if results:
+            fields = ["source_url", "domain", "title", "dedupe_hash"]
+            # Добавляем поля из extracted_fields первого результата
+            if results[0].extracted_fields:
+                fields.extend(results[0].extracted_fields.keys())
+            writer = csv.DictWriter(output, fieldnames=fields, extrasaction="ignore")
+            writer.writeheader()
+            for r in results:
+                row = {"source_url": r.source_url, "domain": r.domain, "title": r.title, "dedupe_hash": r.dedupe_hash}
+                if r.extracted_fields:
+                    row.update(r.extracted_fields)
+                writer.writerow(row)
+        from fastapi.responses import Response
+        return Response(content=output.getvalue(), media_type="text/csv",
+                       headers={"Content-Disposition": f"attachment; filename=research_{job_id[:8]}.csv"})
+    else:
+        return {"job_id": job_id, "total": len(results), "items": [_result_response(r) for r in results]}
+
+
+# ── Templates CRUD ────────────────────────────────────────────────────────────
+
+@router.get("/templates")
+async def list_templates(user=Depends(get_current_user)):
+    """Список шаблонов (заглушка для Phase 1)."""
+    return {"items": [], "total": 0, "message": "Templates will be available in Phase 5"}
+
+
+@router.post("/templates")
+async def create_template(user=Depends(get_current_user)):
+    """Создание шаблона (заглушка для Phase 1)."""
+    raise HTTPException(501, "Templates not implemented yet. Coming in Phase 5.")
+
+
+# ── Usage / Stats ─────────────────────────────────────────────────────────────
+
+@router.get("/stats")
+async def get_research_stats(
+    user=Depends(get_current_user),
+    session: AsyncSession = Depends(get_session),
+):
+    """Статистика задач пользователя для dashboard."""
+    from sqlalchemy import select, func
+    from db.models import ResearchJob, ResearchResultItem
+    uid = user.telegram_id
+    # Считаем задачи по статусам
+    stmt = select(ResearchJob.status, func.count()).where(ResearchJob.created_by == uid).group_by(ResearchJob.status)
+    result = await session.execute(stmt)
+    status_counts = dict(result.fetchall())
+    # Общее количество результатов
+    total_results_stmt = (
+        select(func.count()).select_from(ResearchResultItem)
+        .join(ResearchJob, ResearchResultItem.job_id == ResearchJob.id)
+        .where(ResearchJob.created_by == uid)
+    )
+    total_results = (await session.execute(total_results_stmt)).scalar_one()
+    return {
+        "total_jobs": sum(status_counts.values()),
+        "running": status_counts.get("running", 0),
+        "completed": status_counts.get("completed", 0),
+        "failed": status_counts.get("failed", 0),
+        "draft": status_counts.get("draft", 0),
+        "canceled": status_counts.get("canceled", 0),
+        "total_results": total_results,
+    }
+
+
 # ── Helpers ───────────────────────────────────────────────────────────────────
 
 def _job_response(job) -> dict:
