@@ -1070,6 +1070,131 @@ class ExternalIdentity(Base):
 
     __table_args__ = (UniqueConstraint("provider", "provider_id", name="uq_external_identity"),)
 
+
+
+# ==============================================================================
+# Billing / Usage / Subscription
+# ==============================================================================
+
+class Plan(Base):
+    """Тарифный план."""
+    __tablename__ = "plans"
+    id: Mapped[str] = mapped_column(PG_UUID(as_uuid=False), primary_key=True, default=lambda: str(uuid.uuid4()))
+    name: Mapped[str] = mapped_column(String(50))
+    features: Mapped[Optional[dict]] = mapped_column(JSONB, nullable=True)
+    quotas: Mapped[Optional[dict]] = mapped_column(JSONB, nullable=True)
+    price_monthly: Mapped[Optional[float]] = mapped_column(Float, nullable=True)
+    price_yearly: Mapped[Optional[float]] = mapped_column(Float, nullable=True)
+    is_active: Mapped[bool] = mapped_column(Boolean, default=True)
+    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now())
+
+
+class BillingAccount(Base):
+    """Billing account привязанный к workspace."""
+    __tablename__ = "billing_accounts"
+    id: Mapped[str] = mapped_column(PG_UUID(as_uuid=False), primary_key=True, default=lambda: str(uuid.uuid4()))
+    workspace_id: Mapped[str] = mapped_column(PG_UUID(as_uuid=False), ForeignKey("workspaces.id"), index=True)
+    provider: Mapped[Optional[str]] = mapped_column(String(30), nullable=True)
+    provider_customer_id: Mapped[Optional[str]] = mapped_column(String(255), nullable=True)
+    extra_metadata: Mapped[Optional[dict]] = mapped_column(JSONB, nullable=True)
+
+
+class Subscription(Base):
+    """Подписка workspace на тарифный план."""
+    __tablename__ = "subscriptions"
+    id: Mapped[str] = mapped_column(PG_UUID(as_uuid=False), primary_key=True, default=lambda: str(uuid.uuid4()))
+    workspace_id: Mapped[str] = mapped_column(PG_UUID(as_uuid=False), ForeignKey("workspaces.id"), index=True)
+    plan_id: Mapped[str] = mapped_column(PG_UUID(as_uuid=False), ForeignKey("plans.id"))
+    status: Mapped[str] = mapped_column(String(20), default="trial")
+    period_start: Mapped[Optional[datetime]] = mapped_column(DateTime(timezone=True), nullable=True)
+    period_end: Mapped[Optional[datetime]] = mapped_column(DateTime(timezone=True), nullable=True)
+    grace_end: Mapped[Optional[datetime]] = mapped_column(DateTime(timezone=True), nullable=True)
+    cancel_at: Mapped[Optional[datetime]] = mapped_column(DateTime(timezone=True), nullable=True)
+    canceled_at: Mapped[Optional[datetime]] = mapped_column(DateTime(timezone=True), nullable=True)
+    trial_end: Mapped[Optional[datetime]] = mapped_column(DateTime(timezone=True), nullable=True)
+    billing_account_id: Mapped[Optional[str]] = mapped_column(PG_UUID(as_uuid=False), ForeignKey("billing_accounts.id"), nullable=True)
+
+
+class UsageLedger(Base):
+    """Агрегированное потребление за период."""
+    __tablename__ = "usage_ledgers"
+    id: Mapped[str] = mapped_column(PG_UUID(as_uuid=False), primary_key=True, default=lambda: str(uuid.uuid4()))
+    workspace_id: Mapped[str] = mapped_column(PG_UUID(as_uuid=False), ForeignKey("workspaces.id"), index=True)
+    period_start: Mapped[datetime] = mapped_column(DateTime(timezone=True))
+    period_end: Mapped[datetime] = mapped_column(DateTime(timezone=True))
+    metric_type: Mapped[str] = mapped_column(String(30))
+    consumed: Mapped[float] = mapped_column(Float, default=0.0)
+    reserved: Mapped[float] = mapped_column(Float, default=0.0)
+    limit_value: Mapped[float] = mapped_column(Float, default=0.0)
+
+
+class UsageEvent(Base):
+    """Атомарное событие потребления ресурсов."""
+    __tablename__ = "usage_events"
+    id: Mapped[str] = mapped_column(PG_UUID(as_uuid=False), primary_key=True, default=lambda: str(uuid.uuid4()))
+    workspace_id: Mapped[str] = mapped_column(PG_UUID(as_uuid=False), ForeignKey("workspaces.id"), index=True)
+    user_id: Mapped[Optional[int]] = mapped_column(BigInteger, nullable=True)
+    metric_type: Mapped[str] = mapped_column(String(30))
+    amount: Mapped[float] = mapped_column(Float)
+    source_type: Mapped[Optional[str]] = mapped_column(String(20), nullable=True)
+    source_id: Mapped[Optional[str]] = mapped_column(PG_UUID(as_uuid=False), nullable=True)
+    provider: Mapped[Optional[str]] = mapped_column(String(30), nullable=True)
+    cost_metadata: Mapped[Optional[dict]] = mapped_column(JSONB, nullable=True)
+    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now())
+
+
+class QuotaPolicy(Base):
+    """Квотная политика - лимиты по плану."""
+    __tablename__ = "quota_policies"
+    id: Mapped[str] = mapped_column(PG_UUID(as_uuid=False), primary_key=True, default=lambda: str(uuid.uuid4()))
+    plan_id: Mapped[str] = mapped_column(PG_UUID(as_uuid=False), ForeignKey("plans.id"), index=True)
+    metric_type: Mapped[str] = mapped_column(String(30))
+    limit_value: Mapped[float] = mapped_column(Float)
+    period: Mapped[str] = mapped_column(String(10), default="monthly")
+    enforcement: Mapped[str] = mapped_column(String(10), default="hard")
+
+
+class Invoice(Base):
+    """Счёт на оплату."""
+    __tablename__ = "invoices"
+    id: Mapped[str] = mapped_column(PG_UUID(as_uuid=False), primary_key=True, default=lambda: str(uuid.uuid4()))
+    workspace_id: Mapped[str] = mapped_column(PG_UUID(as_uuid=False), ForeignKey("workspaces.id"), index=True)
+    subscription_id: Mapped[Optional[str]] = mapped_column(PG_UUID(as_uuid=False), ForeignKey("subscriptions.id"), nullable=True)
+    amount: Mapped[float] = mapped_column(Float)
+    currency: Mapped[str] = mapped_column(String(3), default="RUB")
+    status: Mapped[str] = mapped_column(String(20), default="draft")
+    period_start: Mapped[Optional[datetime]] = mapped_column(DateTime(timezone=True), nullable=True)
+    period_end: Mapped[Optional[datetime]] = mapped_column(DateTime(timezone=True), nullable=True)
+    issued_at: Mapped[Optional[datetime]] = mapped_column(DateTime(timezone=True), nullable=True)
+    paid_at: Mapped[Optional[datetime]] = mapped_column(DateTime(timezone=True), nullable=True)
+    extra_metadata: Mapped[Optional[dict]] = mapped_column(JSONB, nullable=True)
+
+
+class Payment(Base):
+    """Платёж."""
+    __tablename__ = "payments"
+    id: Mapped[str] = mapped_column(PG_UUID(as_uuid=False), primary_key=True, default=lambda: str(uuid.uuid4()))
+    invoice_id: Mapped[Optional[str]] = mapped_column(PG_UUID(as_uuid=False), ForeignKey("invoices.id"), nullable=True)
+    billing_account_id: Mapped[Optional[str]] = mapped_column(PG_UUID(as_uuid=False), ForeignKey("billing_accounts.id"), nullable=True)
+    provider: Mapped[Optional[str]] = mapped_column(String(30), nullable=True)
+    provider_payment_id: Mapped[Optional[str]] = mapped_column(String(255), nullable=True)
+    amount: Mapped[float] = mapped_column(Float)
+    status: Mapped[str] = mapped_column(String(20), default="pending")
+    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now())
+    extra_metadata: Mapped[Optional[dict]] = mapped_column(JSONB, nullable=True)
+
+
+class BillingEvent(Base):
+    """Событие биллинга."""
+    __tablename__ = "billing_events"
+    id: Mapped[str] = mapped_column(PG_UUID(as_uuid=False), primary_key=True, default=lambda: str(uuid.uuid4()))
+    workspace_id: Mapped[str] = mapped_column(PG_UUID(as_uuid=False), ForeignKey("workspaces.id"), index=True)
+    event_type: Mapped[str] = mapped_column(String(50))
+    subscription_id: Mapped[Optional[str]] = mapped_column(PG_UUID(as_uuid=False), nullable=True)
+    actor_id: Mapped[Optional[int]] = mapped_column(BigInteger, nullable=True)
+    details: Mapped[Optional[dict]] = mapped_column(JSONB, nullable=True)
+    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now())
+
 # ==============================================================================
 # Research домен - сбор, парсинг и анализ данных из интернета
 # ==============================================================================
