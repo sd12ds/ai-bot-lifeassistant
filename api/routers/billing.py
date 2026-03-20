@@ -2,7 +2,7 @@
 FastAPI роутер для Billing / Subscription / Usage.
 """
 from __future__ import annotations
-from fastapi import APIRouter, Depends, HTTPException
+from fastapi import APIRouter, Request, Depends, HTTPException
 from pydantic import BaseModel
 from sqlalchemy.ext.asyncio import AsyncSession
 from api.deps import get_current_user
@@ -89,3 +89,35 @@ async def cancel(ctx=Depends(get_workspace_context), session: AsyncSession = Dep
 async def list_invoices(ctx=Depends(get_workspace_context), session: AsyncSession = Depends(get_session)):
     """История платежей (заглушка Phase 3)."""
     return {"items": [], "total": 0, "message": "Invoices coming soon"}
+
+
+@router.post("/webhook")
+async def billing_webhook(request: Request, session: AsyncSession = Depends(get_session)):
+    """Webhook от платёжного провайдера (Stripe/Tinkoff/etc). Abstraction layer."""
+    from fastapi import Request
+    body = await request.json()
+    event_type = body.get("event", body.get("type", ""))
+    # Обрабатываем события
+    if event_type in ("payment.succeeded", "payment_intent.succeeded"):
+        ws_id = body.get("workspace_id", body.get("metadata", {}).get("workspace_id"))
+        if ws_id:
+            sub = await subscription_manager.get_subscription(session, ws_id)
+            if sub and sub.status in ("past_due", "trial"):
+                sub.status = "active"
+                from db.models import BillingEvent
+                import uuid
+                session.add(BillingEvent(id=str(uuid.uuid4()), workspace_id=ws_id, event_type="payment.succeeded", details=body))
+                await session.commit()
+        return {"status": "ok"}
+    elif event_type in ("payment.failed", "payment_intent.payment_failed"):
+        ws_id = body.get("workspace_id", body.get("metadata", {}).get("workspace_id"))
+        if ws_id:
+            sub = await subscription_manager.get_subscription(session, ws_id)
+            if sub:
+                sub.status = "past_due"
+                from db.models import BillingEvent
+                import uuid
+                session.add(BillingEvent(id=str(uuid.uuid4()), workspace_id=ws_id, event_type="payment.failed", details=body))
+                await session.commit()
+        return {"status": "ok"}
+    return {"status": "ignored", "event": event_type}

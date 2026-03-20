@@ -78,6 +78,16 @@ async def create_job(
     session: AsyncSession = Depends(get_session),
 ):
     """Создание задачи исследования."""
+    # Input validation
+    if data.title and len(data.title) > 500:
+        raise HTTPException(400, "Title too long (max 500)")
+    if data.description and len(data.description) > 5000:
+        raise HTTPException(400, "Description too long (max 5000)")
+    if data.normalized_spec and data.normalized_spec.get("urls"):
+        for url in data.normalized_spec["urls"]:
+            if not url.startswith(("http://", "https://")):
+                raise HTTPException(400, f"Invalid URL: {url}")
+
     job = await storage.create_job(
         session=session,
         created_by=user.telegram_id,
