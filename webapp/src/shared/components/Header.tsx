@@ -2,6 +2,7 @@ import { useAuth } from '../hooks/useAuth'
 import { useQuery } from '@tanstack/react-query'
 import { fetchWorkspaces } from '../../api/workspace'
 import { LogOut, Building2 } from 'lucide-react'
+import { QuotaIndicator } from './QuotaIndicator'
 import { useState } from 'react'
 
 export function Header() {
@@ -22,6 +23,7 @@ export function Header() {
             <span className="text-xs text-[var(--text-muted)]">({activeWs.role})</span>
           </div>
         )}
+        <QuotaIndicator />
         <span className="text-sm text-[var(--text-muted)]">research.thalors.ai</span>
       </div>
       <button onClick={logout} className="flex items-center gap-2 text-sm text-[var(--text-muted)] hover:text-[var(--error)] transition-colors">

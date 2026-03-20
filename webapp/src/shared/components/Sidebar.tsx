@@ -7,7 +7,8 @@ const NAV = [
   { path: '/research/jobs/new', icon: Search, label: 'Новая задача' },
   { path: '/research/templates', icon: FileText, label: 'Шаблоны' },
   { path: '/billing', icon: CreditCard, label: 'Billing' },
-  { path: '/settings', icon: Settings, label: 'Настройки' },
+  { path: '/settings', icon: Settings, label: 'Audit' },
+  { path: '/settings/workspace', icon: Settings, label: 'Workspace' },
 ]
 
 export function Sidebar() {

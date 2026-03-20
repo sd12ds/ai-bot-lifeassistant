@@ -8,8 +8,11 @@ import { JobsList } from './features/research/JobsList'
 import { JobDetail } from './features/research/JobDetail'
 import { NewJobForm } from './features/research/NewJobForm'
 import { TemplatesList } from './features/research/TemplatesList'
+import { ResultsExplorer } from './features/research/ResultsExplorer'
 import { BillingDashboard } from './features/billing/BillingDashboard'
 import { AuditPage } from './features/settings/AuditPage'
+import { PlanSelector } from './features/billing/PlanSelector'
+import { WorkspaceSettings } from './features/settings/WorkspaceSettings'
 import { getToken } from './api/client'
 
 const qc = new QueryClient({ defaultOptions: { queries: { retry: 1, refetchOnWindowFocus: false } } })
@@ -32,9 +35,12 @@ export default function App() {
             <Route path="/research/jobs" element={<JobsList />} />
             <Route path="/research/jobs/new" element={<NewJobForm />} />
             <Route path="/research/jobs/:id" element={<JobDetail />} />
+            <Route path="/research/jobs/:id/results" element={<ResultsExplorer />} />
             <Route path="/research/templates" element={<TemplatesList />} />
             <Route path="/billing" element={<BillingDashboard />} />
+            <Route path="/billing/plans" element={<PlanSelector />} />
             <Route path="/settings" element={<AuditPage />} />
+            <Route path="/settings/workspace" element={<WorkspaceSettings />} />
           </Route>
           <Route path="*" element={<Navigate to="/research" replace />} />
         </Routes>
