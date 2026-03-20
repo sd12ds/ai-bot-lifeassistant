@@ -615,19 +615,45 @@ async def regenerate_occurrences(
             count += 1
         if count:
             await db.commit()
-            # Создаём напоминания для новых экземпляров на основе offset шаблона
-            if template.remind_at:
-                anchor_tmpl = template.start_at or template.due_datetime
-                if anchor_tmpl:
+            # Создаём напоминания для экземпляров на основе offset шаблона.
+            # Ищем offset двумя способами: task.remind_at или запись в reminders.
+            anchor_tmpl = template.start_at or template.due_datetime
+            if anchor_tmpl:
+                offset_sec = 0
+                # Способ 1: remind_at на самом шаблоне
+                if template.remind_at:
                     offset_sec = int(
                         (anchor_tmpl - template.remind_at).total_seconds()
                     )
-                    if offset_sec > 0:
-                        await create_occurrence_reminders(
-                            template_id=template_id,
-                            user_id=user_id,
-                            offset_seconds=offset_sec,
+                # Способ 2: запись в reminders (fallback — remind_at может быть NULL)
+                if offset_sec <= 0:
+                    tmpl_rem = await db.execute(
+                        select(Reminder).where(
+                            Reminder.entity_type == "task",
+                            Reminder.entity_id == template_id,
+                            Reminder.user_id == user_id,
+                        ).order_by(Reminder.id.desc()).limit(1)
+                    )
+                    rem_row = tmpl_rem.scalar_one_or_none()
+                    if rem_row and rem_row.remind_at:
+                        offset_sec = int(
+                            (anchor_tmpl - rem_row.remind_at).total_seconds()
                         )
+                # Способ 3: дефолт из user_settings (notification_offset_min)
+                if offset_sec <= 0:
+                    try:
+                        from db import reminders as rdb
+                        us = await rdb.get_user_settings(user_id)
+                        offset_sec = int(us.get("notification_offset_min", 15)) * 60
+                    except Exception:
+                        offset_sec = 15 * 60  # 15 мин по умолчанию
+
+                if offset_sec > 0:
+                    await create_occurrence_reminders(
+                        template_id=template_id,
+                        user_id=user_id,
+                        offset_seconds=offset_sec,
+                    )
         return count
 
 
