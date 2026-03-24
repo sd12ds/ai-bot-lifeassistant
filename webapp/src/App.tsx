@@ -13,6 +13,7 @@ import { BillingDashboard } from './features/billing/BillingDashboard'
 import { AuditPage } from './features/settings/AuditPage'
 import { PlanSelector } from './features/billing/PlanSelector'
 import { WorkspaceSettings } from './features/settings/WorkspaceSettings'
+import { ChatPage } from './features/chat/ChatPage'
 import { getToken } from './api/client'
 
 const qc = new QueryClient({ defaultOptions: { queries: { retry: 1, refetchOnWindowFocus: false } } })
@@ -32,6 +33,7 @@ export default function App() {
           <Route element={<ProtectedRoute><AppLayout /></ProtectedRoute>}>
             <Route path="/" element={<Navigate to="/research" replace />} />
             <Route path="/research" element={<ResearchDashboard />} />
+            <Route path="/research/chat" element={<ChatPage />} />
             <Route path="/research/jobs" element={<JobsList />} />
             <Route path="/research/jobs/new" element={<NewJobForm />} />
             <Route path="/research/jobs/:id" element={<JobDetail />} />

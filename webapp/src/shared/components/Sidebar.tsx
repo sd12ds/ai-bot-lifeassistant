@@ -1,8 +1,9 @@
 import { useLocation, useNavigate } from 'react-router-dom'
-import { LayoutDashboard, List, FileText, Settings, Search, CreditCard } from 'lucide-react'
+import { LayoutDashboard, List, FileText, Settings, Search, CreditCard, MessageCircle } from 'lucide-react'
 
 const NAV = [
   { path: '/research', icon: LayoutDashboard, label: 'Dashboard' },
+  { path: '/research/chat', icon: MessageCircle, label: 'Чат' },
   { path: '/research/jobs', icon: List, label: 'Задачи' },
   { path: '/research/jobs/new', icon: Search, label: 'Новая задача' },
   { path: '/research/templates', icon: FileText, label: 'Шаблоны' },
