@@ -91,15 +91,16 @@ RESEARCH_DEFAULT_TIMEOUT: int = int(os.getenv("RESEARCH_DEFAULT_TIMEOUT", "300")
 # Максимальное количество одновременно выполняемых задач
 RESEARCH_MAX_CONCURRENT_JOBS: int = int(os.getenv("RESEARCH_MAX_CONCURRENT_JOBS", "3"))
 
-# ── LangSmith (наблюдаемость LLM-вызовов) ────────────────────────────────────
+
+# ЛангСмитх (наблюдаемость ЛЛМ-вызовов) ———————————————————————————————————
 # LangChain автоматически подхватывает эти переменные из окружения
 # и начинает трассировать все вызовы без изменений кода агентов.
-# ля включения задай в .env:
+# Для включения задай в .env:
 #   LANGCHAIN_TRACING_V2=true
 #   LANGCHAIN_API_KEY=<ключ с smith.langchain.com>
 #   LANGSMITH_PROJECT=ai-assistant  (опционально)
-LANGSMITH_TRACING: bool = os.getenv( LANGCHAIN_TRACING_V2, false).lower() == true
-LANGSMITH_API_KEY: str = os.getenv(LANGCHAIN_API_KEY, )
-LANGSMITH_PROJECT: str = os.getenv(LANGSMITH_PROJECT, ai-assistant)
+LANGSMITH_TRACING: bool = os.getenv("LANGCHAIN_TRACING_V2", "false").lower() == "true"
+LANGSMITH_API_KEY: str = os.getenv("LANGCHAIN_API_KEY", "")
+LANGSMITH_PROJECT: str = os.getenv("LANGSMITH_PROJECT", "ai-assistant")
 # Трейсинг активен только если оба параметра заданы
 LANGSMITH_ENABLED: bool = LANGSMITH_TRACING and bool(LANGSMITH_API_KEY)
