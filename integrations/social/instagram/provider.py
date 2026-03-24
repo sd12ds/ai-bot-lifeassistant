@@ -180,12 +180,19 @@ class InstagramProvider(SocialProvider):
         media_urls = []
         if item.get("displayUrl"):
             media_urls.append(item["displayUrl"])
-        for edge in item.get("images", []):
-            if isinstance(edge, str):
-                media_urls.append(edge)
-        for node in item.get("videoUrl", []):
-            if isinstance(node, str):
-                media_urls.append(node)
+        images = item.get("images")
+        if isinstance(images, list):
+            for edge in images:
+                if isinstance(edge, str) and edge:
+                    media_urls.append(edge)
+        # videoUrl может быть строкой или списком — обрабатываем оба случая
+        video_url = item.get("videoUrl")
+        if isinstance(video_url, str) and video_url:
+            media_urls.append(video_url)
+        elif isinstance(video_url, list):
+            for node in video_url:
+                if isinstance(node, str) and node:
+                    media_urls.append(node)
 
         # Хэштеги и упоминания из caption
         caption = item.get("caption", "") or ""
