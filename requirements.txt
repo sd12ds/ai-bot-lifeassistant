@@ -98,3 +98,7 @@ PyJWT==2.12.1
 firecrawl-py
 langgraph-checkpoint-postgres
 psycopg[binary]
+
+# Social parsers
+telethon==1.37.0
+apify-client==1.9.0

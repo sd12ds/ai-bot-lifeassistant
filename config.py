@@ -104,3 +104,13 @@ LANGSMITH_API_KEY: str = os.getenv("LANGCHAIN_API_KEY", "")
 LANGSMITH_PROJECT: str = os.getenv("LANGSMITH_PROJECT", "ai-assistant")
 # Трейсинг активен только если оба параметра заданы
 LANGSMITH_ENABLED: bool = LANGSMITH_TRACING and bool(LANGSMITH_API_KEY)
+
+# ── Social Media Parser ────────────────────────────────────────────────────────
+# Apify — для парсинга Instagram (Actor: apify/instagram-scraper)
+APIFY_API_KEY: str = os.getenv("APIFY_API_KEY", "")
+
+# Telegram Parser — отдельный аккаунт для парсинга каналов через Telethon
+TELEGRAM_PARSER_API_ID: int = int(os.getenv("TELEGRAM_PARSER_API_ID", "0"))
+TELEGRAM_PARSER_API_HASH: str = os.getenv("TELEGRAM_PARSER_API_HASH", "")
+TELEGRAM_PARSER_PHONE: str = os.getenv("TELEGRAM_PARSER_PHONE", "")
+TELEGRAM_PARSER_SESSION: str = os.getenv("TELEGRAM_PARSER_SESSION", "/root/ai-assistant/data/tg_parser.session")

@@ -407,3 +407,6 @@ AI-чат для управления Research Platform: SSE-стриминг, O
 
 ## [16:24] -- 
 📦 ромпты 4 агентов вынесены в prompts/*.txt + utils/prompts.py с lru_cache. едактирование промптов без изменения кода агентов.
+## [0054b3a] — 2026-03-24 18:55
+📦 Research: интеграция Phase 2-5 (RBAC, workspace isolation, preflight quota check, audit logging, rate limiting, enrichment regex, промпт в файл)
+

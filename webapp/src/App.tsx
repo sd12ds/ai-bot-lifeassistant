@@ -11,6 +11,9 @@ import { TemplatesList } from './features/research/TemplatesList'
 import { ResultsExplorer } from './features/research/ResultsExplorer'
 import { BillingDashboard } from './features/billing/BillingDashboard'
 import { AuditPage } from './features/settings/AuditPage'
+import { SocialMonitorPage } from './features/research/social/SocialMonitorPage'
+import { SourceDetailPage }  from './features/research/social/SourceDetailPage'
+import { PostsFeedPage }     from './features/research/social/PostsFeedPage'
 import { PlanSelector } from './features/billing/PlanSelector'
 import { WorkspaceSettings } from './features/settings/WorkspaceSettings'
 import { ChatPage } from './features/chat/ChatPage'
@@ -39,6 +42,9 @@ export default function App() {
             <Route path="/research/jobs/:id" element={<JobDetail />} />
             <Route path="/research/jobs/:id/results" element={<ResultsExplorer />} />
             <Route path="/research/templates" element={<TemplatesList />} />
+            <Route path="/research/social" element={<SocialMonitorPage />} />
+            <Route path="/research/social/feed" element={<PostsFeedPage />} />
+            <Route path="/research/social/:id" element={<SourceDetailPage />} />
             <Route path="/billing" element={<BillingDashboard />} />
             <Route path="/billing/plans" element={<PlanSelector />} />
             <Route path="/settings" element={<AuditPage />} />

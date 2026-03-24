@@ -1,5 +1,5 @@
 import { useLocation, useNavigate } from 'react-router-dom'
-import { LayoutDashboard, List, FileText, Settings, Search, CreditCard, MessageCircle } from 'lucide-react'
+import { LayoutDashboard, List, FileText, Settings, Search, CreditCard, MessageCircle, Radio } from 'lucide-react'
 
 const NAV = [
   { path: '/research', icon: LayoutDashboard, label: 'Dashboard' },
@@ -7,6 +7,7 @@ const NAV = [
   { path: '/research/jobs', icon: List, label: 'Задачи' },
   { path: '/research/jobs/new', icon: Search, label: 'Новая задача' },
   { path: '/research/templates', icon: FileText, label: 'Шаблоны' },
+  { path: '/research/social', icon: Radio, label: 'Мониторинг' },
   { path: '/billing', icon: CreditCard, label: 'Billing' },
   { path: '/settings', icon: Settings, label: 'Audit' },
   { path: '/settings/workspace', icon: Settings, label: 'Workspace' },

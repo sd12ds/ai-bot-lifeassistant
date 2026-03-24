@@ -1389,3 +1389,86 @@ class ResearchStatusEvent(Base):
     created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now())
 
     job: Mapped["ResearchJob"] = relationship(back_populates="status_events")
+
+
+# ==============================================================================
+# Social Media Monitor — модели для парсинга соцсетей
+# ==============================================================================
+
+class SocialSource(Base):
+    """Отслеживаемый источник — канал, профиль, хэштег, локация."""
+    __tablename__ = "social_sources"
+
+    id: Mapped[str] = mapped_column(PG_UUID(as_uuid=False), primary_key=True, default=lambda: str(uuid.uuid4()))
+    workspace_id: Mapped[Optional[str]] = mapped_column(PG_UUID(as_uuid=False), nullable=True, index=True)
+    created_by: Mapped[int] = mapped_column(BigInteger, ForeignKey("users.telegram_id"), index=True)
+    # Платформа и идентификатор источника
+    platform: Mapped[str] = mapped_column(String(20))          # telegram | instagram | vk | tiktok
+    source_url: Mapped[str] = mapped_column(String(2048))       # оригинальная ссылка
+    source_id: Mapped[str] = mapped_column(String(512))         # platform-native ID (username, channel_id и т.д.)
+    source_name: Mapped[Optional[str]] = mapped_column(String(512), nullable=True)   # отображаемое имя
+    source_type: Mapped[str] = mapped_column(String(20), default="profile")          # channel | group | profile | page
+    # Конфигурация сбора — что и как собирать
+    collection_config: Mapped[Optional[dict]] = mapped_column(JSONB, nullable=True)
+    # Расписание — когда запускать
+    schedule: Mapped[Optional[dict]] = mapped_column(JSONB, nullable=True)
+    # Состояние
+    status: Mapped[str] = mapped_column(String(20), default="active", index=True)   # active | paused | error
+    last_parsed_at: Mapped[Optional[datetime]] = mapped_column(DateTime(timezone=True), nullable=True)
+    error_count: Mapped[int] = mapped_column(Integer, default=0)
+    last_error: Mapped[Optional[str]] = mapped_column(Text, nullable=True)
+    # Мета-данные источника (subscribers_count, verified и т.д.)
+    source_meta: Mapped[Optional[dict]] = mapped_column(JSONB, nullable=True)
+    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now())
+    updated_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now(), onupdate=func.now())
+
+    posts: Mapped[List["SocialPost"]] = relationship(back_populates="source")
+    runs: Mapped[List["SocialParseRun"]] = relationship(back_populates="source")
+
+
+class SocialPost(Base):
+    """Собранный пост/контент из социальной сети."""
+    __tablename__ = "social_posts"
+
+    id: Mapped[str] = mapped_column(PG_UUID(as_uuid=False), primary_key=True, default=lambda: str(uuid.uuid4()))
+    source_id: Mapped[str] = mapped_column(PG_UUID(as_uuid=False), ForeignKey("social_sources.id"), index=True)
+    workspace_id: Mapped[Optional[str]] = mapped_column(PG_UUID(as_uuid=False), nullable=True, index=True)
+    # Идентификация поста на платформе
+    platform_post_id: Mapped[str] = mapped_column(String(512), index=True)          # shortcode, msg_id и т.д.
+    post_url: Mapped[Optional[str]] = mapped_column(String(2048), nullable=True)     # прямая ссылка на пост
+    post_type: Mapped[Optional[str]] = mapped_column(String(30), nullable=True)      # image | video | carousel | reel | text
+    # Контент
+    content: Mapped[Optional[str]] = mapped_column(Text, nullable=True)             # caption / текст поста
+    posted_at: Mapped[Optional[datetime]] = mapped_column(DateTime(timezone=True), nullable=True, index=True)
+    # Автор
+    author_name: Mapped[Optional[str]] = mapped_column(String(512), nullable=True)
+    author_id: Mapped[Optional[str]] = mapped_column(String(256), nullable=True)
+    # Метрики и медиа
+    metrics: Mapped[Optional[dict]] = mapped_column(JSONB, nullable=True)           # views, likes, comments, forwards, reactions
+    media_urls: Mapped[Optional[dict]] = mapped_column(JSONB, nullable=True)        # список URL фото/видео
+    hashtags: Mapped[Optional[dict]] = mapped_column(JSONB, nullable=True)          # список хэштегов
+    mentions: Mapped[Optional[dict]] = mapped_column(JSONB, nullable=True)          # упомянутые аккаунты
+    location: Mapped[Optional[dict]] = mapped_column(JSONB, nullable=True)          # геометка
+    raw_data: Mapped[Optional[dict]] = mapped_column(JSONB, nullable=True)          # полный raw ответ API
+    dedupe_hash: Mapped[Optional[str]] = mapped_column(String(64), nullable=True, index=True)
+    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now())
+
+    source: Mapped["SocialSource"] = relationship(back_populates="posts")
+
+
+class SocialParseRun(Base):
+    """История запусков парсинга для одного источника."""
+    __tablename__ = "social_parse_runs"
+
+    id: Mapped[str] = mapped_column(PG_UUID(as_uuid=False), primary_key=True, default=lambda: str(uuid.uuid4()))
+    source_id: Mapped[str] = mapped_column(PG_UUID(as_uuid=False), ForeignKey("social_sources.id"), index=True)
+    status: Mapped[str] = mapped_column(String(20), default="running")  # running | completed | failed
+    started_at: Mapped[Optional[datetime]] = mapped_column(DateTime(timezone=True), nullable=True)
+    finished_at: Mapped[Optional[datetime]] = mapped_column(DateTime(timezone=True), nullable=True)
+    posts_found: Mapped[int] = mapped_column(Integer, default=0)   # всего найдено
+    posts_new: Mapped[int] = mapped_column(Integer, default=0)     # из них новых
+    error_details: Mapped[Optional[str]] = mapped_column(Text, nullable=True)
+    metrics: Mapped[Optional[dict]] = mapped_column(JSONB, nullable=True)
+    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now())
+
+    source: Mapped["SocialSource"] = relationship(back_populates="runs")
