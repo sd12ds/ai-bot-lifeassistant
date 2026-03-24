@@ -18,7 +18,7 @@ from __future__ import annotations
 
 import logging
 import re
-from typing import Annotated, Literal
+from typing import Annotated, AsyncGenerator, Literal
 
 from langchain_core.messages import HumanMessage, AIMessage, BaseMessage
 from langchain_openai import ChatOpenAI
@@ -472,3 +472,20 @@ async def process_message(
         config={"configurable": {"thread_id": str(user_id)}},
     )
     return result.get("response", "Не смог обработать запрос.")
+
+
+_AGENT_NODES: frozenset[str] = frozenset({'calendar','reminder','nutrition','fitness','coaching','crm','team','assistant'})
+
+async def stream_message(user_id: int, user_mode: str, text: str, force_agent: str | None = None) -> AsyncGenerator[str, None]:
+    if not force_agent:
+        from bot.core.session_context import get_context as _sc1
+        _ctx1 = _sc1(user_id)
+        if _ctx1 and _ctx1.draft:
+            force_agent = _ctx1.active_domain or 'nutrition'
+    supervisor = get_supervisor()
+    state: SupervisorState = {'messages': [HumanMessage(content=text)], 'user_mode': user_mode, 'user_id': user_id, 'agent_type': force_agent or '', 'response': ''}
+    async for chunk in supervisor.astream(state, config={'configurable': {'thread_id': str(user_id)}}, stream_mode='messages'):
+        if not isinstance(chunk, tuple) or len(chunk) != 2: continue
+        msg, metadata = chunk
+        if metadata.get('langgraph_node', '') not in _AGENT_NODES: continue
+        if hasattr(msg, 'content') and isinstance(msg.content, str) and msg.content: yield msg.content
