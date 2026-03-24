@@ -192,8 +192,9 @@ class InstagramProvider(SocialProvider):
         hashtags = re.findall(r"#(\w+)", caption)
         mentions = re.findall(r"@(\w+)", caption)
 
-        # Ограничиваем до 5 медиа — Apify иногда возвращает сотни URL для карусели
-        media_urls = media_urls[:5]
+        # Дедупликация и ограничение до 5
+        seen = set()
+        media_urls = [u for u in media_urls if u not in seen and not seen.add(u)][:5]
 
         return ParsedPost(
             platform_post_id=shortcode or item.get("id", ""),

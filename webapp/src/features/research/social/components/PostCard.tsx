@@ -29,6 +29,7 @@ export function PostCard({ post, sourceMap }: Props) {
   const m = post.metrics ?? {}
   const mediaUrls = Array.isArray(post.media_urls) ? post.media_urls.filter(u => !u.startsWith('tg_')) : []
   const content = post.content ?? ''
+  const post_type = post.post_type ?? ""
   const isLong = content.length > 240
 
   return (
@@ -63,22 +64,52 @@ export function PostCard({ post, sourceMap }: Props) {
         </div>
       )}
 
-      {/* Медиа */}
+      {/* Медиа — Reels/Video: превью с кнопкой ▶ | Карусели/фото: сетка */}
       {mediaUrls.length > 0 && (
-        <div className={`grid gap-1 ${mediaUrls.length <= 1 ? 'grid-cols-1' : mediaUrls.length === 2 ? 'grid-cols-2' : 'grid-cols-3'}`}>
-          {mediaUrls.slice(0, 3).map((url, i) => (
+        post_type === 'reel' || post_type === 'video' ? (
+          /* Reel/Video — одна превью с кнопкой воспроизведения */
+          <a
+            href={post.post_url ?? undefined}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="relative block rounded-xl overflow-hidden group"
+          >
             <img
-              key={i}
-              src={'/api/proxy/image?url=' + encodeURIComponent(url)}
+              src={'/api/proxy/image?url=' + encodeURIComponent(mediaUrls[0])}
               alt=""
-              className="w-full aspect-square object-cover rounded-lg bg-[var(--bg-hover)]"
+              className="w-full aspect-video object-cover bg-[var(--bg-hover)]"
               referrerPolicy="no-referrer"
-              crossOrigin="anonymous"
               onError={e => (e.currentTarget.style.display = 'none')}
             />
-          ))}
-
-        </div>
+            {/* Overlay с кнопкой play */}
+            <div className="absolute inset-0 flex items-center justify-center bg-black/30 group-hover:bg-black/50 transition-colors">
+              <div className="w-14 h-14 rounded-full bg-white/20 backdrop-blur-sm border border-white/40 flex items-center justify-center">
+                <svg width="24" height="24" viewBox="0 0 24 24" fill="white">
+                  <path d="M8 5v14l11-7z"/>
+                </svg>
+              </div>
+            </div>
+            {/* Бейдж Reel */}
+            <div className="absolute top-2 right-2 flex items-center gap-1 px-2 py-0.5 rounded-full bg-black/60 text-white text-xs font-medium backdrop-blur-sm">
+              <svg width="10" height="10" viewBox="0 0 24 24" fill="currentColor"><path d="M8 5v14l11-7z"/></svg>
+              {post_type === 'reel' ? 'Reel' : 'Видео'}
+            </div>
+          </a>
+        ) : (
+          /* Фото / Карусель — сетка */
+          <div className={`grid gap-1 ${mediaUrls.length <= 1 ? 'grid-cols-1' : mediaUrls.length === 2 ? 'grid-cols-2' : 'grid-cols-3'}`}>
+            {mediaUrls.slice(0, 3).map((url, i) => (
+              <img
+                key={i}
+                src={'/api/proxy/image?url=' + encodeURIComponent(url)}
+                alt=""
+                className="w-full aspect-square object-cover rounded-lg bg-[var(--bg-hover)]"
+                referrerPolicy="no-referrer"
+                onError={e => (e.currentTarget.style.display = 'none')}
+              />
+            ))}
+          </div>
+        )
       )}
 
       {/* Реакции Telegram */}
