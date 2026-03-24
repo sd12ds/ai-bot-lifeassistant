@@ -132,6 +132,7 @@ async def get_posts(
     search: str | None = None,
     date_from: str | None = None,
     date_to: str | None = None,
+    post_type: str | None = None,
     ctx=Depends(get_workspace_context),
     session: AsyncSession = Depends(get_session),
 ):
@@ -142,7 +143,7 @@ async def get_posts(
     df = datetime.fromisoformat(date_from) if date_from else None
     dt = datetime.fromisoformat(date_to) if date_to else None
     posts = await storage.get_posts(session, source_id, offset=offset, limit=limit,
-                                     search=search, date_from=df, date_to=dt)
+                                     search=search, date_from=df, date_to=dt, post_type=post_type)
     total = await storage.count_posts(session, source_id)
     return {"total": total, "offset": offset, "limit": limit, "items": [_post_dict(p) for p in posts]}
 
@@ -166,6 +167,7 @@ async def get_feed(
     search: str | None = None,
     date_from: str | None = None,
     date_to: str | None = None,
+    post_type: str | None = None,
     offset: int = Query(0, ge=0),
     limit: int = Query(50, ge=1, le=200),
     ctx=Depends(get_workspace_context),
@@ -178,7 +180,7 @@ async def get_feed(
     posts, total = await storage.get_feed_posts(
         session, ctx["workspace_id"],
         source_ids=sids, platform=platform, search=search,
-        date_from=df, date_to=dt, offset=offset, limit=limit,
+        date_from=df, date_to=dt, post_type=post_type, offset=offset, limit=limit,
     )
     return {"total": total, "offset": offset, "limit": limit, "items": [_post_dict(p) for p in posts]}
 

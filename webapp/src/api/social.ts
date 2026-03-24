@@ -119,7 +119,7 @@ export const triggerParse = async (id: string): Promise<void> => {
 
 export const fetchSourcePosts = async (
   sourceId: string,
-  params?: { offset?: number; limit?: number; search?: string; date_from?: string; date_to?: string }
+  params?: { offset?: number; limit?: number; search?: string; date_from?: string; date_to?: string; post_type?: string }
 ): Promise<PostsResponse> => {
   const { data } = await api.get(`/social/sources/${sourceId}/posts`, { params })
   return data
@@ -136,6 +136,7 @@ export const fetchFeed = async (params?: {
   search?: string
   date_from?: string
   date_to?: string
+  post_type?: string
   offset?: number
   limit?: number
 }): Promise<PostsResponse> => {

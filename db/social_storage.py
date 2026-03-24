@@ -170,6 +170,7 @@ async def get_posts(
     search: str | None = None,
     date_from: datetime | None = None,
     date_to: datetime | None = None,
+    post_type: str | None = None,
 ) -> list[SocialPost]:
     stmt = select(SocialPost).where(SocialPost.source_id == source_id)
     if search:
@@ -178,6 +179,8 @@ async def get_posts(
         stmt = stmt.where(SocialPost.posted_at >= date_from)
     if date_to:
         stmt = stmt.where(SocialPost.posted_at <= date_to)
+    if post_type:
+        stmt = stmt.where(SocialPost.post_type == post_type)
     stmt = stmt.order_by(SocialPost.posted_at.desc()).offset(offset).limit(limit)
     return list((await session.execute(stmt)).scalars().all())
 
@@ -195,6 +198,7 @@ async def get_feed_posts(
     search: str | None = None,
     date_from: datetime | None = None,
     date_to: datetime | None = None,
+    post_type: str | None = None,
     offset: int = 0,
     limit: int = 50,
 ) -> tuple[list[SocialPost], int]:
@@ -211,6 +215,8 @@ async def get_feed_posts(
         stmt = stmt.where(SocialPost.posted_at >= date_from)
     if date_to:
         stmt = stmt.where(SocialPost.posted_at <= date_to)
+    if post_type:
+        stmt = stmt.where(SocialPost.post_type == post_type)
     total = (await session.execute(
         select(func.count()).select_from(stmt.subquery())
     )).scalar_one()

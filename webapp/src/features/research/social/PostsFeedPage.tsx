@@ -3,6 +3,8 @@ import { useState } from 'react'
 import { useQuery } from '@tanstack/react-query'
 import { useNavigate } from 'react-router-dom'
 import { ArrowLeft, Search } from 'lucide-react'
+import { ContentTypeFilter, filterToApiParam } from './components/ContentTypeFilter'
+import type { PostTypeFilter } from './components/ContentTypeFilter'
 import { fetchFeed, fetchSources } from '../../../api/social'
 import { PostCard } from './components/PostCard'
 
@@ -10,6 +12,7 @@ export function PostsFeedPage() {
   const navigate = useNavigate()
   const [search, setSearch] = useState('')
   const [platform, setPlatform] = useState('')
+  const [postTypeFilter, setPostTypeFilter] = useState<PostTypeFilter>('all')
   const [offset, setOffset] = useState(0)
   const LIMIT = 50
 
@@ -19,10 +22,11 @@ export function PostsFeedPage() {
   })
 
   const { data: feedData, isLoading } = useQuery({
-    queryKey: ['social-feed', search, platform, offset],
+    queryKey: ['social-feed', search, platform, postTypeFilter, offset],
     queryFn: () => fetchFeed({
       search: search || undefined,
       platform: platform || undefined,
+      post_type: filterToApiParam(postTypeFilter),
       offset,
       limit: LIMIT,
     }),
@@ -70,6 +74,8 @@ export function PostsFeedPage() {
           {platforms.map(p => <option key={p} value={p} className="capitalize">{p}</option>)}
         </select>
       </div>
+      {/* Фильтр по типу контента */}
+      <ContentTypeFilter value={postTypeFilter} onChange={v => { setPostTypeFilter(v); setOffset(0) }} />
 
       {/* Лента */}
       {isLoading ? (

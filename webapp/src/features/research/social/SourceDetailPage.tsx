@@ -11,6 +11,8 @@ import { SourceStatusBadge } from './components/SourceStatusBadge'
 import { PostCard } from './components/PostCard'
 import { ParseRunCard } from './components/ParseRunCard'
 import { CollectionConfigPanel } from './components/CollectionConfigPanel'
+import { ContentTypeFilter, filterToApiParam } from './components/ContentTypeFilter'
+import type { PostTypeFilter } from './components/ContentTypeFilter'
 import { SchedulePicker } from './components/SchedulePicker'
 
 const TABS = ['Посты', 'История запусков', 'Настройки'] as const
@@ -21,6 +23,7 @@ export function SourceDetailPage() {
   const qc = useQueryClient()
   const [tab, setTab] = useState<typeof TABS[number]>('Посты')
   const [search, setSearch] = useState('')
+  const [postTypeFilter, setPostTypeFilter] = useState<PostTypeFilter>('all')
   const [cfgSaved, setCfgSaved] = useState(false)
 
   const { data: source, isLoading } = useQuery({
@@ -31,8 +34,8 @@ export function SourceDetailPage() {
   })
 
   const { data: postsData } = useQuery({
-    queryKey: ['social-posts', id, search],
-    queryFn: () => fetchSourcePosts(id!, { limit: 50, search: search || undefined }),
+    queryKey: ['social-posts', id, search, postTypeFilter],
+    queryFn: () => fetchSourcePosts(id!, { limit: 50, search: search || undefined, post_type: filterToApiParam(postTypeFilter) }),
     enabled: !!id && tab === 'Посты',
   })
 
@@ -145,6 +148,7 @@ export function SourceDetailPage() {
             placeholder="Поиск по тексту..."
             className="w-full px-3 py-2 bg-[var(--bg-hover)] border border-[var(--border)] rounded-lg text-sm text-[var(--text-primary)] placeholder:text-[var(--text-muted)] focus:outline-none focus:border-[var(--accent)]"
           />
+          <ContentTypeFilter value={postTypeFilter} onChange={setPostTypeFilter} />
           {postsData?.items.length === 0 && <div className="text-center py-8 text-[var(--text-muted)]">Постов пока нет. Запустите парсинг.</div>}
           <div className="space-y-3">
             {postsData?.items.map(p => <PostCard key={p.id} post={p} sourceMap={sourceMap} />)}

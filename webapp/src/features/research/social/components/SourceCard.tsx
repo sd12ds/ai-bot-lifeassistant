@@ -5,6 +5,7 @@ import { Play, Pause, RotateCw } from 'lucide-react'
 import type { SocialSource } from '../../../../api/social'
 import { updateSource, triggerParse } from '../../../../api/social'
 import { PlatformIcon, PlatformBadge } from './PlatformBadge'
+import { CollectionTypeBadge } from './ContentTypeFilter'
 import { SourceStatusBadge } from './SourceStatusBadge'
 import { SparklineChart } from './SparklineChart'
 
@@ -70,8 +71,11 @@ export function SourceCard({ source }: Props) {
       </div>
 
       {/* Подзаголовок */}
-      <div className="flex items-center gap-2">
+      <div className="flex items-center gap-2 flex-wrap">
         <PlatformBadge platform={source.platform} showLabel={true} size="sm" />
+        {source.collection_config?.results_type && (
+          <CollectionTypeBadge resultsType={source.collection_config.results_type} />
+        )}
         {subsLabel && <span className="text-xs text-[var(--text-muted)]">{subsLabel} подписчиков</span>}
       </div>
 
