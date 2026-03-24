@@ -29,6 +29,25 @@ logging.basicConfig(
 )
 logger = logging.getLogger(__name__)
 
+def _setup_langsmith() -> None:
+    """Логирует статус LangSmith трейсинга при старте бота.
+
+    LangChain v1+ автоматически трассирует все вызовы при наличии
+    LANGCHAIN_TRACING_V2=true и LANGCHAIN_API_KEY в переменных окружения.
+    Никаких изменений кода агентов не требуется.
+    """
+    if config.LANGSMITH_ENABLED:
+        logger.info(
+            "LangSmith трейсинг ВКЛЮЧЕН | проект: %s",
+            config.LANGSMITH_PROJECT,
+        )
+    else:
+        logger.warning(
+            "LangSmith трейсинг ВЫКЛЮЧЕН — задайте "
+            "LANGCHAIN_TRACING_V2=true и LANGCHAIN_API_KEY в .env"
+        )
+
+
 
 async def _setup_menu_button(bot: Bot) -> None:
     """
@@ -64,6 +83,9 @@ async def _setup_menu_button(bot: Bot) -> None:
 async def main() -> None:
     # Проверяем обязательные переменные окружения
     config.validate()
+
+    # Логируем статус LangSmith трейсинга (включается через .env)
+    _setup_langsmith()
 
     # Инициализируем БД (создаём таблицы при первом запуске)
     await init_db()
