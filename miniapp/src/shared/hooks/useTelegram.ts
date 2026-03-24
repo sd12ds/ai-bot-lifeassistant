@@ -27,6 +27,8 @@ declare global {
         }
         themeParams: Record<string, string>
         colorScheme: 'light' | 'dark'
+        setHeaderColor: (color: string) => void
+        setBackgroundColor: (color: string) => void
         BackButton: {
           show: () => void
           hide: () => void

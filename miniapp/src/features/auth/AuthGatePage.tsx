@@ -41,7 +41,7 @@ export function AuthGatePage() {
     <div style={{
       display: 'flex', flexDirection: 'column', alignItems: 'center',
       justifyContent: 'center', height: '100vh', padding: '2rem',
-      textAlign: 'center', color: 'var(--tg-theme-text-color, #fff)',
+      textAlign: 'center', color: 'var(--app-text)',
     }}>
       {loading && !error ? (
         <>

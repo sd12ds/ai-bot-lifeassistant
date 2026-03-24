@@ -1,19 +1,19 @@
 /*
- * Маппинг Telegram WebApp CSS-переменных → кастомные CSS-свойства приложения.
- * Применяется в useTheme.ts при инициализации.
- * Если Telegram-переменные недоступны (dev), используются fallback-значения тёмной темы.
+ * иксированная тёмная тема приложения.
+ * е зависит от Telegram colorScheme — всегда тёмная,
+ * чтобы при переключении темы в Telegram miniapp не менял цвет.
  */
 
 :root {
-  /* ── Базовые цвета из Telegram ──────────────────────────────────────────── */
-  --app-bg:          var(--tg-theme-bg-color,          #0f0f1a);
-  --app-bg-section:  var(--tg-theme-section-bg-color,  #1a1a2e);
-  --app-text:        var(--tg-theme-text-color,        #ffffff);
-  --app-hint:        var(--tg-theme-hint-color,        rgba(255,255,255,0.5));
-  --app-link:        var(--tg-theme-link-color,        #6366f1);
-  --app-button-bg:   var(--tg-theme-button-color,      #6366f1);
-  --app-button-text: var(--tg-theme-button-text-color, #ffffff);
-  --app-secondary:   var(--tg-theme-secondary-bg-color, rgba(255,255,255,0.05));
+  /* ── азовые цвета (жёстко зафиксированы под тёмную тему) ─────────────── */
+  --app-bg:          #0f0f1a;
+  --app-bg-section:  #1a1a2e;
+  --app-text:        #ffffff;
+  --app-hint:        rgba(255,255,255,0.5);
+  --app-link:        #6366f1;
+  --app-button-bg:   #6366f1;
+  --app-button-text: #ffffff;
+  --app-secondary:   rgba(255,255,255,0.05);
 
   /* ── Glass-эффект ───────────────────────────────────────────────────────── */
   --glass-bg:     rgba(255, 255, 255, 0.05);

@@ -1,37 +1,25 @@
 /**
- * Хук применяет Telegram CSS-переменные к документу при монтировании.
- * Это нужно, чтобы наши --app-* переменные корректно получили значения из Telegram.
+ * Хук фиксирует тёмную тему при монтировании.
+ * ринудительно задаёт data-theme='dark' и тёмный цвет заголовка/фона в Telegram,
+ * чтобы miniapp не менял оформление при переключении темы в Telegram.
  */
 import { useEffect } from 'react'
 
 export function useTheme() {
   useEffect(() => {
     const tg = window.Telegram?.WebApp
+
+    // сегда принудительно ставим тёмную тему, независимо от Telegram
+    document.documentElement.setAttribute('data-theme', 'dark')
+
     if (!tg) return
 
-    const params = tg.themeParams
-    const root = document.documentElement
-
-    // Маппинг: ключ из Telegram → CSS-переменная
-    const mapping: Record<string, string> = {
-      bg_color:           '--tg-theme-bg-color',
-      section_bg_color:   '--tg-theme-section-bg-color',
-      text_color:         '--tg-theme-text-color',
-      hint_color:         '--tg-theme-hint-color',
-      link_color:         '--tg-theme-link-color',
-      button_color:       '--tg-theme-button-color',
-      button_text_color:  '--tg-theme-button-text-color',
-      secondary_bg_color: '--tg-theme-secondary-bg-color',
+    // ринудительно задаём тёмный цвет заголовка и фона Telegram WebApp
+    try {
+      tg.setHeaderColor?.('#0f0f1a')
+      tg.setBackgroundColor?.('#0f0f1a')
+    } catch {
+      // е все версии Telegram поддерживают эти методы — игнорируем
     }
-
-    // Применяем переменные к :root
-    Object.entries(mapping).forEach(([key, cssVar]) => {
-      if (params[key]) {
-        root.style.setProperty(cssVar, params[key])
-      }
-    })
-
-    // Применяем colorScheme к <html> для ориентирования CSS
-    root.setAttribute('data-theme', tg.colorScheme ?? 'dark')
   }, [])
 }

@@ -8,8 +8,8 @@ export function AuthRequiredPage() {
     <div style={{
       display: 'flex', flexDirection: 'column', alignItems: 'center',
       justifyContent: 'center', height: '100vh', padding: '2rem',
-      textAlign: 'center', color: 'var(--tg-theme-text-color, #fff)',
-      background: 'var(--tg-theme-bg-color, #1a1a2e)',
+      textAlign: 'center', color: 'var(--app-text)',
+      background: 'var(--app-bg-section)',
     }}>
       <div style={{ fontSize: '3rem', marginBottom: '1rem' }}>🔒</div>
       <h2 style={{ marginBottom: '0.5rem' }}>Требуется авторизация</h2>
