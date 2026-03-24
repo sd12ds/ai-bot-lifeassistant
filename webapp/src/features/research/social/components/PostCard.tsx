@@ -84,14 +84,14 @@ export function PostCard({ post, sourceMap }: Props) {
       <div className="flex divide-x divide-[var(--border)]/60 flex-1">
 
         {/* ── Колонка 1: квадратное превью ── */}
-        <div className="w-40 flex-shrink-0 p-2 flex items-center justify-center">
+        <div className="w-48 flex-shrink-0 relative overflow-hidden">
           {media.length > 0 ? (
             isVideo ? (
               <a href={post.post_url ?? undefined} target="_blank" rel="noopener noreferrer"
-                className="relative block rounded-lg overflow-hidden group w-36 h-36 flex-shrink-0">
+                className="absolute inset-0 block group">
                 <img
                   src={proxyImg(media[0])} alt=""
-                  className="w-full h-full object-cover bg-[var(--bg-hover)]"
+                  className="w-full h-full object-cover"
                   referrerPolicy="no-referrer"
                   onError={e => { const el = e.currentTarget.closest('a') as HTMLElement; if (el) el.style.display = 'none' }}
                 />
@@ -110,14 +110,14 @@ export function PostCard({ post, sourceMap }: Props) {
             ) : (
               <img
                 src={proxyImg(media[0])} alt=""
-                className="w-36 h-36 object-cover rounded-lg bg-[var(--bg-hover)] flex-shrink-0"
+                className="absolute inset-0 w-full h-full object-cover bg-[var(--bg-hover)]"
                 referrerPolicy="no-referrer"
                 onError={e => (e.currentTarget.style.display = 'none')}
               />
             )
           ) : (
             /* Нет медиа — placeholder */
-            <div className="w-36 h-36 rounded-lg bg-[var(--bg-hover)] flex items-center justify-center text-[var(--text-muted)]">
+            <div className="absolute inset-0 bg-[var(--bg-hover)]/60 flex items-center justify-center text-[var(--text-muted)]">
               <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5">
                 <rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><path d="m21 15-5-5L5 21"/>
               </svg>
