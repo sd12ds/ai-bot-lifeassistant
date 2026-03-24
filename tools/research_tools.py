@@ -14,6 +14,19 @@ from services.research.execution_engine import run_job
 logger = logging.getLogger(__name__)
 
 
+async def _get_or_create_workspace_id(user_id: int) -> str:
+    """Получает или создаёт Personal Workspace для пользователя из чата."""
+    from db.session import get_async_session
+    from services.auth.workspace_manager import get_default_workspace, create_personal_workspace
+    async with get_async_session() as session:
+        ws = await get_default_workspace(session, user_id)
+        if not ws:
+            # Auto-provisioning — первый вход пользователя
+            ws = await create_personal_workspace(session, user_id)
+            await session.commit()
+    return ws.id
+
+
 def make_research_tools(user_id: int):
     """Создает набор tools для research-агента, привязанных к user_id."""
 
@@ -34,6 +47,9 @@ def make_research_tools(user_id: int):
             urls: URL-адреса через запятую (если есть конкретные сайты)
             extraction_fields: Поля для извлечения через запятую (сайт, телефон, email и т.д.)
         """
+        # Получаем или создаём workspace для пользователя
+        workspace_id = await _get_or_create_workspace_id(user_id)
+
         # Формируем normalized_spec из параметров
         spec = {"objective": description}
         if urls:
@@ -50,6 +66,7 @@ def make_research_tools(user_id: int):
             original_request=description,
             normalized_spec=spec,
             origin="chat",
+            workspace_id=workspace_id,
         )
         return f"Задача создана: {result['title']} (ID: {result['id']}, тип: {result['job_type']})"
 
@@ -60,7 +77,7 @@ def make_research_tools(user_id: int):
         Args:
             job_id: ID задачи для запуска
         """
-        # Запуск в фоне - не блокирует чат
+        # Запуск в фоне — не блокирует чат
         asyncio.create_task(run_job(job_id))
         return f"Задача {job_id} запущена. Сбор данных идет в фоне. Результаты появятся в Research -> Jobs."
 

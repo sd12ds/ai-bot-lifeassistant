@@ -21,6 +21,7 @@ async def create_research_job(
     config: dict | None = None,
     origin: str = "chat",
     tags: dict | None = None,
+    workspace_id: str | None = None,
 ) -> dict:
     """Создает новую задачу и возвращает её данные."""
     async with get_async_session() as session:
@@ -35,9 +36,10 @@ async def create_research_job(
             config=config,
             origin=origin,
             tags=tags,
+            workspace_id=workspace_id,
         )
         await session.commit()
-        logger.info("Job создан: id=%s user=%d type=%s", job.id, user_id, job_type)
+        logger.info("Job создан: id=%s user=%d type=%s ws=%s", job.id, user_id, job_type, workspace_id)
         return {"id": job.id, "title": job.title, "status": job.status, "job_type": job.job_type}
 
 
@@ -75,6 +77,7 @@ def _job_to_dict(job) -> dict:
         "id": job.id, "title": job.title, "description": job.description,
         "status": job.status, "job_type": job.job_type, "provider": job.provider,
         "origin": job.origin, "created_by": job.created_by,
+        "workspace_id": job.workspace_id,
         "created_at": job.created_at.isoformat() if job.created_at else None,
         "last_run_at": job.last_run_at.isoformat() if job.last_run_at else None,
     }

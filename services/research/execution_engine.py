@@ -14,6 +14,7 @@ from services.research.collection_engine import collect
 from services.research.result_processor import process_results
 from services.research.extraction_pipeline import extract_structured
 from services.research.enrichment import enrich_results
+from services.billing.quota_checker import preflight_check
 
 logger = logging.getLogger(__name__)
 
@@ -21,7 +22,7 @@ logger = logging.getLogger(__name__)
 async def run_job(job_id: str, notify_callback=None) -> dict:
     """
     Основной pipeline выполнения задачи.
-    Возвращает dict с результатами run.
+    Phase 3: preflight quota check перед созданием run.
     notify_callback(user_id, message) - для отправки уведомления в Telegram.
     """
     async with get_async_session() as session:
@@ -29,6 +30,15 @@ async def run_job(job_id: str, notify_callback=None) -> dict:
         job = await storage.get_job(session, job_id)
         if not job:
             return {"error": f"Job {job_id} не найден"}
+
+        # 1a. Phase 3: preflight check — подписка + квоты перед запуском
+        if job.workspace_id:
+            preflight = await preflight_check(session, job.workspace_id)
+            if not preflight["allowed"]:
+                reason = preflight.get("reason", "unknown")
+                await storage.update_job_status(session, job_id, "failed", source="system")
+                await session.commit()
+                return {"error": f"Preflight failed: {reason}", "status": "failed"}
 
         # 2. Создаем run
         run = await storage.create_run(session, job_id)

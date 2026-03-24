@@ -379,3 +379,31 @@
 ## [141e81e] — 2026-03-20 17:28 (МСК)
 📦 Phase 3: Billing + Usage — 9 ORM-моделей, subscription lifecycle, quota checker, usage tracker, billing guard, 7 API endpoints, webapp BillingDashboard
 
+
+
+## [556e57e] — 2026-03-24 14:12 (МСК)
+📦 Фиксация тёмной темы miniapp: убрана зависимость от Telegram colorScheme
+## [fecc95b] — 
+AI-чат для управления Research Platform: SSE-стриминг, OpenAI function calling, 7 tools
+
+📦 AI-чат для управления Research Platform: SSE-стриминг, OpenAI function calling, 7 tools
+
+## [d15051b] -- 2026-03-24
+
+## [15:18] -- 
+📦 обавлена интеграция LangSmith: config.py (4 переменные) + main.py (_setup_langsmith). Трейсинг включается через .env без изменений кода агентов.
+
+## [1f10dda] -- 2026-03-24
+
+## [15:47] -- 
+📦 Streaming ответов: stream_message() в supervisor.py + обновлён text_handler. ользователь видит ответ по мере генерации с курсором ▌ и fallback на batch при 0 токенов.
+
+## [b06a938] -- 2026-03-24
+
+## [16:05] -- 
+📦 инамическая фильтрация tools в coaching-агенте: domain classifier без LLM, снижение контекста на 25-50% для чётких запросов по целям/привычкам/обзорам.
+
+## [efe0d3e] -- 2026-03-24
+
+## [16:24] -- 
+📦 ромпты 4 агентов вынесены в prompts/*.txt + utils/prompts.py с lru_cache. едактирование промптов без изменения кода агентов.
