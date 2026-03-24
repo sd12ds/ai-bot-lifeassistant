@@ -3,8 +3,10 @@
  * [квадратное превью] | [текст] | [статистика + AI + кнопки]
  */
 import { useState } from 'react'
-import { Eye, Heart, MessageCircle, Share2, ExternalLink, FileText, CalendarPlus, Zap, TrendingUp, Minus } from 'lucide-react'
+import { Eye, Heart, MessageCircle, Share2, ExternalLink, FileText, CalendarPlus, Zap, TrendingUp, Minus, Loader2 } from 'lucide-react'
 import type { SocialPost } from '../../../../api/social'
+import { transcribePost } from '../../../../api/social'
+import { TranscriptModal } from './TranscriptModal'
 import { PlatformIcon } from './PlatformBadge'
 
 interface Props {
@@ -51,6 +53,10 @@ const V_TEXT   = { viral: 'text-orange-400',       good: 'text-green-400',      
 
 export function PostCard({ post, sourceMap }: Props) {
   const [expanded, setExpanded] = useState(false)
+  const [transcribing, setTranscribing] = useState(false)
+  const [transcript, setTranscript] = useState<string | null>(post.transcript ?? null)
+  const [showModal, setShowModal] = useState(false)
+  const [transcribeError, setTranscribeError] = useState('')
   const source   = sourceMap?.[post.source_id]
   const platform = source?.platform ?? 'instagram'
   const m        = post.metrics ?? {}
@@ -62,6 +68,7 @@ export function PostCard({ post, sourceMap }: Props) {
   const isLong   = content.length > 220
 
   return (
+    <>
     <div className="bg-[var(--bg-card)] border border-[var(--border)] rounded-xl overflow-hidden flex flex-col">
 
       {/* Шапка */}
@@ -180,9 +187,39 @@ export function PostCard({ post, sourceMap }: Props) {
 
           {/* Кнопки */}
           <div className="flex flex-col gap-1">
-            <button className="flex items-center gap-1.5 px-2.5 py-1.5 text-xs text-[var(--text-secondary)] border border-[var(--border)] rounded-lg hover:bg-[var(--bg-hover)] hover:text-[var(--text-primary)] transition-colors w-full">
-              <FileText size={10}/> Транскрибировать
-            </button>
+            {/* Кнопка транскрипции — 3 состояния */}
+            {transcript ? (
+              <button
+                onClick={() => setShowModal(true)}
+                className="flex items-center gap-1.5 px-2.5 py-1.5 text-xs font-medium text-[var(--accent)] border border-[var(--accent)]/40 bg-[var(--accent)]/10 rounded-lg hover:bg-[var(--accent)]/20 transition-colors w-full"
+              >
+                <FileText size={10}/> Показать текст
+              </button>
+            ) : transcribing ? (
+              <button disabled className="flex items-center gap-1.5 px-2.5 py-1.5 text-xs text-[var(--text-muted)] border border-[var(--border)] rounded-lg w-full cursor-not-allowed opacity-70">
+                <Loader2 size={10} className="animate-spin"/> Транскрибирую...
+              </button>
+            ) : (
+              <button
+                onClick={async () => {
+                  setTranscribing(true)
+                  setTranscribeError('')
+                  try {
+                    const res = await transcribePost(post.id)
+                    setTranscript(res.transcript)
+                    setShowModal(true)
+                  } catch (e: any) {
+                    setTranscribeError(e?.response?.data?.detail || 'Ошибка транскрипции')
+                  } finally {
+                    setTranscribing(false)
+                  }
+                }}
+                className="flex items-center gap-1.5 px-2.5 py-1.5 text-xs text-[var(--text-secondary)] border border-[var(--border)] rounded-lg hover:bg-[var(--bg-hover)] hover:text-[var(--text-primary)] transition-colors w-full"
+              >
+                <FileText size={10}/> Транскрибировать
+              </button>
+            )}
+            {transcribeError && <p className="text-[10px] text-red-400 leading-tight">{transcribeError}</p>}
             <button className="flex items-center gap-1.5 px-2.5 py-1.5 text-xs text-[var(--text-secondary)] border border-[var(--border)] rounded-lg hover:bg-[var(--bg-hover)] hover:text-[var(--text-primary)] transition-colors w-full">
               <CalendarPlus size={10}/> В план контента
             </button>
@@ -191,5 +228,14 @@ export function PostCard({ post, sourceMap }: Props) {
         </div>
       </div>
     </div>
+      {showModal && transcript && (
+        <TranscriptModal
+          transcript={transcript}
+          authorName={post.author_name || source?.source_name || ''}
+          postedAt={post.posted_at}
+          onClose={() => setShowModal(false)}
+        />
+      )}
+    </>
   )
 }

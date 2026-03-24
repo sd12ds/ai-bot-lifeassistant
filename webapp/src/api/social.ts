@@ -44,6 +44,7 @@ export interface SocialPost {
   hashtags: string[] | null
   mentions: string[] | null
   location: Record<string, any> | null
+  transcript: string | null
 }
 
 export interface ParseRun {
@@ -148,5 +149,12 @@ export const fetchFeed = async (params?: {
 
 export const fetchSocialStats = async (): Promise<SocialStats> => {
   const { data } = await api.get('/social/stats')
+  return data
+}
+
+// ── Transcribe ───────────────────────────────────────────────────────────────
+
+export const transcribePost = async (postId: string): Promise<{ transcript: string; cached: boolean }> => {
+  const { data } = await api.post(`/social/posts/${postId}/transcribe`)
   return data
 }
