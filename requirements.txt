@@ -102,3 +102,4 @@ psycopg[binary]
 # Social parsers
 telethon==1.37.0
 apify-client==1.9.0
+apify-shared<2.0
