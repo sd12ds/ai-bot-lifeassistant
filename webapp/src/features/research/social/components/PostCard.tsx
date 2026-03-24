@@ -65,7 +65,7 @@ export function PostCard({ post, sourceMap }: Props) {
 
       {/* Медиа */}
       {mediaUrls.length > 0 && (
-        <div className={`grid gap-1 ${mediaUrls.length === 1 ? 'grid-cols-1' : 'grid-cols-3'}`}>
+        <div className={`grid gap-1 ${mediaUrls.length <= 1 ? 'grid-cols-1' : mediaUrls.length === 2 ? 'grid-cols-2' : 'grid-cols-3'}`}>
           {mediaUrls.slice(0, 3).map((url, i) => (
             <img
               key={i}
@@ -77,11 +77,7 @@ export function PostCard({ post, sourceMap }: Props) {
               onError={e => (e.currentTarget.style.display = 'none')}
             />
           ))}
-          {mediaUrls.length > 3 && (
-            <div className="aspect-square rounded-lg bg-[var(--bg-hover)] flex items-center justify-center text-xs text-[var(--text-muted)]">
-              +{mediaUrls.length - 3}
-            </div>
-          )}
+
         </div>
       )}
 
