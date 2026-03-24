@@ -17,6 +17,7 @@ CoachingAgent — персональный AI-коуч для достижени
 from __future__ import annotations
 
 import asyncio
+import logging
 from typing import Optional
 
 from langchain_openai import ChatOpenAI
@@ -25,6 +26,49 @@ from langgraph.prebuilt import create_react_agent
 from config import OPENAI_API_KEY, OPENAI_AGENT_MODEL
 
 # ═══════════════════════════════════════════════════════════════════════════
+logger = logging.getLogger(__name__)
+
+_GOAL_KEYWORDS = frozenset({
+    "\u0446\u0435\u043b", "goal", "\u044d\u0442\u0430\u043f", "milestone", "\u043f\u0440\u043e\u0433\u0440\u0435\u0441\u0441", "\u0434\u0435\u0434\u043b\u0430\u0439\u043d", "\u0434\u043e\u0441\u0442\u0438\u0436",
+    "\u0437\u0430\u043c\u043e\u0440\u043e\u0437\u0438", "\u0430\u0440\u0445\u0438\u0432\u0438\u0440", "\u0432\u043e\u0437\u043e\u0431\u043d\u043e\u0432\u0438", "\u043f\u043b\u0430\u043d \u0446\u0435\u043b",
+})
+_HABIT_KEYWORDS = frozenset({
+    "\u043f\u0440\u0438\u0432\u044b\u0447\u043a", "habit", "\u0441\u0435\u0440\u0438\u044f", "streak", "\u0442\u0440\u0435\u043a\u0435\u0440", "\u0435\u0436\u0435\u0434\u043d\u0435\u0432\u043d",
+    "\u043f\u0440\u043e\u043f\u0443\u0441\u0442\u0438\u043b", "\u043f\u0440\u043e\u043f\u0443\u0441\u043a", "\u0448\u0430\u0431\u043b\u043e\u043d \u043f\u0440\u0438\u0432\u044b\u0447",
+})
+_ANALYSIS_KEYWORDS = frozenset({
+    "\u0447\u0435\u043a\u0438\u043d", "check-in", "checkin", "\u043e\u0431\u0437\u043e\u0440", "review",
+    "\u0438\u0442\u043e\u0433", "\u0430\u043d\u0430\u043b\u0438\u0437", "\u0438\u043d\u0441\u0430\u0439\u0442", "insight",
+})
+
+
+def _classify_coaching_domain(text: str) -> str:
+    t = text.lower()
+    has_goals = any(kw in t for kw in _GOAL_KEYWORDS)
+    has_habits = any(kw in t for kw in _HABIT_KEYWORDS)
+    has_analysis = any(kw in t for kw in _ANALYSIS_KEYWORDS)
+    if has_goals and not has_habits:
+        return "goals"
+    if has_habits and not has_goals:
+        return "habits"
+    if has_analysis and not has_goals and not has_habits:
+        return "analysis"
+    return "general"
+
+
+def _filter_tools_by_domain(all_tools: list, domain: str) -> list:
+    if domain == "goals":
+        return [t for t in all_tools
+                if not t.name.startswith("habit_") and t.name != "coaching_template_apply"]
+    if domain == "habits":
+        return [t for t in all_tools if not t.name.startswith("goal_")]
+    if domain == "analysis":
+        return [t for t in all_tools if not (
+            t.name.startswith("goal_") or
+            t.name.startswith("habit_") or
+            t.name.startswith("orchestrate_")
+        )]
+    return all_tools
 # Базовый системный промпт (статическая часть)
 # ═══════════════════════════════════════════════════════════════════════════
 
@@ -252,7 +296,7 @@ def _format_context_pack(ctx: dict) -> str:
     return "\n".join(lines)
 
 
-def build_coaching_agent(checkpointer=None, user_id: int = 0):
+def build_coaching_agent(checkpointer=None, user_id: int = 0, message_text: str = ""):
     """
     Строит CoachingAgent.
 
@@ -264,8 +308,11 @@ def build_coaching_agent(checkpointer=None, user_id: int = 0):
     from tools.coaching_tools import make_coaching_tools
     from tools.coaching_context_tools import make_coaching_context_tools
 
-    # Объединяем все инструменты: core (30+) + context/analytics (5)
     all_tools = make_coaching_tools(user_id) + make_coaching_context_tools(user_id)
+    domain = _classify_coaching_domain(message_text)
+    filtered = _filter_tools_by_domain(all_tools, domain)
+    if domain != "general":
+        logger.debug("coaching tools: %d->%d (domain=%s)", len(all_tools), len(filtered), domain)
 
     # Если есть user_id — обогащаем системный промпт контекстом
     system_prompt = _BASE_SYSTEM_PROMPT
@@ -276,7 +323,7 @@ def build_coaching_agent(checkpointer=None, user_id: int = 0):
 
     return create_react_agent(
         model=_llm,
-        tools=all_tools,
+        tools=filtered,
         prompt=system_prompt,
         checkpointer=checkpointer,
     )

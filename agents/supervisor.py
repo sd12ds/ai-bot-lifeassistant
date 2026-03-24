@@ -332,9 +332,10 @@ def build_supervisor(
         agent = build_fitness_agent(checkpointer=get_checkpointer(), user_id=state["user_id"])
         return await _run_agent(agent, state)
     async def run_coaching(state):
-        # Динамически создаём coaching-агента под user_id
         from agents.personal.coaching_agent import build_coaching_agent
-        agent = build_coaching_agent(checkpointer=get_checkpointer(), user_id=state["user_id"])
+        last_human = next((m for m in reversed(state["messages"]) if isinstance(m, HumanMessage)), None)
+        msg_text = last_human.content if last_human else ""
+        agent = build_coaching_agent(checkpointer=get_checkpointer(), user_id=state["user_id"], message_text=msg_text)
         return await _run_agent(agent, state)
 
     
