@@ -410,3 +410,9 @@ AI-чат для управления Research Platform: SSE-стриминг, O
 ## [0054b3a] — 2026-03-24 18:55
 📦 Research: интеграция Phase 2-5 (RBAC, workspace isolation, preflight quota check, audit logging, rate limiting, enrichment regex, промпт в файл)
 
+## [6dd59f3] — 2026-03-24 21:42
+📦 Social Monitor: полная реализация модуля мониторинга соцсетей (Instagram/Apify + Telegram/Telethon, 33 файла, 2742 строки)
+
+## [2aa7864] — 2026-03-24 22:29
+📦 fix: apify-shared<2.0 совместимость + подключение APIFY_API_KEY + тест парсинга Instagram @natgeo (10 постов собрано успешно)
+

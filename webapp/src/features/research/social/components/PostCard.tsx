@@ -69,9 +69,11 @@ export function PostCard({ post, sourceMap }: Props) {
           {mediaUrls.slice(0, 3).map((url, i) => (
             <img
               key={i}
-              src={url}
+              src={'/api/proxy/image?url=' + encodeURIComponent(url)}
               alt=""
               className="w-full aspect-square object-cover rounded-lg bg-[var(--bg-hover)]"
+              referrerPolicy="no-referrer"
+              crossOrigin="anonymous"
               onError={e => (e.currentTarget.style.display = 'none')}
             />
           ))}

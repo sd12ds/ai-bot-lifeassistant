@@ -8,7 +8,7 @@ from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
 import config
-from api.routers import auth, tasks, calendars, nutrition, fitness, voice, ai_coach, coaching, research, workspace, billing, chat, social
+from api.routers import auth, tasks, calendars, nutrition, fitness, voice, ai_coach, coaching, research, workspace, billing, chat, social, proxy
 
 # Время старта приложения — используется в /api/health для расчёта uptime
 _START_TIME = _time.time()
@@ -42,6 +42,7 @@ app.include_router(workspace.router, prefix="/api")
 app.include_router(billing.router, prefix="/api")
 app.include_router(chat.router, prefix="/api")
 app.include_router(social.router, prefix="/api")
+app.include_router(proxy.router, prefix="/api")
 app.include_router(tasks.router, prefix="/api")
 app.include_router(calendars.router, prefix="/api")
 
