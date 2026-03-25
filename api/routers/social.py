@@ -230,6 +230,7 @@ def _post_dict(p) -> dict:
         "author_name": p.author_name, "author_id": p.author_id,
         "metrics": p.metrics, "media_urls": p.media_urls,
         "hashtags": p.hashtags, "mentions": p.mentions, "location": p.location,
+        "transcript": p.transcript,
     }
 
 def _run_dict(r) -> dict:

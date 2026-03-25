@@ -1451,6 +1451,7 @@ class SocialPost(Base):
     location: Mapped[Optional[dict]] = mapped_column(JSONB, nullable=True)          # геометка
     raw_data: Mapped[Optional[dict]] = mapped_column(JSONB, nullable=True)          # полный raw ответ API
     dedupe_hash: Mapped[Optional[str]] = mapped_column(String(64), nullable=True, index=True)
+    transcript: Mapped[Optional[str]] = mapped_column(Text, nullable=True)  # транскрипт аудио
     created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now())
 
     source: Mapped["SocialSource"] = relationship(back_populates="posts")
