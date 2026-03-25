@@ -3,7 +3,7 @@ import { useState } from 'react'
 import { useQuery } from '@tanstack/react-query'
 import { Plus, Rss, Activity, BarChart2, XCircle, List } from 'lucide-react'
 import { useNavigate } from 'react-router-dom'
-import { fetchSources, fetchSocialStats } from '../../../api/social'
+import { fetchSources, fetchSocialStats, fetchSparklines } from '../../../api/social'
 import { SourceCard } from './components/SourceCard'
 import { PlatformFilterTabs } from './components/PlatformFilterTabs'
 import { AddSourceDrawer } from './components/AddSourceDrawer'
@@ -23,6 +23,15 @@ export function SocialMonitorPage() {
     queryKey: ['social-stats'],
     queryFn: fetchSocialStats,
     refetchInterval: 30000,
+  })
+
+  // Загружаем sparkline-данные для всех источников одним batch-запросом
+  const sourceIds = sources.map(s => s.id)
+  const { data: sparklines = {} } = useQuery({
+    queryKey: ['social-sparklines', sourceIds.join(',')],
+    queryFn: () => fetchSparklines(sourceIds),
+    enabled: sourceIds.length > 0,
+    refetchInterval: 60000,
   })
 
   const filtered = platformFilter ? sources.filter(s => s.platform === platformFilter) : sources
@@ -85,7 +94,7 @@ export function SocialMonitorPage() {
         </div>
       ) : (
         <div className="grid grid-cols-3 gap-4">
-          {filtered.map(s => <SourceCard key={s.id} source={s} />)}
+          {filtered.map(s => <SourceCard key={s.id} source={s} sparkData={sparklines[s.id]} />)}
         </div>
       )}
 

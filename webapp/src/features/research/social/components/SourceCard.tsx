@@ -9,7 +9,7 @@ import { CollectionTypeBadge } from './ContentTypeFilter'
 import { SourceStatusBadge } from './SourceStatusBadge'
 import { SparklineChart } from './SparklineChart'
 
-interface Props { source: SocialSource }
+interface Props { source: SocialSource; sparkData?: Array<{ day: string; count: number }> }
 
 function formatRelative(iso: string | null): string {
   if (!iso) return 'никогда'
@@ -31,7 +31,7 @@ function formatNext(schedule: Record<string, any> | null, lastParsed: string | n
   return `через ${Math.floor(diff / 86400)}д`
 }
 
-export function SourceCard({ source }: Props) {
+export function SourceCard({ source, sparkData }: Props) {
   const navigate = useNavigate()
   const qc = useQueryClient()
 
@@ -47,11 +47,8 @@ export function SourceCard({ source }: Props) {
     onSuccess: () => qc.invalidateQueries({ queryKey: ['social-sources'] }),
   })
 
-  // Заглушка sparkline — в реальности данные из /posts?group_by=day
-  const sparkData = Array.from({ length: 7 }, (_, i) => ({
-    day: `д${i + 1}`,
-    count: Math.floor(Math.random() * 20),
-  }))
+  // Используем реальные sparkline-данные, переданные из родителя
+  const chartData = sparkData ?? []
 
   const subs = source.source_meta?.subscribers_count
   const subsLabel = subs ? (subs >= 1000 ? `${(subs / 1000).toFixed(1)}K` : subs) : null
@@ -81,7 +78,7 @@ export function SourceCard({ source }: Props) {
 
       {/* Sparkline */}
       <div>
-        <SparklineChart data={sparkData} />
+        <SparklineChart data={chartData} />
         <p className="text-xs text-[var(--text-muted)] mt-1">
           посты за 7 дней
         </p>

@@ -158,3 +158,11 @@ export const transcribePost = async (postId: string): Promise<{ transcript: stri
   const { data } = await api.post(`/social/posts/${postId}/transcribe`)
   return data
 }
+
+// ── Sparklines ───────────────────────────────────────────────────────────────
+
+/** Batch-получение sparkline данных для нескольких источников. */
+export const fetchSparklines = async (sourceIds: string[]): Promise<Record<string, Array<{ day: string; count: number }>>> => {
+  const { data } = await api.get('/social/sparklines', { params: { source_ids: sourceIds.join(',') } })
+  return data
+}

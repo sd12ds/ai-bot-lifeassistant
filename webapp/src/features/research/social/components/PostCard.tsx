@@ -220,7 +220,16 @@ export function PostCard({ post, sourceMap }: Props) {
               </button>
             )}
             {transcribeError && <p className="text-[10px] text-red-400 leading-tight">{transcribeError}</p>}
-            <button className="flex items-center gap-1.5 px-2.5 py-1.5 text-xs text-[var(--text-secondary)] border border-[var(--border)] rounded-lg hover:bg-[var(--bg-hover)] hover:text-[var(--text-primary)] transition-colors w-full">
+            <button
+              onClick={() => {
+                const el = document.createElement('div')
+                el.className = 'fixed bottom-4 right-4 z-50 px-4 py-2 bg-[var(--bg-card)] border border-[var(--border)] rounded-lg text-sm text-[var(--text-primary)] shadow-lg'
+                el.textContent = '🚧 В разработке'
+                document.body.appendChild(el)
+                setTimeout(() => el.remove(), 2000)
+              }}
+              className="flex items-center gap-1.5 px-2.5 py-1.5 text-xs text-[var(--text-secondary)] border border-[var(--border)] rounded-lg hover:bg-[var(--bg-hover)] hover:text-[var(--text-primary)] transition-colors w-full"
+            >
               <CalendarPlus size={10}/> В план контента
             </button>
           </div>

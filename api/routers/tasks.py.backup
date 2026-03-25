@@ -285,39 +285,9 @@ async def patch_task(
         task.status = "todo"
 
     task.updated_at = datetime.now(timezone.utc)
-    
-    # Синхронизируем reminder если:
-    # 1. Поле remind_at передано явно, ИЛИ
-    # 2. Изменилась дата (due_datetime или start_at) - тогда пересчитаем напоминание
-    body_dict = body.model_dump(exclude_unset=True)
-    if "remind_at" in body_dict:
-        # Явно передано remind_at — синхронизируем как есть
+    # Синхронизируем reminder если поле remind_at передано явно
+    if "remind_at" in body.model_dump(exclude_unset=True):
         await _sync_reminder(db, current_user.telegram_id, task_id, body.remind_at)
-    elif any(field in body_dict for field in ["due_datetime", "start_at"]):
-        # Дата изменилась — пересчитываем напоминание если активное существует
-        rem_result = await db.execute(
-            select(Reminder).where(
-                Reminder.user_id == current_user.telegram_id,
-                Reminder.entity_type == "task",
-                Reminder.entity_id == task_id,
-                Reminder.is_sent == False,
-            )
-        )
-        existing_reminder = rem_result.scalar_one_or_none()
-        if existing_reminder:
-            anchor = task.due_datetime or task.start_at
-            if anchor:
-                # Берём offset из профиля пользователя (дефолт 15 мин)
-                offset_min = int(current_user.notification_offset_min or 15)
-                new_remind_at = anchor - timedelta(minutes=offset_min)
-                # Гарантируем UTC
-                if new_remind_at.tzinfo is None:
-                    new_remind_at = new_remind_at.replace(tzinfo=timezone.utc)
-                else:
-                    new_remind_at = new_remind_at.astimezone(timezone.utc)
-                await _sync_reminder(db, current_user.telegram_id, task_id, new_remind_at)
-                # Синхронизируем task.remind_at чтобы мини-апп видел актуальное время
-                task.remind_at = new_remind_at
     await db.commit()
     await db.refresh(task)
     return task

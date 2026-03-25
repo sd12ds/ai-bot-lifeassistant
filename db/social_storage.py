@@ -253,3 +253,62 @@ async def list_runs(session: AsyncSession, source_id: str, limit: int = 20) -> l
     stmt = select(SocialParseRun).where(SocialParseRun.source_id == source_id)\
            .order_by(SocialParseRun.created_at.desc()).limit(limit)
     return list((await session.execute(stmt)).scalars().all())
+
+
+# ── Sparkline данные ──────────────────────────────────────────────────────────
+
+async def get_daily_post_counts(
+    session: AsyncSession,
+    source_id: str,
+    days: int = 7,
+) -> list[dict]:
+    """Количество постов по дням за последние N дней (для sparkline)."""
+    from datetime import timedelta
+    cutoff = datetime.now(timezone.utc) - timedelta(days=days)
+    stmt = select(
+        func.date(SocialPost.posted_at).label("day"),
+        func.count().label("count"),
+    ).where(
+        SocialPost.source_id == source_id,
+        SocialPost.posted_at >= cutoff,
+    ).group_by(func.date(SocialPost.posted_at)).order_by(func.date(SocialPost.posted_at))
+    rows = (await session.execute(stmt)).fetchall()
+    return [{"day": str(r.day), "count": r.count} for r in rows]
+
+
+async def get_sparklines_batch(
+    session: AsyncSession,
+    source_ids: list[str],
+    days: int = 7,
+) -> dict[str, list[dict]]:
+    """Batch-получение sparkline данных для нескольких источников."""
+    from datetime import timedelta
+    cutoff = datetime.now(timezone.utc) - timedelta(days=days)
+    stmt = select(
+        SocialPost.source_id,
+        func.date(SocialPost.posted_at).label("day"),
+        func.count().label("count"),
+    ).where(
+        SocialPost.source_id.in_(source_ids),
+        SocialPost.posted_at >= cutoff,
+    ).group_by(SocialPost.source_id, func.date(SocialPost.posted_at)).order_by(
+        SocialPost.source_id, func.date(SocialPost.posted_at)
+    )
+    rows = (await session.execute(stmt)).fetchall()
+    # Группируем по source_id
+    result: dict[str, list[dict]] = {sid: [] for sid in source_ids}
+    for r in rows:
+        result[r.source_id].append({"day": str(r.day), "count": r.count})
+    return result
+
+
+# ── Проверка активного парсинга ───────────────────────────────────────────────
+
+async def has_running_run(session: AsyncSession, source_id: str) -> bool:
+    """Проверяет есть ли активный (running) запуск для источника."""
+    stmt = select(func.count()).select_from(SocialParseRun).where(
+        SocialParseRun.source_id == source_id,
+        SocialParseRun.status == "running",
+    )
+    count = (await session.execute(stmt)).scalar_one()
+    return count > 0

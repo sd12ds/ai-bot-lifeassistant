@@ -10,19 +10,9 @@ from datetime import datetime, timezone
 
 from db.session import get_async_session
 from db import social_storage as storage
+from integrations.social import get_provider
 
 logger = logging.getLogger(__name__)
-
-
-def _get_provider(platform: str):
-    """Получает провайдер по платформе."""
-    if platform == "instagram":
-        from integrations.social.instagram.provider import InstagramProvider
-        return InstagramProvider()
-    elif platform == "telegram":
-        from integrations.social.telegram_parser.provider import TelegramProvider
-        return TelegramProvider()
-    raise ValueError(f"Неизвестная платформа: {platform}")
 
 
 async def run_source(source_id: str, notify_callback=None) -> dict:
@@ -41,7 +31,7 @@ async def run_source(source_id: str, notify_callback=None) -> dict:
     error_msg = None
 
     try:
-        provider = _get_provider(source.platform)
+        provider = get_provider(source.platform)
         config = source.collection_config or {}
         results_type = config.get("results_type", "posts")
         limit = config.get("limit", 50)

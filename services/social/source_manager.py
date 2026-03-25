@@ -6,19 +6,9 @@ from __future__ import annotations
 import logging
 from db.session import get_async_session
 from db import social_storage as storage
+from integrations.social import get_provider
 
 logger = logging.getLogger(__name__)
-
-
-def _get_provider(platform: str):
-    """Получает провайдер по имени платформы."""
-    if platform == "instagram":
-        from integrations.social.instagram.provider import InstagramProvider
-        return InstagramProvider()
-    elif platform == "telegram":
-        from integrations.social.telegram_parser.provider import TelegramProvider
-        return TelegramProvider()
-    raise ValueError(f"Неизвестная платформа: {platform}")
 
 
 def _detect_platform(url: str) -> str:
@@ -41,7 +31,7 @@ def _detect_platform(url: str) -> str:
 async def resolve_source(url: str) -> dict:
     """Резолвит URL → информация об источнике (без сохранения)."""
     platform = _detect_platform(url)
-    provider = _get_provider(platform)
+    provider = get_provider(platform)
     info = await provider.resolve_url(url)
     return {
         "platform": platform,
