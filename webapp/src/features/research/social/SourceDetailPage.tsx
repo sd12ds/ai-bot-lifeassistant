@@ -25,6 +25,7 @@ export function SourceDetailPage() {
   const [search, setSearch] = useState('')
   const [postTypeFilter, setPostTypeFilter] = useState<PostTypeFilter>('all')
   const [cfgSaved, setCfgSaved] = useState(false)
+  const [isParsing, setIsParsing] = useState(false)
 
   const { data: source, isLoading } = useQuery({
     queryKey: ['social-source', id],
@@ -39,11 +40,21 @@ export function SourceDetailPage() {
     enabled: !!id && tab === 'Посты',
   })
 
+  // Загружаем runs всегда — для определения статуса парсинга
   const { data: runs = [] } = useQuery({
     queryKey: ['social-runs', id],
     queryFn: () => fetchRuns(id!),
-    enabled: !!id && tab === 'История запусков',
+    enabled: !!id,
+    refetchInterval: isParsing ? 3000 : false,
   })
+
+  // Автоопределение завершения парсинга по последнему run
+  const latestRun = runs[0]
+  if (isParsing && latestRun && latestRun.status !== 'running') {
+    setIsParsing(false)
+    qc.invalidateQueries({ queryKey: ['social-source', id] })
+    qc.invalidateQueries({ queryKey: ['social-posts', id] })
+  }
 
   const toggle = useMutation({
     mutationFn: () => updateSource(id!, { status: source?.status === 'active' ? 'paused' : 'active' } as any),
@@ -52,7 +63,11 @@ export function SourceDetailPage() {
 
   const parse = useMutation({
     mutationFn: () => triggerParse(id!),
-    onSuccess: () => qc.invalidateQueries({ queryKey: ['social-runs', id] }),
+    onSuccess: () => {
+      setIsParsing(true)
+      qc.invalidateQueries({ queryKey: ['social-runs', id] })
+    },
+    onError: () => setIsParsing(false),
   })
 
   const del = useMutation({
@@ -109,10 +124,10 @@ export function SourceDetailPage() {
               className="flex items-center gap-1 px-3 py-1.5 text-sm border border-[var(--border)] rounded-lg hover:bg-[var(--bg-hover)] transition-colors">
               {source.status === 'active' ? <><Pause size={14} /> Пауза</> : <><Play size={14} /> Возобновить</>}
             </button>
-            <button onClick={() => parse.mutate()} disabled={parse.isPending}
+            <button onClick={() => parse.mutate()} disabled={parse.isPending || isParsing}
               className="flex items-center gap-1 px-3 py-1.5 text-sm bg-[var(--accent)]/20 text-[var(--accent)] rounded-lg hover:bg-[var(--accent)]/30 transition-colors">
-              <RotateCw size={14} className={parse.isPending ? 'animate-spin' : ''} />
-              {parse.isPending ? 'Запуск...' : 'Запустить сейчас'}
+              <RotateCw size={14} className={parse.isPending || isParsing ? 'animate-spin' : ''} />
+              {isParsing ? 'Парсинг...' : parse.isPending ? 'Запуск...' : 'Запустить сейчас'}
             </button>
             <button onClick={() => { if (confirm('Удалить источник?')) del.mutate() }}
               className="p-1.5 text-[var(--text-muted)] hover:text-red-400 transition-colors">

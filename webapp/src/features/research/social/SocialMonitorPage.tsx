@@ -7,6 +7,7 @@ import { fetchSources, fetchSocialStats, fetchSparklines } from '../../../api/so
 import { SourceCard } from './components/SourceCard'
 import { PlatformFilterTabs } from './components/PlatformFilterTabs'
 import { AddSourceDrawer } from './components/AddSourceDrawer'
+import { SourceCardSkeleton } from './components/Skeletons'
 
 export function SocialMonitorPage() {
   const navigate = useNavigate()
@@ -82,7 +83,9 @@ export function SocialMonitorPage() {
 
       {/* Grid источников */}
       {isLoading ? (
-        <div className="text-center py-12 text-[var(--text-muted)]">Загрузка...</div>
+        <div className="grid grid-cols-3 gap-4">
+          {Array.from({ length: 6 }).map((_, i) => <SourceCardSkeleton key={i} />)}
+        </div>
       ) : filtered.length === 0 ? (
         <div className="text-center py-16 space-y-3">
           <Rss size={40} className="mx-auto text-[var(--text-muted)]" />

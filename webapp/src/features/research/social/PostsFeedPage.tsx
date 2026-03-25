@@ -7,6 +7,7 @@ import { ContentTypeFilter, filterToApiParam } from './components/ContentTypeFil
 import type { PostTypeFilter } from './components/ContentTypeFilter'
 import { fetchFeed, fetchSources } from '../../../api/social'
 import { PostCard } from './components/PostCard'
+import { PostCardSkeleton } from './components/Skeletons'
 
 export function PostsFeedPage() {
   const navigate = useNavigate()
@@ -79,7 +80,9 @@ export function PostsFeedPage() {
 
       {/* Лента */}
       {isLoading ? (
-        <div className="text-center py-12 text-[var(--text-muted)]">Загрузка...</div>
+        <div className="space-y-3">
+          {Array.from({ length: 3 }).map((_, i) => <PostCardSkeleton key={i} />)}
+        </div>
       ) : feedData?.items.length === 0 ? (
         <div className="text-center py-12 text-[var(--text-muted)]">Постов не найдено</div>
       ) : (

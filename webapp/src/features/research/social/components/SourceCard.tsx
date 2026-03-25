@@ -1,4 +1,5 @@
 /** SourceCard — карточка источника мониторинга с sparkline и кнопками действий. */
+import { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useMutation, useQueryClient } from '@tanstack/react-query'
 import { Play, Pause, RotateCw } from 'lucide-react'
@@ -34,6 +35,8 @@ function formatNext(schedule: Record<string, any> | null, lastParsed: string | n
 export function SourceCard({ source, sparkData }: Props) {
   const navigate = useNavigate()
   const qc = useQueryClient()
+  // Локальный статус парсинга (optimistic UI)
+  const [isParsing, setIsParsing] = useState(false)
 
   const toggleStatus = useMutation({
     mutationFn: () => updateSource(source.id, {
@@ -44,7 +47,13 @@ export function SourceCard({ source, sparkData }: Props) {
 
   const parse = useMutation({
     mutationFn: () => triggerParse(source.id),
-    onSuccess: () => qc.invalidateQueries({ queryKey: ['social-sources'] }),
+    onSuccess: () => {
+      setIsParsing(true)
+      // Через 30 сек сбрасываем (парсинг должен завершиться)
+      setTimeout(() => setIsParsing(false), 30000)
+      qc.invalidateQueries({ queryKey: ['social-sources'] })
+    },
+    onError: () => setIsParsing(false),
   })
 
   // Используем реальные sparkline-данные, переданные из родителя
@@ -76,13 +85,18 @@ export function SourceCard({ source, sparkData }: Props) {
         {subsLabel && <span className="text-xs text-[var(--text-muted)]">{subsLabel} подписчиков</span>}
       </div>
 
-      {/* Sparkline */}
-      <div>
-        <SparklineChart data={chartData} />
-        <p className="text-xs text-[var(--text-muted)] mt-1">
-          посты за 7 дней
-        </p>
-      </div>
+      {/* Sparkline или индикация парсинга */}
+      {isParsing || parse.isPending ? (
+        <div className="flex items-center gap-2 h-10">
+          <div className="w-3 h-3 rounded-full bg-[var(--accent)] animate-ping" />
+          <span className="text-xs text-[var(--accent)] font-medium animate-pulse">Парсинг...</span>
+        </div>
+      ) : (
+        <div>
+          <SparklineChart data={chartData} />
+          <p className="text-xs text-[var(--text-muted)] mt-1">посты за 7 дней</p>
+        </div>
+      )}
 
       {/* Тайминги */}
       <div className="space-y-0.5 text-xs text-[var(--text-secondary)]">

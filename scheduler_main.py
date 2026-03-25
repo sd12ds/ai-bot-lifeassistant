@@ -25,6 +25,7 @@ from db.storage import init_db
 from infrastructure.scheduler.notification_scheduler import start_notification_scheduler
 from infrastructure.scheduler.nutrition_tips_scheduler import start_nutrition_tips_scheduler
 from infrastructure.scheduler.coaching_scheduler import start_coaching_scheduler
+from services.social.monitor_scheduler import start_monitor_loop
 
 logging.basicConfig(
     level=logging.INFO,
@@ -50,6 +51,14 @@ async def main() -> None:
     start_notification_scheduler(bot, interval_seconds=60)
     start_nutrition_tips_scheduler(bot, check_interval=60)
     start_coaching_scheduler(bot, interval_seconds=60)
+    # Социальный мониторинг — фоновый цикл проверки расписания источников
+    async def _social_notify(user_id, text):
+        """Callback для уведомлений о новых постах в Telegram."""
+        try:
+            await bot.send_message(user_id, text)
+        except Exception:
+            pass
+    asyncio.create_task(start_monitor_loop(notify_callback=_social_notify))
 
     logger.info("Все планировщики запущены. Ожидаю событий (без polling)...")
 

@@ -76,24 +76,23 @@ async def list_sources(
 
 
 async def list_due_sources(session: AsyncSession) -> list[SocialSource]:
-    """Возвращает активные источники у которых пришло время парсинга."""
-    now = datetime.now(timezone.utc)
-    stmt = select(SocialSource).where(SocialSource.status == "active")
-    sources = list((await session.execute(stmt)).scalars().all())
-    due = []
-    for s in sources:
-        sched = s.schedule or {}
-        interval_hours = sched.get("interval_hours", 6)
-        if s.last_parsed_at is None:
-            due.append(s)
-        else:
-            lp = s.last_parsed_at
-            if lp.tzinfo is None:
-                lp = lp.replace(tzinfo=timezone.utc)
-            delta_hours = (now - lp).total_seconds() / 3600
-            if delta_hours >= interval_hours:
-                due.append(s)
-    return due
+    """Возвращает активные источники у которых пришло время парсинга (фильтрация на стороне PostgreSQL)."""
+    from sqlalchemy import text, cast, Float
+    # SQL-фильтрация: interval_hours из JSONB, сравнение с разницей now() - last_parsed_at
+    # Источники без last_parsed_at — всегда «пора» (ни разу не парсились)
+    stmt = select(SocialSource).where(
+        SocialSource.status == "active",
+        # Условие: либо никогда не парсили, либо прошло >= interval_hours
+        (SocialSource.last_parsed_at.is_(None)) |
+        (
+            func.extract("epoch", func.now() - SocialSource.last_parsed_at) / 3600
+            >= cast(
+                func.coalesce(SocialSource.schedule["interval_hours"].as_string(), "6"),
+                Float,
+            )
+        ),
+    )
+    return list((await session.execute(stmt)).scalars().all())
 
 
 async def update_source(session: AsyncSession, source_id: str, **kwargs) -> SocialSource | None:
